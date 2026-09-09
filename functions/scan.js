@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: "Foto de etiqueta de rollo de acero. Extrae los 4 campos y responde SOLO JSON sin markdown: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 6mm\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. peso=toneladas solo numero, producto=tipo acero con mm, coil=numero rollo, cast=numero colada. null si no aparece."}
+        {text: "You are a data extractor for steel coil labels. Extract exactly these 4 fields and respond with ONLY a JSON object, nothing else:\n{\"peso\": \"1.460\", \"producto\": \"COIL REIN 6.1mm\", \"coil\": \"6260300548\", \"cast\": \"530736\"}\npeso = the large number (weight in tonnes, just the number)\nproducto = the product type including MM size (e.g. COIL REIN 6.1mm)\ncoil = the Coil number\ncast = the Cast number\nRespond with ONLY the JSON, no explanation, no markdown."}
       ]}],
       generationConfig: {temperature: 0, maxOutputTokens: 256}
     })
@@ -23,9 +23,26 @@ export async function onRequestPost(context) {
   if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
 
   const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  let parsed;
-  try { parsed = JSON.parse(raw.replace(/```json/gi,"").replace(/```/g,"").trim()); }
-  catch(e) { return rj({error:"No se leyeron los datos. Foto mas clara."}, 422); }
+  
+  // Try multiple ways to extract JSON
+  let parsed = null;
+  
+  // 1. Direct parse
+  try { parsed = JSON.parse(raw.trim()); } catch(e) {}
+  
+  // 2. Extract from markdown code block
+  if (!parsed) {
+    const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (match) try { parsed = JSON.parse(match[1].trim()); } catch(e) {}
+  }
+  
+  // 3. Extract first { ... } block
+  if (!parsed) {
+    const match = raw.match(/\{[\s\S]*?\}/);
+    if (match) try { parsed = JSON.parse(match[0]); } catch(e) {}
+  }
+
+  if (!parsed) return rj({error: "No se leyeron los datos. Raw: " + raw.substring(0,100)}, 422);
 
   const coil = parsed.coil ? String(parsed.coil).trim() : null;
   const peso = normalizePeso(parsed.peso);
