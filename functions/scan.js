@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: "Analiza esta etiqueta de acero. Responde SOLO con JSON: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 7 MM\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. Peso en toneladas. null si no aparece."}
+        {text: "Foto de etiqueta de rollo de acero. Extrae los 4 campos y responde SOLO JSON sin markdown: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 6mm\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. peso=toneladas solo numero, producto=tipo acero con mm, coil=numero rollo, cast=numero colada. null si no aparece."}
       ]}],
       generationConfig: {temperature: 0, maxOutputTokens: 256}
     })
