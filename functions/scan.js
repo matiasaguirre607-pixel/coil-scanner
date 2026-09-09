@@ -13,7 +13,10 @@ export async function onRequestPost(context) {
     headers: {
       "Content-Type": "application/json",
       "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01"
+      "anthropic-version": "2023-06-01",
+      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV",
+      "anthropic-beta": "interleaved-thinking-2025-05-14",
+      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV"
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
