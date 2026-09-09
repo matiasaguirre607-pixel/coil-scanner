@@ -50,7 +50,7 @@ export async function onRequestPost(context) {
   const producto = normalizeProducto(parsed.producto);
 
   if (coil) {
-    const dr = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,created_at&limit=1", {
+    const dr = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,producto,wo,created_at&limit=1", {
       headers: { apikey: SB_KEY, Authorization: "Bearer "+SB_KEY }
     });
     const dups = await dr.json();
