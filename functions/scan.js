@@ -1,5 +1,5 @@
 export async function onRequestPost(context) {
-  const ANTHROPIC_KEY = "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";
+  const ANTHROPIC_KEY = "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";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
   const SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
 
