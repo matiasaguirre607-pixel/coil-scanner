@@ -259,8 +259,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <script>
-var GEMINI_KEY = 'AQ.Ab8RN6KvVc-63uJ-k5YcOMPkRfi036IJ9Gjv9IJE1n95XxAKeg';
-var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=';
+
 var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
 var records = [], activeRec = null, pendingImg = null, busy = false;
 
@@ -280,19 +279,26 @@ function normalizeProducto(raw) {
   return String(raw).toUpperCase().trim();
 }
 async function callGemini(base64, mType) {
-  var resp = await fetch(GEMINI_URL + GEMINI_KEY, {
-    method: 'POST', headers: {'Content-Type':'application/json'},
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': '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',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify({
-      contents: [{parts: [
-        {inline_data: {mime_type: mType, data: base64}},
-        {text: 'Analiza esta etiqueta de acero. Responde SOLO con JSON sin texto extra: {"peso":"1.475","producto":"COIL REIN 7 MM","coil":"6260170028","cast":"530069"}. El peso solo el numero en toneladas. Si un campo no aparece escribe null.'}
-      ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 256}
+      model: 'claude-sonnet-4-6',
+      max_tokens: 256,
+      messages: [{role: 'user', content: [
+        {type: 'image', source: {type: 'base64', media_type: mType, data: base64}},
+        {type: 'text', text: 'Analiza esta etiqueta de acero. Responde SOLO con JSON sin texto extra: {"peso":"1.475","producto":"COIL REIN 7 MM","coil":"6260170028","cast":"530069"}. El peso solo el numero en toneladas. Si un campo no aparece escribe null.'}
+      ]}]
     })
   });
   var data = await resp.json();
-  if (!resp.ok) throw new Error(data.error ? data.error.message : 'Error Gemini ' + resp.status);
-  var raw = data.candidates[0].content.parts[0].text;
+  if (!resp.ok) throw new Error(data.error ? data.error.message : 'Error API ' + resp.status);
+  var raw = data.content[0].text;
   return JSON.parse(raw.replace(/```json/gi,'').replace(/```/g,'').trim());
 }
 async function saveToDB(wo, producto, coil, cast, peso, operario, notas) {
