@@ -259,7 +259,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <script>
-var GEMINI_KEY = 'AQ.Ab8RN6JCfzMfZGk4ao3BcrKdtPMd0fiDk0m3ydNQ8is80807jQ';
+var GEMINI_KEY = 'AQ.Ab8RN6K974QdGTLEvyMVja20go9F5I7d8RT-yj0epBiXHO-n-Q';
 var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=';
 var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
 var records = [], activeRec = null, pendingImg = null, busy = false;
@@ -296,7 +296,7 @@ async function callGemini(base64, mType) {
   return JSON.parse(raw.replace(/```json/gi,'').replace(/```/g,'').trim());
 }
 async function saveToDB(wo, producto, coil, cast, peso, operario, notas) {
-  var resp = await fetch('/functions/scan', {
+  var resp = await fetch('/scan', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({wo:wo, producto:producto, coil:coil, cast:cast, peso:peso, operario:operario, notas:notas})
   });
@@ -481,7 +481,7 @@ function showResult(d, wo) {
 }
 async function loadRecords() {
   try {
-    var resp = await fetch('/functions/records');
+    var resp = await fetch('/records');
     records = await resp.json();
     document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
     renderWoChips();
@@ -545,7 +545,7 @@ function openModal(r) {
 function closeModal() { document.getElementById('modal-bg').classList.remove('on'); activeRec = null; }
 async function delRecord() {
   if (!activeRec || !confirm('Eliminar?')) return;
-  await fetch('/functions/delete?id=' + activeRec.id, {method:'DELETE'});
+  await fetch('/delete?id=' + activeRec.id, {method:'DELETE'});
   records = records.filter(function(r){return r.id!==activeRec.id;});
   document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
   filterRecords(); renderDash(); closeModal();
