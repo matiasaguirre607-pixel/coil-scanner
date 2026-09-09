@@ -1,5 +1,5 @@
 export async function onRequestPost(context) {
-  const ANTHROPIC_KEY = context.env.ANTHROPIC_KEY;
+  const GEMINI_KEY = "AQ.Ab8RN6J0RmtK5I7cVr5bTDHB8Gqly6fMBAv4eZrDxpw8SNBieQ";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
   const SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
 
@@ -8,29 +8,21 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType, wo, operario, notas } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const ar = await fetch("https://api.anthropic.com/v1/messages", {
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+GEMINI_KEY, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV",
-      "anthropic-beta": "interleaved-thinking-2025-05-14",
-      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV"
-    },
+    headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 256,
-      messages: [{role: "user", content: [
-        {type: "image", source: {type: "base64", media_type: mediaType||"image/jpeg", data: imageBase64}},
-        {type: "text", text: "Analiza esta etiqueta de acero. Responde SOLO con JSON: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 7 MM\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. Peso en toneladas. null si no aparece."}
-      ]}]
+      contents: [{parts: [
+        {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
+        {text: "Analiza esta etiqueta de acero. Responde SOLO con JSON: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 7 MM\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. Peso en toneladas. null si no aparece."}
+      ]}],
+      generationConfig: {temperature: 0, maxOutputTokens: 256}
     })
   });
-  const ad = await ar.json();
-  if (!ar.ok) return rj({error: ad?.error?.message || "Error API"}, 500);
+  const gd = await gr.json();
+  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
 
-  const raw = ad.content[0].text;
+  const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   let parsed;
   try { parsed = JSON.parse(raw.replace(/```json/gi,"").replace(/```/g,"").trim()); }
   catch(e) { return rj({error:"No se leyeron los datos. Foto mas clara."}, 422); }
