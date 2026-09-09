@@ -1,5 +1,5 @@
 export async function onRequestPost(context) {
-  const GEMINI_KEY = "AQ.Ab8RN6J0RmtK5I7cVr5bTDHB8Gqly6fMBAv4eZrDxpw8SNBieQ";
+  const GEMINI_KEY = context.env.GEMINI_KEY;
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
   const SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
 
