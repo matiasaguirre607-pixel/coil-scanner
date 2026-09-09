@@ -279,38 +279,24 @@ function normalizeProducto(raw) {
   return String(raw).toUpperCase().trim();
 }
 async function callGemini(base64, mType) {
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': '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',
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 256,
-      messages: [{role: 'user', content: [
-        {type: 'image', source: {type: 'base64', media_type: mType, data: base64}},
-        {type: 'text', text: 'Analiza esta etiqueta de acero. Responde SOLO con JSON sin texto extra: {"peso":"1.475","producto":"COIL REIN 7 MM","coil":"6260170028","cast":"530069"}. El peso solo el numero en toneladas. Si un campo no aparece escribe null.'}
-      ]}]
-    })
-  });
-  var data = await resp.json();
-  if (!resp.ok) throw new Error(data.error ? data.error.message : 'Error API ' + resp.status);
-  var raw = data.content[0].text;
-  return JSON.parse(raw.replace(/```json/gi,'').replace(/```/g,'').trim());
-}
-async function saveToDB(wo, producto, coil, cast, peso, operario, notas) {
+  var wo = document.getElementById('wo-input').value.trim();
+  var operario = document.getElementById('operario-input').value.trim();
+  var notas = document.getElementById('notas-input').value.trim();
   var resp = await fetch('/scan', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({wo:wo, producto:producto, coil:coil, cast:cast, peso:peso, operario:operario, notas:notas})
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({imageBase64: base64, mediaType: mType, wo: wo, operario: operario, notas: notas})
   });
   var data = await resp.json();
-  if (resp.status === 409) return data;
-  if (!resp.ok) throw new Error('Error guardando');
+  if (resp.status === 409) { data._dup = true; return data; }
+  if (!resp.ok) throw new Error(data.error || 'Error ' + resp.status);
   return data;
 }
+
+async function saveToDB(wo, producto, coil, cast, peso, operario, notas) {
+  return {ok: true}; // scan.js already saved
+}
+
 function isDup(coil) {
   if (!coil) return null;
   var c = String(coil).trim();
@@ -439,19 +425,8 @@ async function analyze() {
     var coil = parsed.coil ? String(parsed.coil).trim() : null;
     var peso = normalizePeso(parsed.peso);
     var producto = normalizeProducto(parsed.producto);
-    var localDup = isDup(coil);
-    if (localDup) {
-      document.getElementById('dup-coil').textContent = localDup.coil || '';
-      document.getElementById('dup-cast').textContent = localDup.cast || '';
-      document.getElementById('dup-peso').textContent = localDup.peso || '';
-      document.getElementById('dup-fecha').textContent = localDup.created_at ? new Date(localDup.created_at).toLocaleString('es') : '';
-      document.getElementById('dup-card').style.display = 'block';
-      setStatus('Etiqueta duplicada.', 'warn');
-      return;
-    }
-    var result = await saveToDB(wo, producto, coil, parsed.cast, peso, operario, notas);
-    if (result && result.duplicate) {
-      var ex = result.existing;
+    if (parsed._dup && parsed.existing) {
+      var ex = parsed.existing;
       document.getElementById('dup-coil').textContent = ex.coil || '';
       document.getElementById('dup-cast').textContent = ex.cast || '';
       document.getElementById('dup-peso').textContent = ex.peso || '';
@@ -460,7 +435,7 @@ async function analyze() {
       setStatus('Etiqueta duplicada.', 'warn');
       return;
     }
-    showResult({peso:peso, producto:producto, coil:coil, cast:parsed.cast}, wo);
+    showResult({peso:parsed.peso, producto:parsed.producto, coil:parsed.coil, cast:parsed.cast}, wo);
     setStatus('Guardado' + (wo ? ' - WO: ' + wo : ''), 'ok');
     await loadRecords();
     document.getElementById('notas-input').value = '';
