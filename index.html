@@ -180,12 +180,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
   <div class="status" id="status"></div>
   <div class="dup-card" id="dup-card">
-    <div class="dup-title">&#9888; Etiqueta duplicada</div>
+    <div class="dup-title">&#9888; Etiqueta duplicada — ya fue escaneada</div>
     <div class="dup-row"><span class="dup-key">Coil:</span><span class="dup-val" id="dup-coil"></span></div>
     <div class="dup-row"><span class="dup-key">Cast:</span><span class="dup-val" id="dup-cast"></span></div>
     <div class="dup-row"><span class="dup-key">Peso:</span><span class="dup-val" id="dup-peso"></span></div>
+    <div class="dup-row"><span class="dup-key">Producto:</span><span class="dup-val" id="dup-prod"></span></div>
+    <div class="dup-row"><span class="dup-key">WO:</span><span class="dup-val" id="dup-wo"></span></div>
     <div class="dup-row"><span class="dup-key">Registrada:</span><span class="dup-val" id="dup-fecha"></span></div>
-    <div style="font-size:12px;color:#7a5c00;margin-top:8px">Esta etiqueta ya fue escaneada.</div>
   </div>
   <button class="analyze-btn" id="analyze-btn" disabled>
     <span id="btn-inner">&#128228; Analizar etiqueta con IA</span>
@@ -429,8 +430,10 @@ async function analyze() {
       var ex = parsed.existing;
       document.getElementById('dup-coil').textContent = ex.coil || '';
       document.getElementById('dup-cast').textContent = ex.cast || '';
-      document.getElementById('dup-peso').textContent = ex.peso || '';
-      document.getElementById('dup-fecha').textContent = ex.created_at ? new Date(ex.created_at).toLocaleString('es') : '';
+      document.getElementById('dup-peso').textContent = (ex.peso || '') + ' t';
+      document.getElementById('dup-prod').textContent = ex.producto || '';
+      document.getElementById('dup-wo').textContent = ex.wo || '-';
+      document.getElementById('dup-fecha').textContent = ex.created_at ? new Date(ex.created_at).toLocaleString('es', {weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
       document.getElementById('dup-card').style.display = 'block';
       setStatus('Etiqueta duplicada.', 'warn');
       return;
@@ -491,7 +494,7 @@ function renderList(list) {
     g.items.forEach(function(r) {
       var row = document.createElement('div');
       row.className = 'rec-item-row';
-      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
       row.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">'+esc(r.coil||'Sin coil')+'</div><div style="font-size:11px;color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div></div><div style="font-size:14px;font-weight:700;color:var(--blue)">'+esc(r.peso||'-')+' t</div>';
       row.addEventListener('click', function() { openModal(r); });
       itemsDiv.appendChild(row);
