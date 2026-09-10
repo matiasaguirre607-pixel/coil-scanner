@@ -384,6 +384,8 @@ async function processQueue(files) {
   for (var i = 0; i < total; i++) {
     document.getElementById('prog-fill').style.width = Math.round((i/total)*100) + '%';
     document.getElementById('prog-txt').textContent = (i+1) + ' de ' + total + ' - ' + ok + ' ok, ' + dup + ' dup, ' + fail + ' error';
+    // Rate limit: max 15 req/min = 1 every 4 seconds
+    if (i > 0) await new Promise(function(r){setTimeout(r, 4000);});
     try {
       var dataUrl = await compressAndRead(files[i]);
       var base64 = dataUrl.split(',')[1];
