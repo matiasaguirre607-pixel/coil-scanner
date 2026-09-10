@@ -648,7 +648,7 @@ async function assignWO(gi) {
   var ok = 0;
   for (var i = 0; i < ids.length; i++) {
     try {
-      await fetch('/update-wo', {
+      await fetch('/updatewo', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({id: ids[i], wo: wo})
