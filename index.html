@@ -549,16 +549,16 @@ function parseTon(p) { if(!p)return 0; var n=parseFloat(String(p).replace(',','.
 function sumTon(arr) { return arr.reduce(function(s,r){return s+parseTon(r.peso);},0); }
 function renderDash() {
   var today = new Date().toDateString();
-  var allProds = unique(records.map(function(r){return r.producto;}).filter(Boolean)).sort();
+  var allProds = unique(records.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
   var allWOs = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
   var fP = document.getElementById('f-prod'), fC = document.getElementById('f-cast'), fW = document.getElementById('f-wo');
   var cP = fP.value, cC = fC.value, cW = fW.value;
-  fP.innerHTML = '<option value="">Todos los productos</option>' + allProds.map(function(p){return'<option value="'+esc(p)+'"'+(p===cP?' selected':'')+'>'+esc(p)+'</option>';}).join('');
+  fP.innerHTML = '<option value="">Todos los productos</option>' + allProds.map(function(p){return'<option value="'+esc(p)+'"'+(p===cP?' selected':'')+'>'+esc(p)+'</option>';}).join(''); cP = fP.value;
   fW.innerHTML = '<option value="">Todas las WOs</option>' + allWOs.map(function(w){return'<option value="'+esc(w)+'"'+(w===cW?' selected':'')+'>'+esc(w)+'</option>';}).join('');
   var casts = unique(records.filter(function(r){return!cP||r.producto===cP;}).map(function(r){return r.cast;}).filter(Boolean)).sort();
   fC.innerHTML = '<option value="">Todos los Casts</option>' + casts.map(function(c){return'<option value="'+esc(c)+'"'+(c===cC?' selected':'')+'>'+esc(c)+'</option>';}).join('');
   var data = records;
-  if (cP) data = data.filter(function(r){return r.producto===cP;});
+  if (cP) data = data.filter(function(r){return normalizeProductoKey(r.producto)===cP;});
   if (cC) data = data.filter(function(r){return r.cast===cC;});
   if (cW) data = data.filter(function(r){return r.wo===cW;});
   var tot = sumTon(data);
@@ -579,7 +579,7 @@ function renderDash() {
     });
     h += '</div>';
   }
-  if (!cP) h += makeChart('Por Producto', groupSum(data, function(r){return r.producto||'Sin producto';}), 'prod');
+  if (!cP) h += makeChart('Por Producto', groupSum(data, function(r){return normalizeProductoKey(r.producto)||'Sin producto';}), 'prod');
   if (!cW && allWOs.length > 1) h += makeChart('Por WO', groupSum(data, function(r){return r.wo||'Sin WO';}), null);
   body.innerHTML = h;
   body.querySelectorAll('.brow-lbl.link').forEach(function(el) {
@@ -607,7 +607,7 @@ function clearFilters() { document.getElementById('f-prod').value=''; document.g
 function renderTable(data) {
   document.getElementById('tbl-body').innerHTML = data.slice(0,200).map(function(r) {
     var d = r.created_at ? new Date(r.created_at).toLocaleDateString('es',{day:'2-digit',month:'short'}) : '';
-    return '<tr><td>'+(r.wo?'<span class="wo-cell">'+esc(r.wo)+'</span>':'')+'</td><td>'+esc(r.producto||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.coil||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.cast||'')+'</td><td class="peso-cell">'+esc(r.peso||'')+'</td><td style="color:var(--muted)">'+esc(r.operario||'')+'</td><td style="color:var(--muted);font-size:11px">'+d+'</td></tr>';
+    return '<tr><td>'+(r.wo?'<span class="wo-cell">'+esc(r.wo)+'</span>':'')+'</td><td>'+esc(normalizeProductoKey(r.producto)||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.coil||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.cast||'')+'</td><td class="peso-cell">'+esc(r.peso||'')+'</td><td style="color:var(--muted)">'+esc(r.operario||'')+'</td><td style="color:var(--muted);font-size:11px">'+d+'</td></tr>';
   }).join('');
 }
 function exportCSV() {
