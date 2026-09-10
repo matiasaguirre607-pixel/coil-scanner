@@ -156,14 +156,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="card">
     <div class="card-title">Maquina</div>
     <div style="display:flex;gap:8px">
-      <button id="btn-evg" onclick="selectMachine('EVG')" style="flex:1;padding:12px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted)">EVG</button>
-      <button id="btn-pittini" onclick="selectMachine('PITTINI')" style="flex:1;padding:12px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted)">PITTINI</button>
+      <button id="btn-evg" onclick="selectMachine('EVG')" style="flex:1;padding:14px;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s">EVG</button>
+      <button id="btn-pittini" onclick="selectMachine('PITTINI')" style="flex:1;padding:14px;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s">PITTINI</button>
     </div>
   </div>
   <div class="card">
     <div class="card-title">Foto de la etiqueta</div>
     <div class="upload-zone" id="upload-zone">
-      <input type="file" accept="image/*" id="file-in" multiple>
+      <input type="file" accept="image/*" id="file-in" multiple onclick="if(!currentMachine){alert('Seleccioná una maquina primero');return false;}">
       <div class="uz-icon">&#128247;</div>
       <div class="uz-title">Tocar para subir fotos</div>
       <div class="uz-sub">Podes seleccionar varias a la vez</div>
@@ -287,6 +287,17 @@ function selectMachine(m) {
   document.getElementById('btn-pittini').style.color = m==='PITTINI' ? '#fff' : 'var(--muted)';
   document.getElementById('btn-pittini').style.borderColor = m==='PITTINI' ? 'var(--blue)' : 'var(--border)';
 }
+function selectMachine(m) {
+  currentMachine = m;
+  var evg = document.getElementById('btn-evg');
+  var pit = document.getElementById('btn-pittini');
+  evg.style.background = m==='EVG' ? 'var(--blue)' : 'var(--bg)';
+  evg.style.color = m==='EVG' ? '#fff' : 'var(--muted)';
+  evg.style.borderColor = m==='EVG' ? 'var(--blue)' : 'var(--border)';
+  pit.style.background = m==='PITTINI' ? 'var(--blue)' : 'var(--bg)';
+  pit.style.color = m==='PITTINI' ? '#fff' : 'var(--muted)';
+  pit.style.borderColor = m==='PITTINI' ? 'var(--blue)' : 'var(--border)';
+}
 function normalizePeso(raw) {
   if (!raw) return null;
   var m = String(raw).replace(',','.').match(/\d+\.?\d*/);
@@ -355,6 +366,7 @@ function renderWoChips() {
 function onFiles(e) {
   var files = Array.from(e.target.files); e.target.value = '';
   if (!files.length) return;
+  if (!currentMachine) { setStatus('Seleccioná EVG o PITTINI primero.', 'err'); return; }
   if (files.length === 1) { loadOneFile(files[0]); return; }
   processQueue(files);
 }
@@ -523,8 +535,13 @@ function renderList(list) {
       var row = document.createElement('div');
       row.className = 'rec-item-row';
       var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-      var maqColor = r.maquina==='EVG'?'var(--blue)':'var(--purple)'; row.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">'+esc(r.coil||'Sin coil')+(r.maquina?'<span style="margin-left:6px;font-size:10px;font-weight:700;color:'+maqColor+'">'+r.maquina+'</span>':'')+' '+(r.wo?'<span style="background:#fff8e8;color:#7a5c00;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>':'')+'</div><div style="font-size:11px;color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div></div><div style="font-size:14px;font-weight:700;color:var(--blue)">'+esc(r.peso||'-')+' t</div>';
-      row.addEventListener('click', function() { openModal(r); });
+      var maqColor = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+      var maqBadge = r.maquina ? '<span style="margin-left:6px;font-size:10px;font-weight:700;color:' + maqColor + '">' + r.maquina + '</span>' : '';
+      var woBadge = r.wo ? '<span style="background:#fff8e8;color:#7a5c00;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px">' + esc(r.wo) + '</span>' : '';
+      var mc2 = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+      var maqBadge = r.maquina ? ' <b style="font-size:10px;color:'+mc2+'">'+r.maquina+'</b>' : '';
+      var woBadge = r.wo ? ' <span style="background:#fff8e8;color:#7a5c00;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>' : '';
+      row.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">' + esc(r.coil||'Sin coil') + maqBadge + ' ' + woBadge + '</div><div style="font-size:11px;color:var(--muted)">' + d + (r.operario ? ' &middot; ' + esc(r.operario) : '') + '</div></div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + esc(r.peso||'-') + ' t</div>';
       itemsDiv.appendChild(row);
     });
     card.querySelector('.rec-top').addEventListener('click', function() {
@@ -624,9 +641,20 @@ function clearFilters() { document.getElementById('f-prod').value=''; document.g
 function renderTable(data) {
   document.getElementById('tbl-body').innerHTML = data.slice(0,200).map(function(r) {
     var d = r.created_at ? new Date(r.created_at).toLocaleDateString('es',{day:'2-digit',month:'short'}) : '';
-    return '<tr><td><span style="font-size:11px;font-weight:700;color:'+(r.maquina==='EVG'?'var(--blue)':'var(--purple)')+">'+(r.maquina||'-')+'</span></td><td>'+(r.wo?'<span class="wo-cell">'+esc(r.wo)+'</span>':'')+'</td><td>'+esc(normalizeProductoKey(r.producto)||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.coil||'')+'</td><td style="font-family:monospace;font-size:11px">'+esc(r.cast||'')+'</td><td class="peso-cell">'+esc(r.peso||'')+'</td><td style="color:var(--muted)">'+esc(r.operario||'')+'</td><td style="color:var(--muted);font-size:11px">'+d+'</td></tr>';
+    var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+    return '<tr>' +
+      '<td><b style="font-size:11px;color:'+mc+'">'+(r.maquina||'-')+'</b></td>' +
+      '<td>'+(r.wo?'<span class="wo-cell">'+esc(r.wo)+'</span>':'')+'</td>' +
+      '<td>'+esc(normalizeProductoKey(r.producto)||'')+'</td>' +
+      '<td style="font-family:monospace;font-size:11px">'+esc(r.coil||'')+'</td>' +
+      '<td style="font-family:monospace;font-size:11px">'+esc(r.cast||'')+'</td>' +
+      '<td class="peso-cell">'+esc(r.peso||'')+'</td>' +
+      '<td style="color:var(--muted)">'+esc(r.operario||'')+'</td>' +
+      '<td style="color:var(--muted);font-size:11px">'+d+'</td>' +
+      '</tr>';
   }).join('');
 }
+
 function exportCSV() {
   if (!records.length) return;
   var rows = [['Fecha','WO','Producto','Coil','Cast','Peso (t)','Operario','Notas']];
