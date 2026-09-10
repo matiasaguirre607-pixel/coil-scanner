@@ -8,7 +8,7 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType, wo, operario, notas } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
@@ -16,7 +16,7 @@ export async function onRequestPost(context) {
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
         {text: "You are a data extractor for steel coil labels. Extract exactly these 4 fields and respond with ONLY a JSON object, nothing else:\n{\"peso\": \"1.460\", \"producto\": \"COIL REIN 6.1mm\", \"coil\": \"6260300548\", \"cast\": \"530736\"}\npeso = the large number (weight in tonnes, just the number)\nproducto = the product type including MM size (e.g. COIL REIN 6.1mm)\ncoil = the Coil number\ncast = the Cast number\nRespond with ONLY the JSON, no explanation, no markdown."}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 2048}
+      generationConfig: {temperature: 0, maxOutputTokens: 512}
     })
   });
   const gd = await gr.json();
@@ -78,7 +78,7 @@ function normalizePeso(raw) {
 function normalizeProducto(raw) {
   if (!raw) return null;
   const m = String(raw).match(/(\d+\.?\d*)\s*[Mm][Mm]/);
-  if (m) return "COIL REIN "+m[1]+"mm";
+  if (m) return "COIL REIN " + parseFloat(m[1]) + "mm";
   return String(raw).toUpperCase().trim();
 }
 
