@@ -8,7 +8,7 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType, wo, operario, notas } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key="+GEMINI_KEY, {
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
