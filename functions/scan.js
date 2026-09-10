@@ -16,7 +16,7 @@ export async function onRequestPost(context) {
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
         {text: "You are a data extractor for steel coil labels. Extract exactly these 4 fields and respond with ONLY a JSON object, nothing else:\n{\"peso\": \"1.460\", \"producto\": \"COIL REIN 6.1mm\", \"coil\": \"6260300548\", \"cast\": \"530736\"}\npeso = the large number (weight in tonnes, just the number)\nproducto = the product type including MM size (e.g. COIL REIN 6.1mm)\ncoil = the Coil number\ncast = the Cast number\nRespond with ONLY the JSON, no explanation, no markdown."}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 512}
+      generationConfig: {temperature: 0, maxOutputTokens: 2048}
     })
   });
   const gd = await gr.json();
