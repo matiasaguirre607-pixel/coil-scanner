@@ -222,138 +222,152 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div class="pane" id="p-dash">
 
-  <!-- FILTER BAR -->
-  <div style="background:var(--card);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Filtros activos</div>
-      <button id="btn-clear" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;color:var(--muted)">&#10006; Limpiar todo</button>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap" id="active-filters">
-      <span style="color:var(--muted);font-size:12px">Ninguno — mostrando todos los datos</span>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px">
-      <select id="f-prod" style="padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text)"><option value="">Todos los productos</option></select>
-      <select id="f-cast" style="padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text)"><option value="">Todos los Casts</option></select>
-      <select id="f-wo" style="padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text)"><option value="">Todas las WOs</option></select>
-      <select id="f-maq" style="padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text)"><option value="">Todas las maquinas</option><option value="EVG">EVG</option><option value="PITTINI">PITTINI</option></select>
-    </div>
-    <div style="margin-top:8px">
-      <input type="text" id="f-date-from" placeholder="Desde (dd/mm/aaaa)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:var(--bg);width:48%;margin-right:2%">
-      <input type="text" id="f-date-to" placeholder="Hasta (dd/mm/aaaa)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:var(--bg);width:48%">
-    </div>
-  </div>
+<style>
+.db-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:10px}
+.db-title{font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.db-title span{font-size:11px;color:#007aff;font-weight:600;text-transform:none;letter-spacing:0}
+.kpi-big{font-size:38px;font-weight:700;line-height:1;margin-bottom:2px}
+.kpi-sub{font-size:12px;opacity:.75}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;border:none;margin:3px}
+.filter-chip.active{box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;border-radius:8px;padding:3px 4px;transition:background .12s}
+.bar-row:hover{background:#f2f2f7}
+.bar-lbl{font-size:12px;color:#1c1c1e;font-weight:500;width:100px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;background:#f2f2f7;border-radius:5px;height:24px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:11px;font-weight:700;color:#fff;min-width:32px;transition:width .3s}
+.bar-pct{font-size:11px;color:#8e8e93;width:36px;flex-shrink:0;text-align:right;font-weight:600}
+.seg-bar{display:flex;border-radius:8px;overflow:hidden;height:28px;margin-bottom:6px}
+.seg-piece{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:width .3s;cursor:pointer;white-space:nowrap;overflow:hidden;padding:0 4px}
+.pivot-cell{text-align:center;padding:7px 10px;font-size:12px}
+.pivot-val{font-weight:700;color:#007aff;font-size:13px}
+.pivot-cnt{font-size:10px;color:#8e8e93}
+.time-btn{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #e5e5ea;background:#f2f2f7;color:#8e8e93;transition:all .12s}
+.time-btn.on{background:#007aff;color:#fff;border-color:#007aff}
+.tgl-maq{flex:1;padding:16px 12px;border-radius:12px;cursor:pointer;text-align:center;border:2px solid transparent;transition:all .15s;position:relative}
+.tgl-maq.on{box-shadow:0 3px 10px rgba(0,0,0,.15)}
+</style>
 
-  <!-- KPI CARDS -->
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px" id="kpi-row">
-    <div style="background:linear-gradient(135deg,#007aff,#0040cc);border-radius:var(--r);padding:16px;color:#fff">
-      <div style="font-size:11px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Toneladas</div>
-      <div id="kpi-ton" style="font-size:36px;font-weight:700;line-height:1.1;margin-top:4px">0</div>
-      <div id="kpi-ton-sub" style="font-size:11px;opacity:.7;margin-top:2px">total filtrado</div>
-    </div>
-    <div style="background:linear-gradient(135deg,#34c759,#1a8a35);border-radius:var(--r);padding:16px;color:#fff">
-      <div style="font-size:11px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Registros</div>
-      <div id="kpi-total" style="font-size:36px;font-weight:700;line-height:1.1;margin-top:4px">0</div>
-      <div id="kpi-total-sub" style="font-size:11px;opacity:.7;margin-top:2px">coils escaneados</div>
-    </div>
-    <div style="background:linear-gradient(135deg,#ff9500,#cc6600);border-radius:var(--r);padding:16px;color:#fff">
-      <div style="font-size:11px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Work Orders</div>
-      <div id="kpi-wo" style="font-size:36px;font-weight:700;line-height:1.1;margin-top:4px">0</div>
-      <div id="kpi-wo-sub" style="font-size:11px;opacity:.7;margin-top:2px">activas en seleccion</div>
-    </div>
-    <div style="background:linear-gradient(135deg,#af52de,#7030a0);border-radius:var(--r);padding:16px;color:#fff">
-      <div style="font-size:11px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Hoy</div>
-      <div id="kpi-hoy" style="font-size:36px;font-weight:700;line-height:1.1;margin-top:4px">0</div>
-      <div id="kpi-hoy-sub" style="font-size:11px;opacity:.7;margin-top:2px">registros de hoy</div>
-    </div>
-  </div>
-
-  <!-- MACHINE TOGGLE -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Maquinas — click para filtrar</div>
-    <div style="display:flex;gap:8px">
-      <div id="maq-btn-EVG" onclick="toggleMaqFilter('EVG')" style="flex:1;padding:14px;border-radius:10px;cursor:pointer;border:2px solid #007aff;background:#e8f0fe;text-align:center;transition:all .15s">
-        <div style="font-size:20px;font-weight:700;color:#007aff" id="maq-ton-EVG">0t</div>
-        <div style="font-size:13px;font-weight:700;color:#007aff">EVG</div>
-        <div style="font-size:11px;color:#636366" id="maq-cnt-EVG">0 registros</div>
-      </div>
-      <div id="maq-btn-PITTINI" onclick="toggleMaqFilter('PITTINI')" style="flex:1;padding:14px;border-radius:10px;cursor:pointer;border:2px solid #af52de;background:#f5e8ff;text-align:center;transition:all .15s">
-        <div style="font-size:20px;font-weight:700;color:#af52de" id="maq-ton-PITTINI">0t</div>
-        <div style="font-size:13px;font-weight:700;color:#af52de">PITTINI</div>
-        <div style="font-size:11px;color:#636366" id="maq-cnt-PITTINI">0 registros</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TIMELINE -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Toneladas por Dia</div>
-      <div style="display:flex;gap:4px">
-        <button onclick="setTimeRange(7)" id="tr-7" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff">7d</button>
-        <button onclick="setTimeRange(14)" id="tr-14" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted)">14d</button>
-        <button onclick="setTimeRange(30)" id="tr-30" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted)">30d</button>
-        <button onclick="setTimeRange(0)" id="tr-all" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted)">Todo</button>
-      </div>
-    </div>
-    <canvas id="chart-timeline" style="width:100%;height:130px;display:block"></canvas>
-  </div>
-
-  <!-- DONUT CHARTS ROW -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-    <div style="background:var(--card);border-radius:var(--r);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Por Producto</div>
-      <canvas id="pie-prod" style="width:100%;height:130px;display:block"></canvas>
-      <div id="pie-prod-legend" style="margin-top:8px"></div>
-    </div>
-    <div style="background:var(--card);border-radius:var(--r);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Por WO</div>
-      <canvas id="pie-wo" style="width:100%;height:130px;display:block"></canvas>
-      <div id="pie-wo-legend" style="margin-top:8px"></div>
-    </div>
-  </div>
-
-  <!-- CAST BARS — clickeable -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Por Cast <span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none">(click para filtrar)</span></div>
-      <span id="cast-total" style="font-size:12px;color:var(--blue);font-weight:600"></span>
-    </div>
-    <div id="cast-bars"></div>
-  </div>
-
-  <!-- PRODUCTO BARS — clickeable -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Por Producto <span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none">(click para filtrar)</span></div>
-      <span id="prod-total" style="font-size:12px;color:var(--blue);font-weight:600"></span>
-    </div>
-    <div id="prod-bars"></div>
-  </div>
-
-  <!-- PIVOT TABLE -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Tabla Pivot — Producto x WO (toneladas)</div>
-    <div style="overflow-x:auto"><table class="tbl" id="pivot-tbl"></table></div>
-  </div>
-
-  <!-- FULL TABLE -->
-  <div style="background:var(--card);border-radius:var(--r);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Registros <span id="tbl-count" style="color:var(--blue);font-weight:400;text-transform:none"></span></div>
-      <div style="display:flex;gap:6px">
-        <button class="exp-btn p" id="btn-csv" style="padding:6px 12px;font-size:12px">&#128229; CSV</button>
-        <button class="exp-btn" id="btn-share" style="padding:6px 12px;font-size:12px">&#128228; Compartir</button>
-      </div>
-    </div>
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr><th>Maquina</th><th>WO</th><th>Producto</th><th>Coil</th><th>Cast</th><th>Peso (t)</th><th>Fecha</th></tr></thead>
-        <tbody id="tbl-body"></tbody>
-      </table>
-    </div>
+<!-- FILTROS TOP -->
+<div class="db-card" style="margin-bottom:10px">
+  <div class="db-title">Filtros activos <button id="btn-clear" style="background:none;border:1px solid #e5e5ea;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px;color:#8e8e93;font-weight:500">✕ Limpiar todo</button></div>
+  <div id="active-filter-chips" style="margin-bottom:10px;min-height:20px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <select id="f-prod" style="padding:9px 10px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:13px;font-family:inherit;background:#f2f2f7;color:#1c1c1e;outline:none"><option value="">Todos los productos</option></select>
+    <select id="f-cast" style="padding:9px 10px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:13px;font-family:inherit;background:#f2f2f7;color:#1c1c1e;outline:none"><option value="">Todos los Casts</option></select>
+    <select id="f-wo" style="padding:9px 10px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:13px;font-family:inherit;background:#f2f2f7;color:#1c1c1e;outline:none"><option value="">Todas las WOs</option></select>
+    <select id="f-maq" style="padding:9px 10px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:13px;font-family:inherit;background:#f2f2f7;color:#1c1c1e;outline:none"><option value="">Todas las maquinas</option><option value="EVG">EVG</option><option value="PITTINI">PITTINI</option></select>
   </div>
 </div>
 
+<!-- KPI ROW -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+  <div style="background:linear-gradient(135deg,#007aff 0%,#0040cc 100%);border-radius:14px;padding:16px;color:#fff">
+    <div style="font-size:10px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.08em">Toneladas</div>
+    <div class="kpi-big" id="kpi-ton">0</div>
+    <div class="kpi-sub" id="kpi-ton-sub">total</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#34c759 0%,#1a6b2e 100%);border-radius:14px;padding:16px;color:#fff">
+    <div style="font-size:10px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.08em">Coils</div>
+    <div class="kpi-big" id="kpi-total">0</div>
+    <div class="kpi-sub" id="kpi-total-sub">registros</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#ff9500 0%,#cc5500 100%);border-radius:14px;padding:16px;color:#fff">
+    <div style="font-size:10px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.08em">Work Orders</div>
+    <div class="kpi-big" id="kpi-wo">0</div>
+    <div class="kpi-sub" id="kpi-wo-sub">activas</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#af52de 0%,#6b1fa0 100%);border-radius:14px;padding:16px;color:#fff">
+    <div style="font-size:10px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.08em">Hoy</div>
+    <div class="kpi-big" id="kpi-hoy">0</div>
+    <div class="kpi-sub" id="kpi-hoy-sub">escaneos</div>
+  </div>
+</div>
+
+<!-- MAQUINAS TOGGLE -->
+<div class="db-card">
+  <div class="db-title">Maquinas <span>click para filtrar</span></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div class="tgl-maq" id="tgl-EVG" onclick="toggleMaq('EVG')" style="background:linear-gradient(135deg,#e8f0fe,#c5d8ff);border-color:#007aff">
+      <div style="font-size:11px;font-weight:700;color:#007aff;margin-bottom:4px">EVG</div>
+      <div style="font-size:22px;font-weight:700;color:#007aff" id="maq-ton-EVG">0t</div>
+      <div style="font-size:11px;color:#636366;margin-top:2px" id="maq-cnt-EVG">0 coils</div>
+    </div>
+    <div class="tgl-maq" id="tgl-PITTINI" onclick="toggleMaq('PITTINI')" style="background:linear-gradient(135deg,#f5e8ff,#ddbfff);border-color:#af52de">
+      <div style="font-size:11px;font-weight:700;color:#af52de;margin-bottom:4px">PITTINI</div>
+      <div style="font-size:22px;font-weight:700;color:#af52de" id="maq-ton-PITTINI">0t</div>
+      <div style="font-size:11px;color:#636366;margin-top:2px" id="maq-cnt-PITTINI">0 coils</div>
+    </div>
+  </div>
+  <!-- Stacked bar by machine -->
+  <div class="db-title" style="margin-top:4px">Distribucion por maquina</div>
+  <div class="seg-bar" id="maq-seg-bar"></div>
+  <div id="maq-seg-legend" style="display:flex;gap:12px;margin-top:6px;font-size:11px"></div>
+</div>
+
+<!-- TIMELINE -->
+<div class="db-card">
+  <div class="db-title">
+    Toneladas por dia
+    <div style="display:flex;gap:4px">
+      <button class="time-btn on" id="tr-7" onclick="setTR(7)">7d</button>
+      <button class="time-btn" id="tr-14" onclick="setTR(14)">14d</button>
+      <button class="time-btn" id="tr-30" onclick="setTR(30)">30d</button>
+      <button class="time-btn" id="tr-0" onclick="setTR(0)">Todo</button>
+    </div>
+  </div>
+  <canvas id="chart-timeline" style="width:100%;height:140px;display:block"></canvas>
+</div>
+
+<!-- PRODUCTO + CAST en dos columnas -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+  <div class="db-card" style="margin-bottom:0">
+    <div class="db-title">Por Producto <span id="prod-tot-lbl"></span></div>
+    <canvas id="donut-prod" style="display:block;width:100%;height:120px"></canvas>
+    <div id="donut-prod-leg" style="margin-top:8px"></div>
+  </div>
+  <div class="db-card" style="margin-bottom:0">
+    <div class="db-title">Por WO <span id="wo-tot-lbl"></span></div>
+    <canvas id="donut-wo" style="display:block;width:100%;height:120px"></canvas>
+    <div id="donut-wo-leg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- CAST BARS -->
+<div class="db-card">
+  <div class="db-title">Por Cast <span id="cast-tot-lbl"></span></div>
+  <div id="cast-bars"></div>
+</div>
+
+<!-- PRODUCTO BARS -->
+<div class="db-card">
+  <div class="db-title">Por Producto <span id="prod-bars-lbl"></span></div>
+  <div id="prod-bars"></div>
+</div>
+
+<!-- PIVOT -->
+<div class="db-card">
+  <div class="db-title">Pivot — Producto × WO (toneladas)</div>
+  <div style="overflow-x:auto">
+    <table class="tbl" id="pivot-tbl" style="min-width:100%"></table>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="db-card">
+  <div class="db-title">Registros completos <span id="tbl-count"></span></div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Maquina</th><th>Fecha</th><th>WO</th><th>Producto</th><th>Cast</th><th>Coil</th><th>Peso (t)</th></tr></thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="exp-btn p" id="btn-csv" style="padding:10px 16px;font-size:13px">&#128229; Exportar CSV</button>
+    <button class="exp-btn" id="btn-share" style="padding:10px 16px;font-size:13px">&#128228; Compartir</button>
+  </div>
+</div>
+
+</div>
 <div id="cam-modal" style="display:none;position:fixed;inset:0;background:#000;z-index:250;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.6)">
     <button onclick="closeCamera()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:4px 8px">&#10006; Cerrar</button>
@@ -714,96 +728,106 @@ function renderDash() {
   var cC = document.getElementById('f-cast').value;
   var cW = document.getElementById('f-wo').value;
   var cM = document.getElementById('f-maq').value;
-  var dFrom = parseDate(document.getElementById('f-date-from').value);
-  var dTo = parseDate(document.getElementById('f-date-to').value);
 
   // Populate selects
   var allProds = unique(records.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
   var allCasts = unique(records.filter(function(r){return !cP||normalizeProductoKey(r.producto)===cP;}).map(function(r){return r.cast;}).filter(Boolean)).sort();
   var allWOs = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
-  document.getElementById('f-prod').innerHTML = '<option value="">Todos los productos</option>'+allProds.map(function(p){return'<option value="'+esc(p)+'"'+(p===cP?' selected':'')+'>'+esc(p)+'</option>';}).join('');
-  document.getElementById('f-cast').innerHTML = '<option value="">Todos los Casts</option>'+allCasts.map(function(x){return'<option value="'+esc(x)+'"'+(x===cC?' selected':'')+'>'+esc(x)+'</option>';}).join('');
-  document.getElementById('f-wo').innerHTML = '<option value="">Todas las WOs</option>'+allWOs.map(function(w){return'<option value="'+esc(w)+'"'+(w===cW?' selected':'')+'>'+esc(w)+'</option>';}).join('');
+  document.getElementById('f-prod').innerHTML = '<option value="">Todos los productos</option>'+allProds.map(function(p){return'<option'+(p===cP?' selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
+  document.getElementById('f-cast').innerHTML = '<option value="">Todos los Casts</option>'+allCasts.map(function(x){return'<option'+(x===cC?' selected':'')+' value="'+esc(x)+'">'+esc(x)+'</option>';}).join('');
+  document.getElementById('f-wo').innerHTML = '<option value="">Todas las WOs</option>'+allWOs.map(function(w){return'<option'+(w===cW?' selected':'')+' value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
 
-  // Filter
+  // Filter data
   var data = records.filter(function(r) {
     if (cP && normalizeProductoKey(r.producto)!==cP) return false;
     if (cC && r.cast!==cC) return false;
     if (cW && r.wo!==cW) return false;
     if (cM && r.maquina!==cM) return false;
-    if (dFrom || dTo) {
-      var d = r.created_at ? new Date(r.created_at) : null;
-      if (!d) return false;
-      if (dFrom && d < dFrom) return false;
-      if (dTo && d > dTo) return false;
-    }
     return true;
   });
 
   var tot = sumTon(data);
 
-  // Active filters display
-  var af = document.getElementById('active-filters');
-  af.innerHTML = '';
-  var filterDefs = [];
-  if (cP) filterDefs.push({label:cP, id:'f-prod', bg:'#e8f0fe', color:'#007aff'});
-  if (cC) filterDefs.push({label:'Cast: '+cC, id:'f-cast', bg:'#e8ffe8', color:'#34c759'});
-  if (cW) filterDefs.push({label:'WO: '+cW, id:'f-wo', bg:'#fff8e8', color:'#7a5c00'});
-  if (cM) filterDefs.push({label:cM, id:'f-maq', bg:'#f5e8ff', color:'#af52de'});
-  if (filterDefs.length) {
-    filterDefs.forEach(function(fd) {
-      var span = document.createElement('span');
-      span.style.cssText = 'background:'+fd.bg+';color:'+fd.color+';border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;display:inline-block;margin-right:4px';
-      span.textContent = fd.label + ' ✕';
-      span.addEventListener('click', function(){document.getElementById(fd.id).value='';renderDash();});
-      af.appendChild(span);
+  // Active filter chips
+  var afc = document.getElementById('active-filter-chips');
+  afc.innerHTML = '';
+  var chipDefs = [];
+  if (cP) chipDefs.push({label:cP, id:'f-prod', bg:'#e8f0fe', color:'#007aff'});
+  if (cC) chipDefs.push({label:'Cast: '+cC, id:'f-cast', bg:'#e8ffe8', color:'#1a7a3c'});
+  if (cW) chipDefs.push({label:'WO: '+cW, id:'f-wo', bg:'#fff8e8', color:'#7a5c00'});
+  if (cM) chipDefs.push({label:cM, id:'f-maq', bg:'#f5e8ff', color:'#af52de'});
+  if (chipDefs.length) {
+    chipDefs.forEach(function(cd) {
+      var chip = document.createElement('span');
+      chip.className = 'filter-chip active';
+      chip.style.background = cd.bg;
+      chip.style.color = cd.color;
+      chip.textContent = cd.label + ' ✕';
+      chip.addEventListener('click', function(){document.getElementById(cd.id).value='';renderDash();});
+      afc.appendChild(chip);
     });
   } else {
-    af.innerHTML = '<span style="color:var(--muted);font-size:12px">Ninguno</span>';
+    afc.innerHTML = '<span style="font-size:12px;color:#8e8e93">Mostrando todos los datos</span>';
   }
 
   // KPIs
   document.getElementById('kpi-ton').textContent = tot.toFixed(3);
-  document.getElementById('kpi-ton-sub').textContent = 't en '+data.length+' coils';
+  document.getElementById('kpi-ton-sub').textContent = (cP||cM||cW||cC?'filtrado':'total') + ' — ' + data.length + ' coils';
   document.getElementById('kpi-total').textContent = data.length;
   document.getElementById('kpi-total-sub').textContent = 'de '+records.length+' total';
   var wosInData = unique(data.map(function(r){return r.wo;}).filter(Boolean));
   document.getElementById('kpi-wo').textContent = wosInData.length;
-  document.getElementById('kpi-wo-sub').textContent = wosInData.length ? wosInData.slice(0,2).join(', ')+(wosInData.length>2?'...':'') : 'sin WO';
-  document.getElementById('kpi-hoy').textContent = data.filter(function(r){return r.created_at&&new Date(r.created_at).toDateString()===today;}).length;
-  document.getElementById('kpi-hoy-sub').textContent = 'escaneos hoy';
+  document.getElementById('kpi-wo-sub').textContent = wosInData.length ? wosInData.slice(0,2).join(', ')+(wosInData.length>2?'…':'') : 'ninguna asignada';
+  var hoy = data.filter(function(r){return r.created_at&&new Date(r.created_at).toDateString()===today;});
+  document.getElementById('kpi-hoy').textContent = hoy.length;
+  document.getElementById('kpi-hoy-sub').textContent = hoy.length ? sumTon(hoy).toFixed(3)+'t hoy' : 'sin escaneos hoy';
 
   // Machine cards
   ['EVG','PITTINI'].forEach(function(m) {
-    var mData = records.filter(function(r){return r.maquina===m;});
-    document.getElementById('maq-ton-'+m).textContent = sumTon(mData).toFixed(3)+'t';
-    document.getElementById('maq-cnt-'+m).textContent = mData.length+' registros';
-    var btn = document.getElementById('maq-btn-'+m);
-    btn.style.opacity = (!cM||cM===m) ? '1' : '0.4';
+    var all = records.filter(function(r){return r.maquina===m;});
+    document.getElementById('maq-ton-'+m).textContent = sumTon(all).toFixed(3)+'t';
+    document.getElementById('maq-cnt-'+m).textContent = all.length+' coils';
+    var tgl = document.getElementById('tgl-'+m);
+    tgl.style.opacity = (!cM||cM===m) ? '1' : '0.45';
+    tgl.style.borderWidth = cM===m ? '3px' : '2px';
   });
+
+  // Stacked bar by machine
+  var evgT = sumTon(records.filter(function(r){return r.maquina==='EVG';}));
+  var pitT = sumTon(records.filter(function(r){return r.maquina==='PITTINI';}));
+  var noMT = sumTon(records.filter(function(r){return !r.maquina;}));
+  var segTot = evgT+pitT+noMT||1;
+  var seg = document.getElementById('maq-seg-bar');
+  seg.innerHTML = '';
+  if (evgT>0) {var d=document.createElement('div');d.className='seg-piece';d.style.width=((evgT/segTot)*100)+'%';d.style.background='#007aff';d.textContent=evgT.toFixed(1)+'t';d.onclick=function(){document.getElementById('f-maq').value='EVG';renderDash();};seg.appendChild(d);}
+  if (pitT>0) {var d2=document.createElement('div');d2.className='seg-piece';d2.style.width=((pitT/segTot)*100)+'%';d2.style.background='#af52de';d2.textContent=pitT.toFixed(1)+'t';d2.onclick=function(){document.getElementById('f-maq').value='PITTINI';renderDash();};seg.appendChild(d2);}
+  if (noMT>0) {var d3=document.createElement('div');d3.className='seg-piece';d3.style.width=((noMT/segTot)*100)+'%';d3.style.background='#8e8e93';d3.textContent=noMT.toFixed(1)+'t';seg.appendChild(d3);}
+  document.getElementById('maq-seg-legend').innerHTML =
+    (evgT>0?'<span style="color:#007aff;font-weight:600">&#9632; EVG '+evgT.toFixed(3)+'t ('+Math.round((evgT/segTot)*100)+'%)</span>':'') +
+    (pitT>0?'<span style="color:#af52de;font-weight:600">&#9632; PITTINI '+pitT.toFixed(3)+'t ('+Math.round((pitT/segTot)*100)+'%)</span>':'') +
+    (noMT>0?'<span style="color:#8e8e93">&#9632; Sin maquina '+noMT.toFixed(3)+'t</span>':'');
 
   // Timeline
   renderTimeline(data);
 
-  // Donut: por producto
-  renderDonut('pie-prod', 'pie-prod-legend', groupSum(data, function(r){return normalizeProductoKey(r.producto)||'Sin producto';}), function(k){
-    document.getElementById('f-prod').value=k; renderDash();
-  });
+  // Donuts
+  var byProd = groupSum(data, function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
+  document.getElementById('prod-tot-lbl').textContent = tot.toFixed(3)+'t';
+  renderDonut('donut-prod','donut-prod-leg',byProd,function(k){document.getElementById('f-prod').value=k;renderDash();});
 
-  // Donut: por WO
-  renderDonut('pie-wo', 'pie-wo-legend', groupSum(data, function(r){return r.wo||'Sin WO';}), function(k){
-    document.getElementById('f-wo').value=(k==='Sin WO'?'':k); renderDash();
-  });
+  var byWO = groupSum(data, function(r){return r.wo||'Sin WO';});
+  var woTot = Object.values(byWO).reduce(function(s,v){return s+v;},0);
+  document.getElementById('wo-tot-lbl').textContent = woTot.toFixed(3)+'t';
+  renderDonut('donut-wo','donut-wo-leg',byWO,function(k){document.getElementById('f-wo').value=(k==='Sin WO'?'':k);renderDash();});
 
   // Cast bars
   var byCast = groupSum(data, function(r){return r.cast||'Sin Cast';});
-  document.getElementById('cast-total').textContent = tot.toFixed(3)+' t';
-  renderBars('cast-bars', byCast, tot, function(k){ document.getElementById('f-cast').value=(k==='Sin Cast'?'':k); renderDash(); });
+  document.getElementById('cast-tot-lbl').textContent = tot.toFixed(3)+'t — '+Object.keys(byCast).length+' casts';
+  renderBars('cast-bars', byCast, tot, function(k){document.getElementById('f-cast').value=(k==='Sin Cast'?'':k);renderDash();});
 
-  // Producto bars
-  var byProd = groupSum(data, function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
-  document.getElementById('prod-total').textContent = tot.toFixed(3)+' t';
-  renderBars('prod-bars', byProd, tot, function(k){ document.getElementById('f-prod').value=k; renderDash(); });
+  // Prod bars
+  document.getElementById('prod-bars-lbl').textContent = tot.toFixed(3)+'t';
+  renderBars('prod-bars', byProd, tot, function(k){document.getElementById('f-prod').value=k;renderDash();});
 
   // Pivot
   renderPivot(data);
@@ -813,185 +837,174 @@ function renderDash() {
   document.getElementById('tbl-count').textContent = '('+data.length+' registros)';
 }
 
-var _timeRange = 7;
-function setTimeRange(n) {
-  _timeRange = n;
-  ['7','14','30','all'].forEach(function(x) {
+var _tr = 7;
+function setTR(n) {
+  _tr = n;
+  ['7','14','30','0'].forEach(function(x){
     var btn = document.getElementById('tr-'+x);
-    var active = (n===7&&x==='7')||(n===14&&x==='14')||(n===30&&x==='30')||(n===0&&x==='all');
-    btn.style.background = active ? 'var(--blue)' : 'var(--bg)';
-    btn.style.color = active ? '#fff' : 'var(--muted)';
-    btn.style.borderColor = active ? 'var(--blue)' : 'var(--border)';
+    var on = String(n)===x;
+    btn.className = 'time-btn'+(on?' on':'');
   });
   renderDash();
 }
 
-function toggleMaqFilter(m) {
+function toggleMaq(m) {
   var sel = document.getElementById('f-maq');
   sel.value = sel.value===m ? '' : m;
   renderDash();
 }
 
-function parseDate(s) {
-  if (!s) return null;
-  var p = s.split('/');
-  if (p.length===3) return new Date(p[2],p[1]-1,p[0]);
-  return null;
-}
-
-function renderDonut(canvasId, legendId, byKey, onClick) {
+function renderDonut(canvasId, legId, byKey, onClick) {
   var canvas = document.getElementById(canvasId);
-  var legend = document.getElementById(legendId);
-  var entries = Object.keys(byKey).map(function(k){return{k:k,v:byKey[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,6);
-  var total = entries.reduce(function(s,e){return s+e.v;},0);
-  legend.innerHTML = '';
-  if (!total) { canvas.style.display='none'; legend.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">Sin datos</div>'; return; }
+  var leg = document.getElementById(legId);
+  var ents = Object.keys(byKey).map(function(k){return{k:k,v:byKey[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,6);
+  var total = ents.reduce(function(s,e){return s+e.v;},0);
+  leg.innerHTML = '';
+  if (!total) { canvas.style.display='none'; return; }
   canvas.style.display='block';
-  var W = canvas.offsetWidth||150, H = 130;
-  canvas.width = W; canvas.height = H;
-  var cx = H/2, cy = H/2, r = H/2-6, start = -Math.PI/2;
+  var size = 110;
+  canvas.width = size; canvas.height = size;
+  canvas.style.cssText = 'width:'+size+'px;height:'+size+'px;float:left;margin-right:10px';
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  entries.forEach(function(e,i) {
-    var angle = (e.v/total)*Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,start,start+angle);
-    ctx.closePath(); ctx.fillStyle=COLORS[i%COLORS.length]; ctx.fill();
-    start += angle;
+  ctx.clearRect(0,0,size,size);
+  var cx=size/2,cy=size/2,r=size/2-4,start=-Math.PI/2;
+  ents.forEach(function(e,i){
+    var a=(e.v/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+a);ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+    start+=a;
   });
-  ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  ctx.fillStyle='#1c1c1e'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(total.toFixed(1)+'t', cx, cy);
-  // Right side legend
-  var lx = H+8, ly = 8, lw = W-lx-4;
-  entries.forEach(function(e,i) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:5px;margin-bottom:4px;cursor:pointer;padding:2px 4px;border-radius:5px';
-    row.innerHTML = '<div style="width:8px;height:8px;border-radius:2px;background:'+COLORS[i%COLORS.length]+';flex-shrink:0"></div>'+
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--text)">'+esc(e.k)+'</span>'+
-      '<span style="font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0">'+e.v.toFixed(2)+'t</span>';
-    row.addEventListener('click', function(){onClick(e.k);});
-    row.addEventListener('mouseover', function(){this.style.background='var(--bg)';});
-    row.addEventListener('mouseout', function(){this.style.background='';});
-    legend.appendChild(row);
+  ctx.beginPath();ctx.arc(cx,cy,r*.58,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+  ctx.fillStyle='#1c1c1e';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(total.toFixed(1)+'t',cx,cy);
+  leg.style.cssText = 'overflow:hidden;padding-top:4px';
+  ents.forEach(function(e,i){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer;border-radius:5px;padding:1px 3px';
+    row.innerHTML='<div style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+COLORS[i%COLORS.length]+'"></div>'+
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#1c1c1e">'+esc(e.k)+'</span>'+
+      '<span style="font-size:10px;font-weight:700;color:#007aff;flex-shrink:0">'+e.v.toFixed(2)+'t</span>';
+    row.addEventListener('click',function(){onClick(e.k);});
+    row.addEventListener('mouseover',function(){this.style.background='#f2f2f7';});
+    row.addEventListener('mouseout',function(){this.style.background='';});
+    leg.appendChild(row);
   });
-  // Position canvas to left, legend to right
-  canvas.style.cssText = 'position:absolute;left:0;top:0;width:'+H+'px;height:'+H+'px';
-  var wrapper = canvas.parentElement;
-  wrapper.style.position = 'relative';
-  wrapper.style.minHeight = H+'px';
-  legend.style.cssText = 'position:absolute;left:'+(H+8)+'px;top:0;right:0;overflow:hidden';
 }
 
 function renderTimeline(data) {
   var canvas = document.getElementById('chart-timeline');
-  var byDay = {};
-  var now = new Date();
-  var filtered = _timeRange > 0 ? data.filter(function(r) {
-    if (!r.created_at) return false;
-    var d = new Date(r.created_at);
-    return (now - d) <= _timeRange * 86400000;
-  }) : data;
-  filtered.forEach(function(r) {
-    if (!r.created_at) return;
-    var d = new Date(r.created_at);
-    var key = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-    byDay[key] = (byDay[key]||0) + parseTon(r.peso);
-  });
-  var days = Object.keys(byDay).sort();
-  var vals = days.map(function(d){return byDay[d];});
-  if (!vals.length) { canvas.height=0; return; }
-  var W = canvas.offsetWidth||300, H = 130;
+  var W = canvas.offsetWidth||300, H = 140;
   canvas.width = W; canvas.height = H;
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  var mx = Math.max.apply(null,vals)||1;
-  var padL=28, padB=22, padT=14, padR=8;
-  var chartW = W-padL-padR, chartH = H-padB-padT;
-  var bw = chartW/Math.max(days.length,1);
-  // Grid
-  ctx.strokeStyle='#e5e5ea'; ctx.lineWidth=1;
-  [0,0.5,1].forEach(function(f){
-    var y = padT + chartH*(1-f);
-    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
-    ctx.fillStyle='#8e8e93'; ctx.font='9px sans-serif'; ctx.textAlign='right';
-    ctx.fillText((mx*f).toFixed(1), padL-3, y+3);
+  var now = new Date();
+  var filtered = _tr > 0 ? data.filter(function(r){
+    if (!r.created_at) return false;
+    return (now-new Date(r.created_at)) <= _tr*86400000;
+  }) : data;
+  var byDay={};
+  filtered.forEach(function(r){
+    if(!r.created_at)return;
+    var d=new Date(r.created_at);
+    var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    byDay[k]=(byDay[k]||0)+parseTon(r.peso);
   });
-  // Bars
-  days.forEach(function(day,i) {
-    var x = padL + i*bw + bw*0.1;
-    var bh = (vals[i]/mx)*chartH;
-    var y = padT + chartH - bh;
-    var grad = ctx.createLinearGradient(0,y,0,y+bh);
-    grad.addColorStop(0,'#007aff'); grad.addColorStop(1,'rgba(0,122,255,.4)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    if(ctx.roundRect) ctx.roundRect(x,y,bw*0.8,bh,3); else ctx.rect(x,y,bw*0.8,bh);
-    ctx.fill();
-    // Day label
-    var d = new Date(day);
-    var lbl = (d.getDate())+'/'+(d.getMonth()+1);
-    ctx.fillStyle='#8e8e93'; ctx.font='9px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(lbl, x+bw*0.4, H-6);
-    // Value
-    if (vals[i]>0) {
-      ctx.fillStyle='#1c1c1e'; ctx.font='bold 9px sans-serif';
-      ctx.fillText(vals[i].toFixed(1), x+bw*0.4, y-3);
+  // Also split by machine for stacked bars
+  var byDayEVG={}, byDayPIT={};
+  filtered.forEach(function(r){
+    if(!r.created_at)return;
+    var d=new Date(r.created_at);
+    var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(r.maquina==='EVG') byDayEVG[k]=(byDayEVG[k]||0)+parseTon(r.peso);
+    else if(r.maquina==='PITTINI') byDayPIT[k]=(byDayPIT[k]||0)+parseTon(r.peso);
+  });
+  var days = Object.keys(byDay).sort();
+  if(!days.length){canvas.height=0;return;}
+  canvas.height=H;
+  var vals=days.map(function(d){return byDay[d];});
+  var mx=Math.max.apply(null,vals)||1;
+  var pL=34,pB=24,pT=16,pR=8;
+  var cW=W-pL-pR,cH=H-pB-pT;
+  var bw=cW/Math.max(days.length,1);
+  // Grid lines
+  [0,0.25,0.5,0.75,1].forEach(function(f){
+    var y=pT+cH*(1-f);
+    ctx.strokeStyle=f===0?'#c7c7cc':'#e5e5ea';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    if(f>0){ctx.fillStyle='#8e8e93';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText((mx*f).toFixed(1),pL-3,y+3);}
+  });
+  // Stacked bars
+  days.forEach(function(day,i){
+    var x=pL+i*bw+bw*.1;
+    var bW=bw*.8;
+    var evgV=byDayEVG[day]||0;
+    var pitV=byDayPIT[day]||0;
+    var totV=byDay[day]||0;
+    var evgH=(evgV/mx)*cH;
+    var pitH=(pitV/mx)*cH;
+    var remH=Math.max(0,((totV-evgV-pitV)/mx)*cH);
+    var y=pT+cH;
+    if(pitH>0){ctx.fillStyle='#af52de';ctx.fillRect(x,y-pitH,bW,pitH);y-=pitH;}
+    if(evgH>0){ctx.fillStyle='#007aff';ctx.fillRect(x,y-evgH,bW,evgH);y-=evgH;}
+    if(remH>0){ctx.fillStyle='#8e8e93';ctx.fillRect(x,y-remH,bW,remH);}
+    // Label
+    var d=new Date(day);
+    var lbl=String(d.getDate())+'/'+(d.getMonth()+1);
+    ctx.fillStyle='#8e8e93';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(lbl,x+bW/2,H-6);
+    // Value on top
+    var topH=(vals[i]/mx)*cH;
+    if(vals[i]>0){
+      ctx.fillStyle='#1c1c1e';ctx.font='bold 9px sans-serif';
+      ctx.fillText(vals[i].toFixed(1),x+bW/2,pT+cH-topH-4);
     }
   });
 }
 
 function renderBars(containerId, byKey, total, onClick) {
-  var entries = Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,20);
-  var mx = entries.length ? entries[0][1] : 1;
-  var container = document.getElementById(containerId);
-  container.innerHTML = '';
-  entries.forEach(function(e,i) {
-    var pct = total>0 ? Math.round((e[1]/total)*100) : 0;
-    var row = document.createElement('div');
-    row.className = 'brow';
-    row.style.cursor = 'pointer';
-    row.innerHTML =
-      '<span class="brow-lbl" title="'+esc(e[0])+'" style="color:var(--text);font-weight:500">'+esc(e[0])+'</span>'+
-      '<div class="brow-track"><div class="brow-fill" style="width:'+(Math.round((e[1]/mx)*88)+10)+'%;background:'+COLORS[i%COLORS.length]+';transition:width .3s">'+e[1].toFixed(3)+'t</div></div>'+
-      '<span class="brow-val" style="color:var(--muted)">'+pct+'%</span>';
-    row.addEventListener('click', function(){onClick(e[0]);});
-    row.addEventListener('mouseover', function(){this.style.background='var(--bg)';this.style.borderRadius='8px';});
-    row.addEventListener('mouseout', function(){this.style.background='';this.style.borderRadius='';});
+  var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,20);
+  var mx=ents.length?ents[0][1]:1;
+  var container=document.getElementById(containerId);
+  container.innerHTML='';
+  ents.forEach(function(e,i){
+    var pct=total>0?Math.round((e[1]/total)*100):0;
+    var row=document.createElement('div');
+    row.className='bar-row';
+    row.innerHTML='<span class="bar-lbl" title="'+esc(e[0])+'">'+esc(e[0])+'</span>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+(Math.round((e[1]/mx)*86)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(3)+'t</div></div>'+
+      '<span class="bar-pct">'+pct+'%</span>';
+    row.addEventListener('click',function(){onClick(e[0]);});
     container.appendChild(row);
   });
 }
 
 function renderPivot(data) {
-  var prods = unique(data.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
-  var wos = unique(data.map(function(r){return r.wo;}).filter(Boolean)).sort();
-  var tbl = document.getElementById('pivot-tbl');
-  if (!prods.length || !wos.length) {
-    tbl.innerHTML = '<tr><td style="color:var(--muted);padding:14px;font-size:13px">Sin datos con WO asignada. Asigna WOs en el Historial.</td></tr>';
+  var prods=unique(data.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
+  var wos=unique(data.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var tbl=document.getElementById('pivot-tbl');
+  if(!prods.length||!wos.length){
+    tbl.innerHTML='<tr><td style="padding:14px;color:#8e8e93;font-size:13px">Asigna WOs en el Historial para ver la tabla pivot.</td></tr>';
     return;
   }
-  var html = '<thead><tr><th style="min-width:120px">Producto</th>';
-  wos.forEach(function(w){html+='<th>'+esc(w)+'</th>';});
-  html += '<th>Total</th></tr></thead><tbody>';
-  prods.forEach(function(p) {
-    var row = data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
-    var rowTot = sumTon(row);
-    html += '<tr><td style="font-weight:600;white-space:nowrap">'+esc(p)+'</td>';
-    wos.forEach(function(w) {
-      var v = sumTon(row.filter(function(r){return r.wo===w;}));
-      var n = row.filter(function(r){return r.wo===w;}).length;
-      html += '<td class="peso-cell" style="text-align:center">'+(v>0?'<div style="font-size:13px">'+v.toFixed(3)+'</div><div style="font-size:10px;color:var(--muted)">'+n+' coils</div>':'<span style="color:var(--border)">—</span>')+'</td>';
+  var html='<thead><tr style="background:#f2f2f7"><th style="min-width:110px;text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:#636366;text-transform:uppercase">Producto</th>';
+  wos.forEach(function(w){html+='<th style="text-align:center;padding:8px 10px;font-size:11px;font-weight:700;color:#636366;text-transform:uppercase">'+esc(w)+'</th>';});
+  html+='<th style="text-align:center;padding:8px 10px;font-size:11px;font-weight:700;color:#007aff;text-transform:uppercase">Total</th></tr></thead><tbody>';
+  prods.forEach(function(p,pi){
+    var row=data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
+    var rowTot=sumTon(row);
+    html+='<tr style="border-bottom:1px solid #f2f2f7'+(pi%2===0?';background:#fafafa':'')+'"><td style="padding:9px 10px;font-weight:600;font-size:12px;white-space:nowrap">'+esc(p)+'</td>';
+    wos.forEach(function(w){
+      var cell=row.filter(function(r){return r.wo===w;});
+      var v=sumTon(cell);
+      html+='<td class="pivot-cell">'+(v>0?'<div class="pivot-val">'+v.toFixed(3)+'</div><div class="pivot-cnt">'+cell.length+' coils</div>':'<span style="color:#e5e5ea">—</span>')+'</td>';
     });
-    html += '<td style="font-weight:700;color:var(--blue);text-align:center">'+rowTot.toFixed(3)+'<div style="font-size:10px;color:var(--muted)">'+row.length+' coils</div></td></tr>';
+    html+='<td class="pivot-cell"><div class="pivot-val" style="color:#007aff">'+rowTot.toFixed(3)+'</div><div class="pivot-cnt">'+row.length+' coils</div></td></tr>';
   });
-  var totRow = '<tr style="background:var(--bg);font-weight:700"><td>TOTAL</td>';
-  wos.forEach(function(w){
-    var v = sumTon(data.filter(function(r){return r.wo===w;}));
-    totRow += '<td style="text-align:center;color:var(--blue)">'+v.toFixed(3)+'</td>';
-  });
-  totRow += '<td style="text-align:center;color:var(--blue)">'+sumTon(data).toFixed(3)+'</td></tr>';
-  html += totRow + '</tbody>';
-  tbl.innerHTML = html;
+  // Total row
+  html+='<tr style="background:#f2f2f7;font-weight:700"><td style="padding:9px 10px;font-size:12px;color:#1c1c1e">TOTAL</td>';
+  wos.forEach(function(w){var v=sumTon(data.filter(function(r){return r.wo===w;}));html+='<td class="pivot-cell"><div class="pivot-val">'+v.toFixed(3)+'</div></td>';});
+  html+='<td class="pivot-cell"><div class="pivot-val" style="color:#007aff">'+sumTon(data).toFixed(3)+'</div></td></tr></tbody>';
+  tbl.innerHTML=html;
 }
 
 
@@ -1007,7 +1020,7 @@ function makeChart(title, byKey, ft) {
   });
   return h + '</div>';
 }
-function clearFilters() { ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){document.getElementById(id).value='';}); document.getElementById('f-date-from').value=''; document.getElementById('f-date-to').value=''; renderDash(); }
+function clearFilters() { ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){document.getElementById(id).value='';}); renderDash(); }
 function renderTable(data) {
   document.getElementById('tbl-body').innerHTML = data.slice(0,200).map(function(r) {
     var d = r.created_at ? new Date(r.created_at).toLocaleDateString('es',{day:'2-digit',month:'short'}) : '';
@@ -1181,9 +1194,7 @@ window.addEventListener('load', function() {
   document.getElementById('btn-share').addEventListener('click', shareData);
   document.getElementById('search-inp').addEventListener('input', filterRecords);
   document.getElementById('wo-filter').addEventListener('input', filterRecords);
-  ['f-prod','f-cast','f-wo','f-maq','f-date-from','f-date-to'].forEach(function(id){
-    document.getElementById(id).addEventListener('change', renderDash);
-  });
+  ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){document.getElementById(id).addEventListener('change',renderDash);});
   loadRecords();
 });
 </script>
