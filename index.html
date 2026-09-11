@@ -162,6 +162,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
   <div class="card">
     <div class="card-title">Foto de la etiqueta</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button id="btn-open-camera" onclick="openCamera()" style="flex:1;padding:14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">&#127909; Camara en vivo</button>
+    </div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:8px">— o subí una foto —</div>
     <div class="upload-zone" id="upload-zone">
       <input type="file" accept="image/*" id="file-in" multiple onclick="if(!currentMachine){alert('Seleccioná una maquina primero');return false;}">
       <div class="uz-icon">&#128247;</div>
@@ -350,6 +354,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
+<div id="cam-modal" style="display:none;position:fixed;inset:0;background:#000;z-index:250;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.6)">
+    <button onclick="closeCamera()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:4px 8px">&#10006; Cerrar</button>
+    <div style="color:#fff;font-size:14px;font-weight:600">Apuntá a la etiqueta</div>
+    <div style="width:60px"></div>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden">
+    <video id="cam-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>
+    <!-- Crosshair overlay -->
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <div style="width:70%;max-width:320px;aspect-ratio:1.6;border:2px solid rgba(255,255,255,.8);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div>
+    </div>
+  </div>
+  <div style="padding:20px 16px;background:rgba(0,0,0,.8);display:flex;gap:12px;align-items:center;justify-content:center">
+    <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid #007aff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px">&#128247;</button>
+  </div>
+  <div id="cam-status" style="text-align:center;color:rgba(255,255,255,.7);font-size:12px;padding-bottom:8px"></div>
+</div>
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1055,6 +1077,94 @@ async function assignWO(gi) {
       renderList(records);
     });
   }, 800);
+}
+
+var _camStream = null;
+
+function openCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('Tu dispositivo no soporta camara en vivo. Usa el boton de subir foto.', 'err');
+    return;
+  }
+  if (!currentMachine) {
+    setStatus('Selecciona EVG o PITTINI primero.', 'err');
+    return;
+  }
+  var modal = document.getElementById('cam-modal');
+  modal.style.display = 'flex';
+  modal.style.flexDirection = 'column';
+  navigator.mediaDevices.getUserMedia({
+    video: {facingMode: 'environment', width: {ideal: 1280}, height: {ideal: 720}}
+  }).then(function(stream) {
+    _camStream = stream;
+    document.getElementById('cam-video').srcObject = stream;
+    document.getElementById('cam-status').textContent = 'Camara lista';
+  }).catch(function(err) {
+    document.getElementById('cam-status').textContent = 'Error: ' + err.message;
+  });
+}
+
+function closeCamera() {
+  if (_camStream) {
+    _camStream.getTracks().forEach(function(t){t.stop();});
+    _camStream = null;
+  }
+  document.getElementById('cam-modal').style.display = 'none';
+  document.getElementById('cam-video').srcObject = null;
+}
+
+async function captureAndAnalyze() {
+  var video = document.getElementById('cam-video');
+  var btn = document.getElementById('cam-capture-btn');
+  var status = document.getElementById('cam-status');
+  btn.disabled = true;
+  btn.style.background = '#e5e5ea';
+  status.textContent = 'Analizando...';
+
+  // Capture frame
+  var canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  var base64 = dataUrl.split(',')[1];
+
+  var wo = document.getElementById('wo-input').value.trim();
+  var operario = document.getElementById('operario-input').value.trim();
+  var notas = document.getElementById('notas-input').value.trim();
+
+  try {
+    var resp = await fetch('/scan', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({imageBase64: base64, mediaType: 'image/jpeg', wo: wo, operario: operario, notas: notas, maquina: currentMachine})
+    });
+    var data = await resp.json();
+
+    if (resp.status === 409 && data.duplicate) {
+      var ex = data.existing;
+      status.textContent = '⚠ DUPLICADO — Coil ' + (ex.coil||'') + ' ya escaneado el ' + (ex.created_at ? new Date(ex.created_at).toLocaleDateString('es') : '');
+      status.style.color = '#ff9500';
+      btn.disabled = false; btn.style.background = '#fff';
+      return;
+    }
+    if (!resp.ok) throw new Error(data.error || 'Error');
+
+    status.textContent = '✓ Guardado: ' + (data.producto||'') + ' — ' + (data.peso||'') + 't — Coil ' + (data.coil||'');
+    status.style.color = '#34c759';
+    await loadRecords();
+    setTimeout(function() {
+      status.textContent = 'Listo para siguiente etiqueta';
+      status.style.color = 'rgba(255,255,255,.7)';
+      btn.disabled = false;
+      btn.style.background = '#fff';
+    }, 2000);
+  } catch(err) {
+    status.textContent = '✗ ' + err.message;
+    status.style.color = '#ff3b30';
+    btn.disabled = false;
+    btn.style.background = '#fff';
+  }
 }
 
 window.addEventListener('load', function() {
