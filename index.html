@@ -143,6 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <button class="tab on" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
   <button class="tab" id="t-hist" onclick="goTab('hist')">&#128203; Historial</button>
   <button class="tab" id="t-dash" onclick="goTab('dash')">&#128202; Dashboard</button>
+  <button class="tab" id="t-prod" onclick="goTab('prod')">&#9878; Produccion</button>
 </div>
 
 <div class="pane on" id="p-scan">
@@ -393,6 +394,76 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 </div>
+<div class="pane" id="p-prod">
+  <style>
+  .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
+  .bal-hdr{font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+  .bal-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f2f2f7}
+  .bal-row:last-child{border-bottom:none}
+  .bal-wo{font-size:14px;font-weight:700;color:#1c1c1e}
+  .bal-nums{display:flex;gap:16px;text-align:right}
+  .bal-num{font-size:13px;font-weight:700}
+  .bal-lbl{font-size:10px;color:#8e8e93;font-weight:500;margin-top:1px}
+  .bar-bal{height:8px;border-radius:4px;background:#f2f2f7;margin-top:8px;overflow:hidden}
+  .bar-bal-fill{height:100%;border-radius:4px}
+  .prod-inp{width:100%;padding:12px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:inherit;background:#f8f8f8;outline:none}
+  .prod-inp:focus{border-color:#007aff;background:#fff}
+  </style>
+
+  <!-- Registrar produccion -->
+  <div class="bal-card">
+    <div class="bal-hdr">Registrar produccion por WO</div>
+    <div class="field">
+      <label>Work Order</label>
+      <select id="prod-wo-sel" class="prod-inp">
+        <option value="">Selecciona una WO...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Toneladas producidas</label>
+      <input type="number" id="prod-ton-inp" class="prod-inp" placeholder="Ej: 93.500" step="0.001" min="0">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Notas (opcional)</label>
+      <input type="text" id="prod-notas-inp" class="prod-inp" placeholder="Observaciones...">
+    </div>
+    <button onclick="saveProduccion()" id="prod-save-btn" style="width:100%;margin-top:14px;padding:14px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">
+      Guardar produccion
+    </button>
+    <div id="prod-status" style="text-align:center;font-size:13px;margin-top:10px;min-height:20px"></div>
+  </div>
+
+  <!-- Balance por WO -->
+  <div class="bal-card">
+    <div class="bal-hdr">Balance por Work Order</div>
+    <div id="bal-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Cargando...</div></div>
+  </div>
+
+  <!-- Historial de registros -->
+  <div class="bal-card">
+    <div class="bal-hdr">Historial de produccion</div>
+    <div id="prod-hist-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros</div></div>
+  </div>
+</div>
+
+<div id="cam-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:250;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.7)">
+    <button onclick="closeCamera()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.15)">&#10006; Cerrar</button>
+    <div style="color:#fff;font-size:14px;font-weight:600">Apunta a la etiqueta</div>
+    <div style="width:80px"></div>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden">
+    <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <div style="width:75%;max-width:340px;aspect-ratio:1.6;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div>
+    </div>
+  </div>
+  <div style="padding:20px 16px 30px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px">
+    <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #007aff;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,122,255,.5)">&#128247;</button>
+    <div id="cam-status" style="color:rgba(255,255,255,.7);font-size:12px;text-align:center;min-height:18px;max-width:280px"></div>
+  </div>
+</div>
+
 <div id="sel-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;padding:12px 16px;z-index:190;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="sel-count" style="color:#fff;font-size:14px;font-weight:600;flex:1"></span>
   <input id="sel-wo-inp" type="text" placeholder="Escribi la WO..." style="padding:9px 12px;border:none;border-radius:8px;font-size:14px;font-family:inherit;width:160px;outline:none">
@@ -495,12 +566,15 @@ function isDup(coil) {
   return null;
 }
 function goTab(n) {
-  ['scan','hist','dash'].forEach(function(t) {
-    document.getElementById('p-'+t).classList.toggle('on', t===n);
-    document.getElementById('t-'+t).classList.toggle('on', t===n);
+  ['scan','hist','dash','prod'].forEach(function(t) {
+    var p=document.getElementById('p-'+t);
+    var tb=document.getElementById('t-'+t);
+    if(p)p.classList.toggle('on',t===n);
+    if(tb)tb.classList.toggle('on',t===n);
   });
   if (n === 'hist') renderList(records);
   if (n === 'dash') renderDash();
+  if (n === 'prod') loadProduccion();
 }
 function renderWoChips() {
   var seen = {}, wos = [];
@@ -822,17 +896,17 @@ function renderDash() {
   document.getElementById('kpi-hoy').textContent = hoy.length;
   document.getElementById('kpi-hoy-sub').textContent = hoy.length ? sumTon(hoy).toFixed(3)+'t' : 'sin escaneos';
 
-  // Machine toggles - always show ALL records totals (not filtered)
+  // Machine cards - use filtered data
   ['EVG','PITTINI'].forEach(function(m){
-    var all = records.filter(function(r){return r.maquina===m;});
-    document.getElementById('maq-ton-'+m).textContent = sumTon(all).toFixed(3)+'t';
-    document.getElementById('maq-cnt-'+m).textContent = all.length+' coils';
+    var mData = data.filter(function(r){return r.maquina===m;});
+    document.getElementById('maq-ton-'+m).textContent = sumTon(mData).toFixed(3)+'t';
+    document.getElementById('maq-cnt-'+m).textContent = mData.length+' coils';
     var tgl = document.getElementById('tgl-'+m);
     tgl.style.opacity = (!cM||cM===m)?'1':'0.4';
     tgl.style.transform = cM===m?'scale(1.02)':'scale(1)';
   });
 
-  // Stacked seg bar
+  // Stacked seg bar - filtered data
   var evgT = sumTon(data.filter(function(r){return r.maquina==='EVG';}));
   var pitT = sumTon(data.filter(function(r){return r.maquina==='PITTINI';}));
   var noMT = sumTon(data.filter(function(r){return !r.maquina;}));
@@ -1190,16 +1264,21 @@ function openCamera() {
     return;
   }
   var modal = document.getElementById('cam-modal');
-  modal.style.display = 'flex';
-  modal.style.flexDirection = 'column';
+  modal.style.cssText = 'display:flex;flex-direction:column;position:fixed;inset:0;background:#000;z-index:250';
   navigator.mediaDevices.getUserMedia({
-    video: {facingMode: 'environment', width: {ideal: 1280}, height: {ideal: 720}}
+    video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}
   }).then(function(stream) {
     _camStream = stream;
-    document.getElementById('cam-video').srcObject = stream;
-    document.getElementById('cam-status').textContent = 'Camara lista';
+    var video = document.getElementById('cam-video');
+    video.srcObject = stream;
+    video.play();
+    document.getElementById('cam-status').textContent = 'Lista — apuntá a la etiqueta y tocá el botón';
   }).catch(function(err) {
-    document.getElementById('cam-status').textContent = 'Error: ' + err.message;
+    var msg = err.name === 'NotAllowedError' ? 'Permiso denegado. Habilitá la cámara en configuración del navegador.' :
+              err.name === 'NotFoundError' ? 'No se encontró cámara.' :
+              'Error: ' + err.message;
+    document.getElementById('cam-status').textContent = msg;
+    document.getElementById('cam-status').style.color = '#ff3b30';
   });
 }
 
@@ -1264,6 +1343,143 @@ async function captureAndAnalyze() {
     btn.disabled = false;
     btn.style.background = '#fff';
   }
+}
+
+var SB_KEY_PROD = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
+var SB_BASE_PROD = 'https://xqzqrlxjzfxpqigjuzor.supabase.co';
+var _produccion = [];
+
+async function loadProduccion() {
+  // Populate WO selector from records
+  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var sel = document.getElementById('prod-wo-sel');
+  sel.innerHTML = '<option value="">Selecciona una WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
+
+  // Load produccion records
+  try {
+    var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion?order=created_at.desc&limit=200', {
+      headers: {apikey: SB_KEY_PROD, Authorization: 'Bearer '+SB_KEY_PROD}
+    });
+    _produccion = await resp.json();
+  } catch(e) { _produccion = []; }
+
+  renderBalance();
+  renderProdHist();
+}
+
+async function saveProduccion() {
+  var wo = document.getElementById('prod-wo-sel').value;
+  var ton = parseFloat(document.getElementById('prod-ton-inp').value);
+  var notas = document.getElementById('prod-notas-inp').value.trim();
+  var status = document.getElementById('prod-status');
+
+  if (!wo) { status.textContent = 'Selecciona una WO.'; status.style.color = '#ff3b30'; return; }
+  if (!ton || ton <= 0) { status.textContent = 'Ingresa las toneladas producidas.'; status.style.color = '#ff3b30'; return; }
+
+  var btn = document.getElementById('prod-save-btn');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+
+  try {
+    var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', apikey:SB_KEY_PROD, Authorization:'Bearer '+SB_KEY_PROD, Prefer:'return=minimal'},
+      body: JSON.stringify({wo:wo, toneladas_producidas:ton, notas:notas||null})
+    });
+    if (!resp.ok) throw new Error('Error guardando');
+    status.textContent = '✓ Guardado correctamente';
+    status.style.color = '#34c759';
+    document.getElementById('prod-ton-inp').value = '';
+    document.getElementById('prod-notas-inp').value = '';
+    await loadProduccion();
+  } catch(e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = '#ff3b30';
+  }
+  btn.textContent = 'Guardar produccion'; btn.disabled = false;
+}
+
+function renderBalance() {
+  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var list = document.getElementById('bal-list');
+  if (!wos.length) {
+    list.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No hay WOs asignadas. Asignalas en el Historial.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  wos.forEach(function(wo) {
+    var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
+    var coils = records.filter(function(r){return r.wo===wo;}).length;
+    // Sum all produccion for this WO
+    var producido = _produccion
+      .filter(function(p){return p.wo===wo;})
+      .reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
+    var stock = entrada - producido;
+    var pct = entrada > 0 ? Math.round((producido/entrada)*100) : 0;
+    var stockColor = stock > 0.1 ? '#ff9500' : stock < -0.1 ? '#ff3b30' : '#34c759';
+
+    var div = document.createElement('div');
+    div.className = 'bal-row';
+    div.style.flexDirection = 'column';
+    div.style.alignItems = 'stretch';
+    div.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+        '<div>'+
+          '<div class="bal-wo">WO: '+esc(wo)+'</div>'+
+          '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+coils+' coils escaneados</div>'+
+        '</div>'+
+        '<div class="bal-nums">'+
+          '<div style="text-align:right">'+
+            '<div class="bal-num" style="color:#007aff">'+entrada.toFixed(3)+'t</div>'+
+            '<div class="bal-lbl">Entrada</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div class="bal-num" style="color:#34c759">'+producido.toFixed(3)+'t</div>'+
+            '<div class="bal-lbl">Producido</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div class="bal-num" style="color:'+stockColor+'">'+stock.toFixed(3)+'t</div>'+
+            '<div class="bal-lbl">Stock</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="bar-bal">'+
+        '<div class="bar-bal-fill" style="width:'+Math.min(pct,100)+'%;background:'+(pct>100?'#ff3b30':'#34c759')+'"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:#8e8e93">'+
+        '<span>0</span><span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% producido</span><span>'+entrada.toFixed(1)+'t</span>'+
+      '</div>';
+    list.appendChild(div);
+  });
+
+  // Total stock summary
+  var totalEntrada = sumTon(records.filter(function(r){return r.wo;}));
+  var totalProducido = _produccion.reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
+  var totalStock = totalEntrada - totalProducido;
+  var summary = document.createElement('div');
+  summary.style.cssText = 'background:#f8f8f8;border-radius:10px;padding:14px;margin-top:8px;display:flex;gap:16px;justify-content:space-around;text-align:center';
+  summary.innerHTML =
+    '<div><div style="font-size:22px;font-weight:700;color:#007aff">'+totalEntrada.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total entrada</div></div>'+
+    '<div><div style="font-size:22px;font-weight:700;color:#34c759">'+totalProducido.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total producido</div></div>'+
+    '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock disponible</div></div>';
+  list.appendChild(summary);
+}
+
+function renderProdHist() {
+  var hist = document.getElementById('prod-hist-list');
+  if (!_produccion.length) {
+    hist.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros de produccion.</div>';
+    return;
+  }
+  hist.innerHTML = _produccion.slice(0,50).map(function(p) {
+    var d = p.created_at ? new Date(p.created_at).toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7">'+
+      '<div>'+
+        '<div style="font-size:13px;font-weight:700;color:#1c1c1e">WO: '+esc(p.wo||'')+'</div>'+
+        '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+d+(p.notas?' · '+esc(p.notas):'')+'</div>'+
+      '</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#34c759">'+parseFloat(p.toneladas_producidas||0).toFixed(3)+'t</div>'+
+    '</div>';
+  }).join('');
 }
 
 window.addEventListener('load', function() {
