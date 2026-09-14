@@ -12,7 +12,7 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
 .nav-pill{background:#e8f0fe;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600}
@@ -72,12 +72,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .rec-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
 .rec-color{width:6px;border-radius:3px;flex-shrink:0;align-self:stretch}
 .rec-info{flex:1;min-width:0}
-.rec-title{font-size:14px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rec-meta{font-size:11px;color:var(--muted)}
-.rec-peso{font-size:17px;font-weight:700;color:var(--blue);flex-shrink:0;text-align:right}
+.rec-title{font-size:15px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-meta{font-size:13px;color:var(--muted)}
+.rec-peso{font-size:18px;font-weight:700;color:var(--blue);flex-shrink:0;text-align:right}
 .rec-sub{font-size:10px;color:var(--muted);text-align:right}
 .rec-badges{display:flex;flex-wrap:wrap;gap:5px;padding:8px 14px 12px;border-top:1px solid var(--border)}
-.badge{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:#636366}
+.badge{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;color:#636366}
 .badge b{color:var(--text);font-weight:700}
 .badge.cast-b{background:#e8f8ef;border-color:#b7e4c7;color:#1a7a3c}
 .badge.wo-b{background:#fff8e8;border-color:#f5d78e;color:#7a5c00}
@@ -244,18 +244,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
 .pbi-row{display:grid;gap:10px;margin-bottom:10px}
 .pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
-.pbi-card-title{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.pbi-kpi-num{font-size:36px;font-weight:700;line-height:1;color:#1a2332}
+.pbi-card-title{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.pbi-kpi-num{font-size:40px;font-weight:700;line-height:1;color:#1a2332}
 .pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
-.pbi-kpi-sub{font-size:11px;color:#8e9aab;margin-top:4px}
+.pbi-kpi-sub{font-size:13px;color:#8e9aab;margin-top:4px}
 .pbi-kpi-trend{font-size:11px;font-weight:700;margin-top:4px}
-.pbi-bar-lbl{font-size:11px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbi-bar-lbl{font-size:13px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pbi-bar-track{flex:1;background:#f0f2f5;border-radius:3px;height:20px;overflow:hidden}
 .pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;font-size:10px;font-weight:700;color:#fff;transition:width .35s}
-.pbi-bar-val{font-size:11px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
+.pbi-bar-val{font-size:13px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
 .pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.pbi-tbl th{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
-.pbi-tbl td{padding:8px 10px;border-bottom:1px solid #f0f2f5;font-size:12px;color:#374151;vertical-align:middle}
+.pbi-tbl th{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
+.pbi-tbl td{padding:9px 10px;border-bottom:1px solid #f0f2f5;font-size:13px;color:#374151;vertical-align:middle}
 .pbi-tbl tr:hover td{background:#f8fafc}
 .pbi-tbl-val{font-weight:700;color:#007aff}
 .pbi-tbl-tot td{background:#f0f5ff;font-weight:700;border-top:2px solid #c5d8ff}
@@ -452,8 +452,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .match-row:last-child{border-bottom:none}
 .match-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .match-info{flex:1;min-width:0}
-.match-coil{font-size:12px;font-weight:700;color:#1c1c1e}
-.match-sub{font-size:11px;color:#8e8e93;margin-top:1px}
+.match-coil{font-size:14px;font-weight:700;color:#1c1c1e}
+.match-sub{font-size:12px;color:#8e8e93;margin-top:1px}
 .match-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
 .status-ok{background:#e8ffe8;color:#1a7a3c}
 .status-miss{background:#fff0f0;color:#cc0000}
@@ -560,6 +560,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div style="width:36px;height:4px;background:#e5e5ea;border-radius:99px;margin:0 auto 16px"></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">Editar registro</div>
     <div style="font-size:12px;color:#8e8e93;margin-bottom:16px" id="edit-coil-lbl"></div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Maquina</label>
+      <div style="display:flex;gap:8px">
+        <button id="edit-maq-evg" onclick="setEditMaq('EVG')" style="flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #e5e5ea;background:#f2f2f7;color:#8e8e93">EVG</button>
+        <button id="edit-maq-pit" onclick="setEditMaq('PITTINI')" style="flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #e5e5ea;background:#f2f2f7;color:#8e8e93">PITTINI</button>
+      </div>
+    </div>
     <div style="margin-bottom:12px">
       <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Peso (toneladas)</label>
       <input id="edit-peso" type="number" step="0.001" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 1.475">
@@ -1844,13 +1851,27 @@ async function handlePDFUpload(e) {
 
 var _editRec = null;
 
+var _editMaq = '';
+
+function setEditMaq(m) {
+  _editMaq = m;
+  document.getElementById('edit-maq-evg').style.background = m==='EVG' ? '#007aff' : '#f2f2f7';
+  document.getElementById('edit-maq-evg').style.color = m==='EVG' ? '#fff' : '#8e8e93';
+  document.getElementById('edit-maq-evg').style.borderColor = m==='EVG' ? '#007aff' : '#e5e5ea';
+  document.getElementById('edit-maq-pit').style.background = m==='PITTINI' ? '#af52de' : '#f2f2f7';
+  document.getElementById('edit-maq-pit').style.color = m==='PITTINI' ? '#fff' : '#8e8e93';
+  document.getElementById('edit-maq-pit').style.borderColor = m==='PITTINI' ? '#af52de' : '#e5e5ea';
+}
+
 function editRecord(r) {
   _editRec = r;
+  _editMaq = r.maquina || '';
   document.getElementById('edit-coil-lbl').textContent = 'Coil: ' + (r.coil||'') + ' — Cast: ' + (r.cast||'');
   document.getElementById('edit-peso').value = r.peso || '';
   document.getElementById('edit-cast').value = r.cast || '';
   document.getElementById('edit-coil').value = r.coil || '';
   document.getElementById('edit-status').textContent = '';
+  setEditMaq(r.maquina || '');
   var bg = document.getElementById('edit-modal-bg');
   bg.style.cssText = 'display:flex;flex-direction:column;justify-content:flex-end;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;align-items:center';
 }
@@ -1872,7 +1893,7 @@ async function saveEdit() {
     var resp = await fetch('/updatewo', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({id: _editRec.id, wo: _editRec.wo, peso: peso, cast: cast||_editRec.cast, coil: coil||_editRec.coil})
+      body: JSON.stringify({id: _editRec.id, wo: _editRec.wo, peso: peso, cast: cast||_editRec.cast, coil: coil||_editRec.coil, maquina: _editMaq||_editRec.maquina||null})
     });
     if (resp.ok) {
       statusEl.textContent = 'Guardado';
