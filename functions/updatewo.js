@@ -4,7 +4,7 @@ export async function onRequestPost(context) {
 
   let body;
   try { body = await context.request.json(); } catch(e) { return rj({error:"Body invalido"},400); }
-  const { id, wo, peso, cast, coil } = body;
+  const { id, wo, peso, cast, coil, maquina } = body;
   if (!id) return rj({error:"id requerido"},400);
 
   const updates = {};
@@ -12,6 +12,7 @@ export async function onRequestPost(context) {
   if (peso !== undefined) updates.peso = peso || null;
   if (cast !== undefined) updates.cast = cast || null;
   if (coil !== undefined) updates.coil = coil || null;
+  if (maquina !== undefined) updates.maquina = maquina || null;
 
   if (!Object.keys(updates).length) return rj({error:"Sin campos para actualizar"},400);
 
