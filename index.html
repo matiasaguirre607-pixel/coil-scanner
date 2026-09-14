@@ -1719,40 +1719,56 @@ async function handlePDFUpload(e) {
   var prog = document.getElementById('pdf-progress');
   var fill = document.getElementById('pdf-prog-fill');
   var txt = document.getElementById('pdf-prog-txt');
-  
-  status.textContent = 'Leyendo PDF...';
+
+  status.textContent = 'Procesando PDF...';
   status.style.color = '#007aff';
   prog.style.display = 'block';
-  fill.style.width = '20%';
-  txt.textContent = 'Convirtiendo PDF...';
+  fill.style.width = '10%';
+  txt.textContent = 'Cargando PDF.js...';
 
-  // Read PDF as base64
-  var base64 = await new Promise(function(res, rej) {
-    var reader = new FileReader();
-    reader.onload = function(ev) { res(ev.target.result.split(',')[1]); };
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-
-  fill.style.width = '40%';
-  txt.textContent = 'Enviando a IA...';
-
-  // Send to scan endpoint which will use Claude/Gemini to extract
   try {
-    var resp = await fetch('/extractpdf', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({pdfBase64: base64})
-    });
+    if (!window.pdfjsLib) {
+      await new Promise(function(res, rej) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
 
-    fill.style.width = '80%';
-    txt.textContent = 'Guardando...';
+    fill.style.width = '20%';
+    txt.textContent = 'Leyendo PDF...';
 
-    var data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Error servidor');
+    var arrayBuffer = await file.arrayBuffer();
+    var pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
+    var numPages = pdf.numPages;
+    var allRows = [];
+
+    for (var pageNum = 1; pageNum <= numPages; pageNum++) {
+      fill.style.width = (20 + (pageNum/numPages)*60)+'%';
+      txt.textContent = 'Analizando pagina '+pageNum+' de '+numPages+'...';
+
+      var page = await pdf.getPage(pageNum);
+      var viewport = page.getViewport({scale: 2.5});
+      var canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+      var imgBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+
+      var resp = await fetch('/extractpdf', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
+      if (data.rows) allRows = allRows.concat(data.rows);
+    }
 
     fill.style.width = '100%';
-    status.textContent = '\u2713 ' + data.saved + ' coils importados';
+    status.textContent = '✓ ' + allRows.length + ' coils importados';
     status.style.color = '#34c759';
     await loadConsignments();
     setTimeout(function(){prog.style.display='none';}, 2000);
@@ -1763,6 +1779,8 @@ async function handlePDFUpload(e) {
     prog.style.display = 'none';
   }
 }
+
+
 
 window.addEventListener('load', function() {
   document.getElementById('file-in').addEventListener('change', onFiles);
