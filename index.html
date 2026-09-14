@@ -13,7 +13,6 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--card:#2c2c2e;--border:#3a3a3c;--text:#fff;--muted:#8e8e93}}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
@@ -146,7 +145,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="nav-title">&#128297; Coil Scanner</div>
   <div style="display:flex;gap:8px;align-items:center">
     <button onclick="shareDailySummary()" title="Resumen del dia" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px">&#128200;</button>
-    <button onclick="requestNotifications();toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px" id="dark-btn">&#9790;</button>
     <div class="nav-pill" id="nav-pill">0 registros</div>
   </div>
 </div>
@@ -235,179 +233,162 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div class="pane" id="p-dash">
 <style>
-.db2-card{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
-.db2-hdr{font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.db2-hdr-val{font-size:11px;color:#007aff;font-weight:700;text-transform:none;letter-spacing:0}
-.kpi2{border-radius:12px;padding:14px 16px;color:#fff;position:relative;overflow:hidden}
-.kpi2-lbl{font-size:9px;font-weight:800;opacity:.8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
-.kpi2-num{font-size:32px;font-weight:700;line-height:1;margin-bottom:2px}
-.kpi2-sub{font-size:11px;opacity:.7}
-.kpi2::after{content:'';position:absolute;right:-10px;top:-10px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.08)}
-.seg2{display:flex;height:32px;border-radius:8px;overflow:hidden;gap:2px}
-.seg2-piece{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer;transition:opacity .15s;white-space:nowrap;padding:0 6px;min-width:40px}
-.seg2-piece:hover{opacity:.85}
-.bar2-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;border-radius:8px;padding:4px 6px;transition:background .1s}
-.bar2-row:hover{background:#f2f2f7}
-.bar2-lbl{font-size:12px;font-weight:500;color:#1c1c1e;width:95px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar2-track{flex:1;background:#f2f2f7;border-radius:5px;height:26px;overflow:hidden;position:relative}
-.bar2-fill{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:11px;font-weight:700;color:#fff;transition:width .35s ease}
-.bar2-pct{font-size:11px;color:#8e8e93;width:34px;text-align:right;flex-shrink:0;font-weight:600}
-.chip2{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;margin:2px;border:none}
-.fsel{width:100%;padding:9px 10px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:13px;font-family:inherit;background:#f8f8f8;color:#1c1c1e;outline:none;-webkit-appearance:none;appearance:none}
-.fsel:focus{border-color:#007aff;background:#fff}
-.ttime{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #e5e5ea;background:#f2f2f7;color:#8e8e93;transition:all .12s}
-.ttime.on{background:#007aff;color:#fff;border-color:#007aff}
-.donut-wrap{position:relative;margin-bottom:10px}
-.pivot2 th{padding:8px 12px;font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;background:#f8f8f8;border-bottom:2px solid #e5e5ea;white-space:nowrap}
-.pivot2 td{padding:9px 12px;border-bottom:1px solid #f2f2f7;font-size:12px;vertical-align:middle}
-.pivot2 tr:hover td{background:#fafafa}
-.pivot2-val{font-weight:700;color:#007aff;font-size:13px}
-.pivot2-cnt{font-size:10px;color:#8e8e93;margin-top:1px}
-.pivot2-tot{background:#f0f5ff!important}
-.pivot2-tot td{font-weight:700;border-top:2px solid #c5d8ff}
+/* Power BI Dashboard Styles */
+.pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.pbi-hdr{background:#fff;border-bottom:2px solid #e8ecf0;padding:0 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-14px -14px 12px -14px;padding-top:10px;padding-bottom:10px}
+.pbi-seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pbi-seg-lbl{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.pbi-chip{padding:5px 12px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
+.pbi-chip:hover{border-color:#007aff;color:#007aff;background:#f0f5ff}
+.pbi-chip.on{background:#007aff;color:#fff;border-color:#007aff;box-shadow:0 2px 6px rgba(0,122,255,.3)}
+.pbi-chip.on-evg{background:#007aff;color:#fff;border-color:#007aff}
+.pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
+.pbi-row{display:grid;gap:10px;margin-bottom:10px}
+.pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
+.pbi-card-title{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.pbi-kpi-num{font-size:36px;font-weight:700;line-height:1;color:#1a2332}
+.pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
+.pbi-kpi-sub{font-size:11px;color:#8e9aab;margin-top:4px}
+.pbi-kpi-trend{font-size:11px;font-weight:700;margin-top:4px}
+.pbi-bar-lbl{font-size:11px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbi-bar-track{flex:1;background:#f0f2f5;border-radius:3px;height:20px;overflow:hidden}
+.pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;font-size:10px;font-weight:700;color:#fff;transition:width .35s}
+.pbi-bar-val{font-size:11px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
+.pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.pbi-tbl th{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
+.pbi-tbl td{padding:8px 10px;border-bottom:1px solid #f0f2f5;font-size:12px;color:#374151;vertical-align:middle}
+.pbi-tbl tr:hover td{background:#f8fafc}
+.pbi-tbl-val{font-weight:700;color:#007aff}
+.pbi-tbl-tot td{background:#f0f5ff;font-weight:700;border-top:2px solid #c5d8ff}
+.maq-evg{color:#007aff;font-weight:700}
+.maq-pit{color:#af52de;font-weight:700}
+.pbi-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.pbi-date-chip{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151}
+.pbi-date-chip.on{background:#1a2332;color:#fff;border-color:#1a2332}
 </style>
 
-<!-- HEADER ROW -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-  <div style="font-size:18px;font-weight:700;color:#1c1c1e">&#128202; Dashboard</div>
-  <button id="btn-clear" style="padding:7px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#636366;cursor:pointer">✕ Limpiar filtros</button>
+<!-- FILTER BAR (segmentador estilo Excel) -->
+<div class="pbi-hdr">
+  <!-- Fecha -->
+  <div class="pbi-seg">
+    <span class="pbi-seg-lbl">Periodo</span>
+    <button class="pbi-date-chip on" id="pd-today" onclick="setPeriod('today')">Hoy</button>
+    <button class="pbi-date-chip" id="pd-week" onclick="setPeriod('week')">7 dias</button>
+    <button class="pbi-date-chip" id="pd-month" onclick="setPeriod('month')">30 dias</button>
+    <button class="pbi-date-chip" id="pd-all" onclick="setPeriod('all')">Todo</button>
+  </div>
+  <!-- Maquina -->
+  <div class="pbi-seg" style="margin-left:6px">
+    <span class="pbi-seg-lbl">Maquina</span>
+    <button class="pbi-chip" id="pm-all" onclick="setMaq('')">Todas</button>
+    <button class="pbi-chip" id="pm-evg" onclick="setMaq('EVG')">EVG</button>
+    <button class="pbi-chip" id="pm-pit" onclick="setMaq('PITTINI')">PITTINI</button>
+  </div>
+  <!-- Producto -->
+  <div class="pbi-seg" style="margin-left:6px">
+    <span class="pbi-seg-lbl">Producto</span>
+    <div id="prod-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+  </div>
+  <!-- WO -->
+  <div class="pbi-seg" style="margin-left:6px">
+    <span class="pbi-seg-lbl">WO</span>
+    <div id="wo-chips-dash" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+  </div>
+  <!-- Clear -->
+  <button onclick="clearDashFilters()" style="margin-left:auto;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#5c6b7a">&#10005; Limpiar</button>
 </div>
 
-<!-- FILTER BAR -->
-<div class="db2-card" style="margin-bottom:10px">
-  <div class="db2-hdr" style="margin-bottom:8px">Filtros <span id="filter-summary" class="db2-hdr-val"></span></div>
-  <div id="active-filter-chips" style="min-height:16px;margin-bottom:8px"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div style="position:relative">
-      <select id="f-prod" class="fsel"><option value="">Todos los productos</option></select>
-    </div>
-    <div style="position:relative">
-      <select id="f-cast" class="fsel"><option value="">Todos los Casts</option></select>
-    </div>
-    <div style="position:relative">
-      <select id="f-wo" class="fsel"><option value="">Todas las WOs</option></select>
-    </div>
-    <div style="position:relative">
-      <select id="f-maq" class="fsel"><option value="">Todas las maquinas</option><option value="EVG">EVG</option><option value="PITTINI">PITTINI</option></select>
-    </div>
+<!-- KPI ROW -->
+<div class="pbi-row" style="grid-template-columns:1fr 1fr">
+  <div class="pbi-card" style="border-top:4px solid #007aff">
+    <div class="pbi-card-title">Toneladas</div>
+    <div><span class="pbi-kpi-num" id="db-ton">0</span><span class="pbi-kpi-unit">t</span></div>
+    <div class="pbi-kpi-sub" id="db-ton-sub">—</div>
+    <div class="pbi-kpi-trend" id="db-ton-trend"></div>
+  </div>
+  <div class="pbi-card" style="border-top:4px solid #34c759">
+    <div class="pbi-card-title">Coils escaneados</div>
+    <div><span class="pbi-kpi-num" id="db-cnt">0</span></div>
+    <div class="pbi-kpi-sub" id="db-cnt-sub">—</div>
+    <div class="pbi-kpi-trend" id="db-cnt-trend"></div>
+  </div>
+</div>
+<div class="pbi-row" style="grid-template-columns:1fr 1fr 1fr">
+  <div class="pbi-card" style="border-top:4px solid #007aff">
+    <div class="pbi-card-title">EVG</div>
+    <div><span class="pbi-kpi-num" style="font-size:26px" id="db-evg-ton">0</span><span class="pbi-kpi-unit">t</span></div>
+    <div class="pbi-kpi-sub" id="db-evg-cnt">0 coils</div>
+  </div>
+  <div class="pbi-card" style="border-top:4px solid #af52de">
+    <div class="pbi-card-title">PITTINI</div>
+    <div><span class="pbi-kpi-num" style="font-size:26px" id="db-pit-ton">0</span><span class="pbi-kpi-unit">t</span></div>
+    <div class="pbi-kpi-sub" id="db-pit-cnt">0 coils</div>
+  </div>
+  <div class="pbi-card" style="border-top:4px solid #ff9500">
+    <div class="pbi-card-title">WOs activas</div>
+    <div><span class="pbi-kpi-num" style="font-size:26px" id="db-wo-cnt">0</span></div>
+    <div class="pbi-kpi-sub" id="db-wo-list">—</div>
   </div>
 </div>
 
-<!-- KPI GRID -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-  <div class="kpi2" style="background:linear-gradient(140deg,#0055cc,#007aff)">
-    <div class="kpi2-lbl">Toneladas</div>
-    <div class="kpi2-num" id="kpi-ton">0</div>
-    <div class="kpi2-sub" id="kpi-ton-sub">—</div>
-  </div>
-  <div class="kpi2" style="background:linear-gradient(140deg,#1a6b2e,#34c759)">
-    <div class="kpi2-lbl">Coils</div>
-    <div class="kpi2-num" id="kpi-total">0</div>
-    <div class="kpi2-sub" id="kpi-total-sub">—</div>
-  </div>
-  <div class="kpi2" style="background:linear-gradient(140deg,#b84f00,#ff9500)">
-    <div class="kpi2-lbl">Work Orders</div>
-    <div class="kpi2-num" id="kpi-wo">0</div>
-    <div class="kpi2-sub" id="kpi-wo-sub">—</div>
-  </div>
-  <div class="kpi2" style="background:linear-gradient(140deg,#7030a0,#af52de)">
-    <div class="kpi2-lbl">Hoy</div>
-    <div class="kpi2-num" id="kpi-hoy">0</div>
-    <div class="kpi2-sub" id="kpi-hoy-sub">—</div>
-  </div>
-</div>
-
-<!-- MACHINES -->
-<div class="db2-card">
-  <div class="db2-hdr">Maquinas <span class="db2-hdr-val">click para filtrar</span></div>
-  <div style="display:flex;gap:8px;margin-bottom:12px">
-    <div id="tgl-EVG" onclick="toggleMaq('EVG')" style="flex:1;padding:14px;border-radius:10px;cursor:pointer;border:2px solid #007aff;background:#f0f5ff;text-align:center;transition:all .15s">
-      <div style="font-size:10px;font-weight:800;color:#007aff;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">EVG</div>
-      <div style="font-size:24px;font-weight:700;color:#007aff;line-height:1" id="maq-ton-EVG">0t</div>
-      <div style="font-size:11px;color:#636366;margin-top:3px" id="maq-cnt-EVG">0 coils</div>
-    </div>
-    <div id="tgl-PITTINI" onclick="toggleMaq('PITTINI')" style="flex:1;padding:14px;border-radius:10px;cursor:pointer;border:2px solid #af52de;background:#f8f0ff;text-align:center;transition:all .15s">
-      <div style="font-size:10px;font-weight:800;color:#af52de;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">PITTINI</div>
-      <div style="font-size:24px;font-weight:700;color:#af52de;line-height:1" id="maq-ton-PITTINI">0t</div>
-      <div style="font-size:11px;color:#636366;margin-top:3px" id="maq-cnt-PITTINI">0 coils</div>
-    </div>
-  </div>
-  <div class="db2-hdr" style="margin-bottom:6px">Distribucion</div>
-  <div class="seg2" id="maq-seg"></div>
-  <div id="maq-seg-leg" style="display:flex;gap:16px;margin-top:8px;font-size:11px;font-weight:600"></div>
-</div>
-
-<!-- TIMELINE -->
-<div class="db2-card">
-  <div class="db2-hdr">
+<!-- TN POR DIA (main chart) -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">
     Toneladas por dia
-    <div style="display:flex;gap:4px">
-      <button class="ttime on" id="tr-7" onclick="setTR(7)">7d</button>
-      <button class="ttime" id="tr-14" onclick="setTR(14)">14d</button>
-      <button class="ttime" id="tr-30" onclick="setTR(30)">30d</button>
-      <button class="ttime" id="tr-0" onclick="setTR(0)">Todo</button>
+    <div style="display:flex;gap:10px;font-size:11px;font-weight:600">
+      <span style="color:#007aff">■ EVG</span>
+      <span style="color:#af52de">■ PITTINI</span>
+      <span style="color:#c7c7cc">■ Sin maq</span>
     </div>
   </div>
-  <canvas id="chart-timeline" style="width:100%;height:150px;display:block"></canvas>
-  <div id="timeline-legend" style="display:flex;gap:14px;margin-top:8px;font-size:11px;font-weight:600"></div>
+  <canvas id="db-timeline" style="width:100%;height:160px;display:block"></canvas>
 </div>
 
-<!-- PRODUCTO + WO donuts -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-  <div class="db2-card" style="margin-bottom:0">
-    <div class="db2-hdr">Por Producto <span class="db2-hdr-val" id="prod-tot-lbl"></span></div>
-    <div class="donut-wrap" id="donut-prod-wrap">
-      <canvas id="donut-prod" style="display:block"></canvas>
-      <div id="donut-prod-leg"></div>
-    </div>
+<!-- ESCANEOS POR DIA -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Coils escaneados por dia</div>
+  <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
+</div>
+
+<!-- MAQUINA DISTRIBUCION + PRODUCTO -->
+<div class="pbi-row" style="grid-template-columns:1fr 1fr">
+  <div class="pbi-card">
+    <div class="pbi-card-title">Distribucion por maquina</div>
+    <canvas id="db-maq-donut" style="display:block;width:100%;height:120px"></canvas>
+    <div id="db-maq-leg" style="margin-top:8px"></div>
   </div>
-  <div class="db2-card" style="margin-bottom:0">
-    <div class="db2-hdr">Por WO <span class="db2-hdr-val" id="wo-tot-lbl"></span></div>
-    <div class="donut-wrap" id="donut-wo-wrap">
-      <canvas id="donut-wo" style="display:block"></canvas>
-      <div id="donut-wo-leg"></div>
-    </div>
+  <div class="pbi-card">
+    <div class="pbi-card-title">Por Producto</div>
+    <div id="db-prod-bars"></div>
   </div>
 </div>
 
 <!-- CAST PROGRESS -->
-<div class="db2-card">
-  <div class="db2-hdr">Progreso por Cast <span class="db2-hdr-val">meta: 48 coils</span></div>
-  <div id="cast-progress"></div>
-</div>
-
-<!-- CAST BARS -->
-<div class="db2-card">
-  <div class="db2-hdr">Toneladas por Cast <span class="db2-hdr-val" id="cast-tot-lbl"></span></div>
-  <div id="cast-bars"></div>
-</div>
-
-<!-- PRODUCTO BARS -->
-<div class="db2-card">
-  <div class="db2-hdr">Por Producto <span class="db2-hdr-val" id="prod-bars-lbl"></span></div>
-  <div id="prod-bars"></div>
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Progreso por Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">meta: 48 coils</span></div>
+  <div id="db-cast-prog"></div>
 </div>
 
 <!-- PIVOT -->
-<div class="db2-card">
-  <div class="db2-hdr">Pivot — Producto × WO</div>
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Pivot — Producto × WO</div>
   <div style="overflow-x:auto">
-    <table class="tbl pivot2" id="pivot-tbl" style="min-width:100%;border-collapse:collapse"></table>
+    <table class="tbl pbi-tbl" id="pivot-tbl" style="min-width:100%;border-collapse:collapse"></table>
   </div>
 </div>
 
-<!-- FULL TABLE -->
-<div class="db2-card">
-  <div class="db2-hdr">Registros <span class="db2-hdr-val" id="tbl-count"></span></div>
+<!-- TABLA -->
+<div class="pbi-card">
+  <div class="pbi-card-title">Detalle de registros <span id="tbl-count" style="font-size:10px;color:#007aff;text-transform:none;font-weight:600"></span></div>
   <div style="overflow-x:auto">
-    <table class="tbl">
-      <thead><tr><th>Maquina</th><th>Fecha / Hora</th><th>WO</th><th>Producto</th><th>Cast</th><th>Coil</th></tr></thead>
+    <table class="tbl pbi-tbl">
+      <thead><tr><th>Maquina</th><th>Fecha / Hora</th><th>WO</th><th>Producto</th><th>Cast</th><th>Coil</th><th>Peso</th></tr></thead>
       <tbody id="tbl-body"></tbody>
     </table>
   </div>
-  <div style="display:flex;gap:8px;margin-top:12px">
-    <button class="exp-btn p" id="btn-csv" style="padding:10px 16px;font-size:13px">&#128229; CSV</button>
-    <button class="exp-btn" id="btn-share" style="padding:10px 16px;font-size:13px">&#128228; Compartir</button>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="exp-btn p" id="btn-csv" style="padding:8px 14px;font-size:12px">&#128229; CSV</button>
+    <button class="exp-btn" id="btn-share" style="padding:8px 14px;font-size:12px">&#128228; Compartir</button>
   </div>
 </div>
 
@@ -947,303 +928,246 @@ async function delRecord() {
 }
 function parseTon(p) { if(!p)return 0; var n=parseFloat(String(p).replace(',','.')); return isNaN(n)?0:n; }
 function sumTon(arr) { return arr.reduce(function(s,r){return s+parseTon(r.peso);},0); }
-function renderDash() {
-  var today = new Date().toDateString();
-  var cP = document.getElementById('f-prod').value;
-  var cC = document.getElementById('f-cast').value;
-  var cW = document.getElementById('f-wo').value;
-  var cM = document.getElementById('f-maq').value;
+// ============ DASHBOARD STATE ============
+var _dbPeriod = 'today';
+var _dbMaq = '';
+var _dbProd = '';
+var _dbWO = '';
 
-  // Populate selects based on current filters
-  var base = records;
-  var allProds = unique(base.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
-  // Casts filtered by product selection
-  var castBase = cP ? base.filter(function(r){return normalizeProductoKey(r.producto)===cP;}) : base;
-  var allCasts = unique(castBase.map(function(r){return r.cast;}).filter(Boolean)).sort();
-  var allWOs = unique(base.map(function(r){return r.wo;}).filter(Boolean)).sort();
+function setPeriod(p) {
+  _dbPeriod = p;
+  ['today','week','month','all'].forEach(function(x){
+    var b = document.getElementById('pd-'+x);
+    if (b) b.className = 'pbi-date-chip'+(p===x?' on':'');
+  });
+  renderDash();
+}
 
-  var sel = document.getElementById('f-prod');
-  sel.innerHTML = '<option value="">Todos los productos</option>'+allProds.map(function(p){return'<option'+(p===cP?' selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
-  sel = document.getElementById('f-cast');
-  sel.innerHTML = '<option value="">Todos los Casts</option>'+allCasts.map(function(x){return'<option'+(x===cC?' selected':'')+' value="'+esc(x)+'">'+esc(x)+'</option>';}).join('');
-  sel = document.getElementById('f-wo');
-  sel.innerHTML = '<option value="">Todas las WOs</option>'+allWOs.map(function(w){return'<option'+(w===cW?' selected':'')+' value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
+function setMaq(m) {
+  _dbMaq = m;
+  document.getElementById('pm-all').className = 'pbi-chip'+(m===''?' on':'');
+  document.getElementById('pm-evg').className = 'pbi-chip'+(m==='EVG'?' on-evg':'');
+  document.getElementById('pm-pit').className = 'pbi-chip'+(m==='PITTINI'?' on-pit':'');
+  renderDash();
+}
 
-  // Apply filters
-  var data = base.filter(function(r) {
-    if (cP && normalizeProductoKey(r.producto)!==cP) return false;
-    if (cC && r.cast!==cC) return false;
-    if (cW && r.wo!==cW) return false;
-    if (cM && r.maquina!==cM) return false;
+function setProdFilter(p) {
+  _dbProd = _dbProd === p ? '' : p;
+  renderProdChips();
+  renderDash();
+}
+
+function setWOFilter(w) {
+  _dbWO = _dbWO === w ? '' : w;
+  renderWOChipsDash();
+  renderDash();
+}
+
+function clearDashFilters() {
+  _dbPeriod = 'all'; _dbMaq = ''; _dbProd = ''; _dbWO = '';
+  setPeriod('all');
+  setMaq('');
+  renderDash();
+}
+
+function getFilteredData() {
+  var now = new Date();
+  return records.filter(function(r) {
+    if (_dbMaq && r.maquina !== _dbMaq) return false;
+    if (_dbProd && normalizeProductoKey(r.producto) !== _dbProd) return false;
+    if (_dbWO && r.wo !== _dbWO) return false;
+    if (_dbPeriod !== 'all' && r.created_at) {
+      var d = new Date(r.created_at);
+      var diff = (now - d) / 86400000;
+      if (_dbPeriod === 'today' && new Date(r.created_at).toDateString() !== now.toDateString()) return false;
+      if (_dbPeriod === 'week' && diff > 7) return false;
+      if (_dbPeriod === 'month' && diff > 30) return false;
+    }
     return true;
   });
+}
 
-  var tot = sumTon(data);
-  var hasFilter = !!(cP||cC||cW||cM);
-
-  // Filter summary
-  var active = [cP,cC?'Cast: '+cC:'',cW?'WO: '+cW:'',cM].filter(Boolean);
-  document.getElementById('filter-summary').textContent = hasFilter ? active.join(' › ') : 'Sin filtros';
-
-  // Filter chips
-  var afc = document.getElementById('active-filter-chips');
-  afc.innerHTML = '';
-  var chipDefs = [];
-  if (cP) chipDefs.push({label:cP, id:'f-prod', bg:'#e8f0fe', col:'#007aff'});
-  if (cC) chipDefs.push({label:'Cast: '+cC, id:'f-cast', bg:'#e8ffe8', col:'#1a7a3c'});
-  if (cW) chipDefs.push({label:'WO: '+cW, id:'f-wo', bg:'#fff8e8', col:'#7a5c00'});
-  if (cM) chipDefs.push({label:cM, id:'f-maq', bg:cM==='EVG'?'#e8f0fe':'#f5e8ff', col:cM==='EVG'?'#007aff':'#af52de'});
-  chipDefs.forEach(function(cd){
-    var chip = document.createElement('span');
-    chip.className = 'chip2';
-    chip.style.background = cd.bg;
-    chip.style.color = cd.col;
-    chip.textContent = cd.label+' ✕';
-    chip.addEventListener('click',function(){document.getElementById(cd.id).value='';renderDash();});
-    afc.appendChild(chip);
+function renderProdChips() {
+  var prods = unique(records.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
+  var el = document.getElementById('prod-chips');
+  if (!el) return;
+  el.innerHTML = '';
+  prods.forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.className = 'pbi-chip' + (_dbProd === p ? ' on' : '');
+    btn.textContent = p;
+    btn.onclick = function(){setProdFilter(p);};
+    el.appendChild(btn);
   });
+}
+
+function renderWOChipsDash() {
+  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var el = document.getElementById('wo-chips-dash');
+  if (!el) return;
+  el.innerHTML = '';
+  wos.forEach(function(w) {
+    var btn = document.createElement('button');
+    btn.className = 'pbi-chip' + (_dbWO === w ? ' on' : '');
+    btn.textContent = w;
+    btn.onclick = function(){setWOFilter(w);};
+    el.appendChild(btn);
+  });
+}
+
+function renderDash() {
+  var data = getFilteredData();
+  var tot = sumTon(data);
+  var today = new Date().toDateString();
+
+  // Populate filter chips
+  renderProdChips();
+  renderWOChipsDash();
 
   // KPIs
-  document.getElementById('kpi-ton').textContent = tot.toFixed(3);
-  document.getElementById('kpi-ton-sub').textContent = data.length+' coils'+(hasFilter?' (filtrado)':'');
-  document.getElementById('kpi-total').textContent = data.length;
-  document.getElementById('kpi-total-sub').textContent = 'de '+records.length+' total';
-  var wosInData = unique(data.map(function(r){return r.wo;}).filter(Boolean));
-  document.getElementById('kpi-wo').textContent = wosInData.length;
-  document.getElementById('kpi-wo-sub').textContent = wosInData.length ? wosInData.slice(0,2).join(', ')+(wosInData.length>2?'…':'') : 'ninguna asignada';
-  var hoy = data.filter(function(r){return r.created_at&&new Date(r.created_at).toDateString()===today;});
-  document.getElementById('kpi-hoy').textContent = hoy.length;
-  document.getElementById('kpi-hoy-sub').textContent = hoy.length ? sumTon(hoy).toFixed(3)+'t' : 'sin escaneos';
+  document.getElementById('db-ton').textContent = tot.toFixed(3);
+  document.getElementById('db-ton-sub').textContent = data.length + ' coils' + (_dbPeriod==='today'?' hoy':_dbPeriod==='week'?' ultimos 7 dias':_dbPeriod==='month'?' ultimos 30 dias':' en total');
 
-  // Machine cards - use filtered data
-  ['EVG','PITTINI'].forEach(function(m){
-    var mData = data.filter(function(r){return r.maquina===m;});
-    document.getElementById('maq-ton-'+m).textContent = sumTon(mData).toFixed(3)+'t';
-    document.getElementById('maq-cnt-'+m).textContent = mData.length+' coils';
-    var tgl = document.getElementById('tgl-'+m);
-    tgl.style.opacity = (!cM||cM===m)?'1':'0.4';
-    tgl.style.transform = cM===m?'scale(1.02)':'scale(1)';
-  });
+  document.getElementById('db-cnt').textContent = data.length;
+  document.getElementById('db-cnt-sub').textContent = 'de ' + records.length + ' total';
 
-  // Stacked seg bar - filtered data
-  var evgT = sumTon(data.filter(function(r){return r.maquina==='EVG';}));
-  var pitT = sumTon(data.filter(function(r){return r.maquina==='PITTINI';}));
-  var noMT = sumTon(data.filter(function(r){return !r.maquina;}));
-  var segTot = evgT+pitT+noMT||1;
-  var seg = document.getElementById('maq-seg');
-  seg.innerHTML = '';
-  function mkSeg(v,bg,lbl,maq){
-    if(v<=0)return;
-    var d=document.createElement('div');
-    d.className='seg2-piece';
-    d.style.width=((v/segTot)*100)+'%';
-    d.style.background=bg;
-    d.textContent=v.toFixed(1)+'t';
-    if(maq)d.onclick=function(){document.getElementById('f-maq').value=maq;renderDash();};
-    seg.appendChild(d);
+  var evgD = data.filter(function(r){return r.maquina==='EVG';});
+  var pitD = data.filter(function(r){return r.maquina==='PITTINI';});
+  document.getElementById('db-evg-ton').textContent = sumTon(evgD).toFixed(3);
+  document.getElementById('db-evg-cnt').textContent = evgD.length + ' coils';
+  document.getElementById('db-pit-ton').textContent = sumTon(pitD).toFixed(3);
+  document.getElementById('db-pit-cnt').textContent = pitD.length + ' coils';
+
+  var wosActive = unique(data.map(function(r){return r.wo;}).filter(Boolean));
+  document.getElementById('db-wo-cnt').textContent = wosActive.length;
+  document.getElementById('db-wo-list').textContent = wosActive.length ? wosActive.slice(0,3).join(', ')+(wosActive.length>3?'…':'') : 'ninguna';
+
+  // Trend vs previous period
+  if (_dbPeriod === 'today') {
+    var yesterday = records.filter(function(r){
+      if (!r.created_at) return false;
+      var d = new Date(r.created_at);
+      var y = new Date(); y.setDate(y.getDate()-1);
+      return d.toDateString() === y.toDateString();
+    });
+    var yTon = sumTon(yesterday);
+    if (yTon > 0) {
+      var diff = ((tot - yTon)/yTon*100).toFixed(1);
+      var up = tot >= yTon;
+      document.getElementById('db-ton-trend').innerHTML = '<span style="color:'+(up?'#34c759':'#ff3b30')+'">'+(up?'▲':'▼')+' '+Math.abs(diff)+'% vs ayer ('+yTon.toFixed(3)+'t)</span>';
+      document.getElementById('db-cnt-trend').innerHTML = '<span style="color:'+(data.length>=yesterday.length?'#34c759':'#ff3b30')+'">'+(data.length>=yesterday.length?'▲':'▼')+' vs ayer ('+yesterday.length+' coils)</span>';
+    }
+  } else {
+    document.getElementById('db-ton-trend').innerHTML = '';
+    document.getElementById('db-cnt-trend').innerHTML = '';
   }
-  mkSeg(evgT,'#007aff','EVG','EVG');
-  mkSeg(pitT,'#af52de','PITTINI','PITTINI');
-  mkSeg(noMT,'#c7c7cc','Sin maq','');
-  document.getElementById('maq-seg-leg').innerHTML =
-    (evgT>0?'<span style="color:#007aff">● EVG '+evgT.toFixed(3)+'t ('+Math.round((evgT/segTot)*100)+'%)</span>':'')+
-    (pitT>0?'<span style="color:#af52de">● PITTINI '+pitT.toFixed(3)+'t ('+Math.round((pitT/segTot)*100)+'%)</span>':'')+
-    (noMT>0?'<span style="color:#8e8e93">● Sin maq '+noMT.toFixed(3)+'t</span>':'');
 
-  // Timeline
+  // Timelines
   renderTimeline2(data);
+  renderCountTimeline(data);
 
-  // Donuts
+  // Donut maquina
+  renderDonut2('db-maq-donut','db-maq-leg',
+    groupSum(data,function(r){return r.maquina||'Sin maq';}),
+    function(k){if(k!=='Sin maq')setMaq(k);});
+
+  // Producto bars
   var byProd = groupSum(data,function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
-  document.getElementById('prod-tot-lbl').textContent = tot.toFixed(3)+'t';
-  renderDonut2('donut-prod','donut-prod-leg',byProd,function(k){document.getElementById('f-prod').value=k;renderDash();});
+  renderBars2('db-prod-bars',byProd,tot,function(k){setProdFilter(k);});
 
-  var byWO = groupSum(data,function(r){return r.wo||'Sin WO';});
-  document.getElementById('wo-tot-lbl').textContent = sumTon(data).toFixed(3)+'t';
-  renderDonut2('donut-wo','donut-wo-leg',byWO,function(k){document.getElementById('f-wo').value=(k==='Sin WO'?'':k);renderDash();});
-
-  // Bars
-  document.getElementById('cast-progress').innerHTML = renderCastProgress();
-  document.getElementById('cast-tot-lbl').textContent = tot.toFixed(3)+'t — '+Object.keys(groupSum(data,function(r){return r.cast||'';})).length+' casts';
-  renderBars2('cast-bars',groupSum(data,function(r){return r.cast||'Sin Cast';}),tot,function(k){document.getElementById('f-cast').value=(k==='Sin Cast'?'':k);renderDash();});
-
-  document.getElementById('prod-bars-lbl').textContent = tot.toFixed(3)+'t';
-  renderBars2('prod-bars',byProd,tot,function(k){document.getElementById('f-prod').value=k;renderDash();});
+  // Cast progress
+  renderCastProgressDB(data);
 
   // Pivot
   renderPivot2(data);
 
   // Table
   renderTable(data);
-  document.getElementById('tbl-count').textContent = '('+data.length+' de '+records.length+')';
+  document.getElementById('tbl-count').textContent = '('+data.length+' registros)';
 }
 
-var _tr = 7;
-function setTR(n){
-  _tr=n;
-  ['7','14','30','0'].forEach(function(x){
-    var b=document.getElementById('tr-'+x);
-    b.className='ttime'+(String(n)===x?' on':'');
-  });
-  renderDash();
-}
-
-function toggleMaq(m){
-  var s=document.getElementById('f-maq');
-  s.value=s.value===m?'':m;
-  renderDash();
-}
-
-function renderDonut2(canvasId,legId,byKey,onClick){
-  var canvas=document.getElementById(canvasId);
-  var leg=document.getElementById(legId);
-  var ents=Object.keys(byKey).map(function(k){return{k:k,v:byKey[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,7);
-  var total=ents.reduce(function(s,e){return s+e.v;},0);
-  leg.innerHTML='';
-  if(!total){canvas.style.display='none';return;}
-  canvas.style.display='block';
-  var size=100;
-  canvas.width=size;canvas.height=size;
-  canvas.style.cssText='width:'+size+'px;height:'+size+'px;float:left;margin-right:10px;flex-shrink:0';
-  var ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,size,size);
-  var cx=size/2,cy=size/2,r=size/2-3,start=-Math.PI/2;
-  ents.forEach(function(e,i){
-    var a=(e.v/total)*Math.PI*2;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+a);ctx.closePath();
-    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
-    start+=a;
-  });
-  ctx.beginPath();ctx.arc(cx,cy,r*.56,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-  ctx.fillStyle='#1c1c1e';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(total.toFixed(1)+'t',cx,cy);
-  leg.style.cssText='overflow:hidden;min-height:'+size+'px';
-  ents.forEach(function(e,i){
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:4px;margin-bottom:4px;cursor:pointer;border-radius:5px;padding:2px 4px';
-    row.innerHTML='<div style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+COLORS[i%COLORS.length]+'"></div>'+
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#1c1c1e">'+esc(e.k)+'</span>'+
-      '<span style="font-size:10px;font-weight:700;color:#007aff;flex-shrink:0">'+e.v.toFixed(2)+'t</span>';
-    row.addEventListener('click',function(){onClick(e.k);});
-    row.addEventListener('mouseover',function(){this.style.background='#f2f2f7';});
-    row.addEventListener('mouseout',function(){this.style.background='';});
-    leg.appendChild(row);
-  });
-}
-
-function renderTimeline2(data){
-  var canvas=document.getElementById('chart-timeline');
-  var W=canvas.offsetWidth||300,H=150;
-  canvas.width=W;canvas.height=H;
-  var ctx=canvas.getContext('2d');
+function renderCountTimeline(data) {
+  var canvas = document.getElementById('db-count-timeline');
+  if (!canvas) return;
+  var W = canvas.offsetWidth||300, H = 100;
+  canvas.width = W; canvas.height = H;
+  var ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  var now=new Date();
-  var filtered=_tr>0?data.filter(function(r){
-    if(!r.created_at)return false;
-    return(now-new Date(r.created_at))<=_tr*86400000;
-  }):data;
-  var byDay={},byDayE={},byDayP={};
-  filtered.forEach(function(r){
-    if(!r.created_at)return;
-    var d=new Date(r.created_at);
-    var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    byDay[k]=(byDay[k]||0)+parseTon(r.peso);
-    if(r.maquina==='EVG')byDayE[k]=(byDayE[k]||0)+parseTon(r.peso);
-    else if(r.maquina==='PITTINI')byDayP[k]=(byDayP[k]||0)+parseTon(r.peso);
+  var byDay = {};
+  data.forEach(function(r){
+    if(!r.created_at) return;
+    var d = new Date(r.created_at);
+    var k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    byDay[k] = (byDay[k]||0) + 1;
   });
-  var days=Object.keys(byDay).sort();
+  var days = Object.keys(byDay).sort();
   if(!days.length){canvas.height=0;return;}
   canvas.height=H;
-  var vals=days.map(function(d){return byDay[d];});
-  var mx=Math.max.apply(null,vals)||1;
-  var pL=36,pB=26,pT=16,pR=10;
+  var vals = days.map(function(d){return byDay[d];});
+  var mx = Math.max.apply(null,vals)||1;
+  var pL=30,pB=20,pT=12,pR=8;
   var cW=W-pL-pR,cH=H-pB-pT;
   var bw=cW/Math.max(days.length,1);
-  // Background grid
-  ctx.fillStyle='#fafafa';ctx.fillRect(pL,pT,cW,cH);
-  [0,0.25,0.5,0.75,1].forEach(function(f){
+  ctx.fillStyle='#f8fafc';ctx.fillRect(pL,pT,cW,cH);
+  [0,0.5,1].forEach(function(f){
     var y=pT+cH*(1-f);
-    ctx.strokeStyle=f===0?'#c7c7cc':'#ebebeb';ctx.lineWidth=f===0?1.5:1;
+    ctx.strokeStyle='#e8ecf0';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
-    if(f>0){ctx.fillStyle='#8e8e93';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText((mx*f).toFixed(1),pL-4,y+3);}
+    if(f>0){ctx.fillStyle='#8e9aab';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(mx*f),pL-3,y+3);}
   });
-  // Bars stacked
   days.forEach(function(day,i){
-    var x=pL+i*bw+bw*.08;
-    var bW=bw*.84;
-    var evgV=byDayE[day]||0,pitV=byDayP[day]||0,totV=byDay[day]||0;
-    var remV=Math.max(0,totV-evgV-pitV);
-    var y=pT+cH;
-    if(pitV>0){var h=(pitV/mx)*cH;ctx.fillStyle='#af52de';ctx.fillRect(x,y-h,bW,h);y-=h;}
-    if(evgV>0){var h2=(evgV/mx)*cH;ctx.fillStyle='#007aff';ctx.fillRect(x,y-h2,bW,h2);y-=h2;}
-    if(remV>0){var h3=(remV/mx)*cH;ctx.fillStyle='#c7c7cc';ctx.fillRect(x,y-h3,bW,h3);}
-    // Date label
+    var x=pL+i*bw+bw*.1,bW=bw*.8;
+    var bh=(vals[i]/mx)*cH;
+    ctx.fillStyle='#34c759';ctx.fillRect(x,pT+cH-bh,bW,bh);
     var d=new Date(day);
-    ctx.fillStyle='#636366';ctx.font='9px sans-serif';ctx.textAlign='center';
-    ctx.fillText(d.getDate()+'/'+(d.getMonth()+1),x+bW/2,H-8);
-    // Value
-    var topH=(totV/mx)*cH;
-    if(totV>0){ctx.fillStyle='#1c1c1e';ctx.font='bold 9px sans-serif';ctx.fillText(totV.toFixed(1),x+bW/2,pT+cH-topH-4);}
-  });
-  // Legend
-  var hasE=Object.keys(byDayE).length>0,hasP=Object.keys(byDayP).length>0;
-  document.getElementById('timeline-legend').innerHTML=
-    (hasE?'<span style="color:#007aff">■ EVG</span>':'')+
-    (hasP?'<span style="color:#af52de">■ PITTINI</span>':'')+
-    (!hasE&&!hasP?'<span style="color:#8e8e93">■ Sin maquina asignada</span>':'');
-}
-
-function renderBars2(containerId,byKey,total,onClick){
-  var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,20);
-  var mx=ents.length?ents[0][1]:1;
-  var container=document.getElementById(containerId);
-  container.innerHTML='';
-  ents.forEach(function(e,i){
-    var pct=total>0?Math.round((e[1]/total)*100):0;
-    var row=document.createElement('div');
-    row.className='bar2-row';
-    row.innerHTML='<span class="bar2-lbl" title="'+esc(e[0])+'">'+esc(e[0])+'</span>'+
-      '<div class="bar2-track"><div class="bar2-fill" style="width:'+(Math.round((e[1]/mx)*84)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(3)+'t</div></div>'+
-      '<span class="bar2-pct">'+pct+'%</span>';
-    row.addEventListener('click',function(){onClick(e[0]);});
-    container.appendChild(row);
+    ctx.fillStyle='#8e9aab';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(d.getDate()+'/'+(d.getMonth()+1),x+bW/2,H-4);
+    if(vals[i]>0){ctx.fillStyle='#1a2332';ctx.font='bold 9px sans-serif';ctx.fillText(vals[i],x+bW/2,pT+cH-bh-3);}
   });
 }
 
-function renderPivot2(data){
-  var prods=unique(data.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
-  var wos=unique(data.map(function(r){return r.wo;}).filter(Boolean)).sort();
-  var tbl=document.getElementById('pivot-tbl');
-  if(!prods.length||!wos.length){
-    tbl.innerHTML='<tr><td style="padding:16px;color:#8e8e93;font-size:13px">'+
-      (wos.length===0?'Asigna WOs en el Historial para ver la tabla pivot.':'Sin datos para los filtros actuales.')+
-      '</td></tr>';
-    return;
-  }
-  var html='<thead><tr><th style="text-align:left">Producto</th>';
-  wos.forEach(function(w){html+='<th>'+esc(w)+'</th>';});
-  html+='<th style="color:#007aff">Total</th></tr></thead><tbody>';
-  prods.forEach(function(p,pi){
-    var row=data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
-    var rowTot=sumTon(row);
-    html+='<tr><td style="font-weight:600;font-size:12px;padding:9px 12px;white-space:nowrap">'+esc(p)+'</td>';
-    wos.forEach(function(w){
-      var cell=row.filter(function(r){return r.wo===w;});
-      var v=sumTon(cell);
-      html+='<td class="pivot2 pivot-cell">'+(v>0?
-        '<div class="pivot2-val">'+v.toFixed(3)+'</div><div class="pivot2-cnt">'+cell.length+' coils</div>':
-        '<span style="color:#e5e5ea">—</span>')+'</td>';
-    });
-    html+='<td class="pivot-cell pivot2-tot"><div class="pivot2-val">'+rowTot.toFixed(3)+'</div><div class="pivot2-cnt">'+row.length+' coils</div></td></tr>';
+function renderCastProgressDB(data) {
+  var el = document.getElementById('db-cast-prog');
+  if (!el) return;
+  var byCast = {};
+  data.forEach(function(r){
+    if(!r.cast) return;
+    if(!byCast[r.cast]) byCast[r.cast]={coils:0,ton:0,prod:r.producto,maqE:0,maqP:0};
+    byCast[r.cast].coils++;
+    byCast[r.cast].ton+=parseTon(r.peso);
+    if(r.maquina==='EVG') byCast[r.cast].maqE++;
+    else if(r.maquina==='PITTINI') byCast[r.cast].maqP++;
   });
-  // Total row
-  html+='<tr class="pivot2-tot"><td style="font-weight:700;padding:9px 12px;font-size:12px">TOTAL</td>';
-  wos.forEach(function(w){
-    var v=sumTon(data.filter(function(r){return r.wo===w;}));
-    html+='<td class="pivot-cell"><div class="pivot2-val">'+v.toFixed(3)+'</div></td>';
-  });
-  html+='<td class="pivot-cell"><div class="pivot2-val">'+sumTon(data).toFixed(3)+'</div></td></tr></tbody>';
-  tbl.innerHTML=html;
+  var TARGET=48;
+  var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
+  if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:13px">Sin datos</div>';return;}
+  el.innerHTML=sorted.map(function(cast){
+    var d=byCast[cast];
+    var pct=Math.min(Math.round((d.coils/TARGET)*100),100);
+    var color=pct>=100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
+    return '<div style="margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+        '<div>'+
+          '<span style="font-size:12px;font-weight:700;color:#1a2332">Cast: '+esc(cast)+'</span>'+
+          (d.prod?' <span style="font-size:10px;color:#5c6b7a">'+esc(normalizeProductoKey(d.prod))+'</span>':'')+
+          (d.maqE?' <span style="font-size:10px;font-weight:700;color:#007aff">EVG:'+d.maqE+'</span>':'')+
+          (d.maqP?' <span style="font-size:10px;font-weight:700;color:#af52de">PIT:'+d.maqP+'</span>':'')+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<span style="font-size:13px;font-weight:700;color:'+color+'">'+d.coils+'/'+TARGET+'</span>'+
+          '<span style="font-size:11px;color:#5c6b7a;margin-left:4px">'+d.ton.toFixed(3)+'t</span>'+
+        '</div>'+
+      '</div>'+
+      '<div style="background:#f0f2f5;border-radius:4px;height:10px;overflow:hidden;position:relative">'+
+        '<div style="height:100%;border-radius:4px;background:'+color+';width:'+pct+'%;transition:width .4s"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:2px">'+
+        '<span style="font-size:9px;color:#8e9aab">0</span>'+
+        '<span style="font-size:9px;font-weight:700;color:'+color+'">'+pct+'%</span>'+
+        '<span style="font-size:9px;color:#8e9aab">48</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
 
@@ -1276,7 +1200,7 @@ function toggleDarkMode() {
     document.documentElement.style.setProperty('--text', '#1c1c1e');
   }
 }
-function clearFilters() { ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); renderDash(); }
+function clearFilters() { clearDashFilters(); }
 function renderTable(data) {
   document.getElementById('tbl-body').innerHTML = data.slice(0,500).map(function(r) {
     var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
@@ -1902,7 +1826,7 @@ window.addEventListener('load', function() {
   document.getElementById('btn-share').addEventListener('click', shareData);
   document.getElementById('search-inp').addEventListener('input', filterRecords);
   document.getElementById('wo-filter').addEventListener('input', filterRecords);
-  ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('change',renderDash);});
+  // Filter chips handle their own events
   loadRecords();
 });
 </script>
