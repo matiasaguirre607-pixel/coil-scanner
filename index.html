@@ -227,6 +227,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <input class="filter-inp" type="text" id="wo-filter" placeholder="WO..." style="max-width:110px">
     <button class="btn-sm" id="btn-refresh" style="max-width:50px;flex:none;padding:10px">&#8634;</button>
   </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <input type="date" id="hist-date" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);outline:none;flex:1;min-width:130px">
+    <button onclick="document.getElementById('hist-date').value='';renderHistorial()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--muted)">&#10006; Fecha</button>
+    <div style="display:flex;border:1.5px solid var(--border);border-radius:9px;overflow:hidden">
+      <button id="view-grouped" onclick="setHistView('grouped')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--blue);color:#fff">Agrupado</button>
+      <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Por escaneo</button>
+    </div>
+  </div>
   <div id="rec-list"></div>
 </div>
 
@@ -368,6 +376,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="db-cast-prog"></div>
 </div>
 
+<!-- CONSIGNMENT SUMMARY IN DASHBOARD -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Estado de Consignments</div>
+  <div id="db-cons-summary"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Carga un consignment en la tab Consignment</div></div>
+</div>
+
 <!-- PIVOT -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Pivot — Producto × WO</div>
@@ -379,6 +393,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- TABLA -->
 <div class="pbi-card">
   <div class="pbi-card-title">Detalle de registros <span id="tbl-count" style="font-size:10px;color:#007aff;text-transform:none;font-weight:600"></span></div>
+  <input id="db-search" type="text" placeholder="Buscar coil, cast, producto, WO..." style="width:100%;padding:10px 13px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:#f8fafc;margin-bottom:10px;box-sizing:border-box">
   <div style="overflow-x:auto">
     <table class="tbl pbi-tbl">
       <thead><tr><th>Maquina</th><th>Fecha / Hora</th><th>WO</th><th>Producto</th><th>Cast</th><th>Coil</th><th>Peso</th></tr></thead>
@@ -441,6 +456,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="bal-card">
     <div class="bal-hdr">Historial de produccion</div>
     <div id="prod-hist-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros</div></div>
+  </div>
+
+  <!-- Historial de cambios -->
+  <div class="bal-card">
+    <div class="bal-hdr">Historial de ediciones <button onclick="renderChangeLog()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
+    <div id="change-log-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin ediciones registradas</div></div>
   </div>
 </div>
 
@@ -689,7 +710,7 @@ function goTab(n) {
     if(p)p.classList.toggle('on',t===n);
     if(tb)tb.classList.toggle('on',t===n);
   });
-  if (n === 'hist') renderList(records);
+  if (n === 'hist') renderHistorial();
   if (n === 'dash') renderDash();
   if (n === 'prod') loadProduccion();
   if (n === 'cons') loadConsignments();
@@ -928,12 +949,7 @@ function renderList(list) {
   });
 }
 function filterRecords() {
-  var q = document.getElementById('search-inp').value.toLowerCase();
-  var wo = document.getElementById('wo-filter').value.toLowerCase();
-  renderList(records.filter(function(r) {
-    return (!q || [r.producto,r.coil,r.cast,r.operario,r.notas].some(function(v){return(v||'').toLowerCase().indexOf(q)>=0;})) &&
-           (!wo || (r.wo||'').toLowerCase().indexOf(wo)>=0);
-  }));
+  renderHistorial();
 }
 function openModal(r) {
   activeRec = r;
@@ -1108,6 +1124,8 @@ function renderDash() {
   // Cast progress
   renderCastProgressDB(data);
 
+  // Consignment summary
+  renderConsSummaryDash();
   // Pivot
   renderPivot2(data);
 
@@ -1232,7 +1250,11 @@ function toggleDarkMode() {
 }
 function clearFilters() { clearDashFilters(); }
 function renderTable(data) {
-  document.getElementById('tbl-body').innerHTML = data.slice(0,500).map(function(r) {
+  var searchEl = document.getElementById('db-search');
+  var q = searchEl ? searchEl.value.toLowerCase().trim() : '';
+  var filtered = q ? data.filter(function(r){return [r.coil,r.cast,r.producto,r.wo,r.maquina].some(function(v){return(v||'').toLowerCase().indexOf(q)>=0;});}) : data;
+  if (document.getElementById('tbl-count')) document.getElementById('tbl-count').textContent = '('+filtered.length+' de '+data.length+')';
+  document.getElementById('tbl-body').innerHTML = filtered.slice(0,200).map(function(r) {
     var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
     return '<tr>' +
@@ -1456,6 +1478,8 @@ async function loadProduccion() {
 
   renderBalance();
   renderProdHist();
+  renderChangeLog();
+  checkStockAlerts();
 }
 
 async function saveProduccion() {
@@ -1887,6 +1911,15 @@ async function saveEdit() {
   var cast = document.getElementById('edit-cast').value.trim();
   var coil = document.getElementById('edit-coil').value.trim();
   var statusEl = document.getElementById('edit-status');
+  // Validate coil not duplicate (unless same record)
+  if (coil && coil !== _editRec.coil) {
+    var dup = records.find(function(r){return r.coil===coil && r.id!==_editRec.id;});
+    if (dup) {
+      statusEl.textContent = 'Error: Coil '+coil+' ya existe ('+new Date(dup.created_at).toLocaleDateString('es')+')';
+      statusEl.style.color = '#ff3b30';
+      return;
+    }
+  }
   statusEl.textContent = 'Guardando...';
   statusEl.style.color = '#007aff';
   try {
@@ -1898,7 +1931,12 @@ async function saveEdit() {
     if (resp.ok) {
       statusEl.textContent = 'Guardado';
       statusEl.style.color = '#34c759';
+      // Log the change
+      if (peso !== (_editRec.peso||'')) logChange(_editRec.id, 'peso', _editRec.peso, peso);
+      if ((cast||_editRec.cast) !== _editRec.cast) logChange(_editRec.id, 'cast', _editRec.cast, cast);
+      if ((_editMaq||_editRec.maquina) !== _editRec.maquina) logChange(_editRec.id, 'maquina', _editRec.maquina, _editMaq);
       await loadRecords();
+      checkStockAlerts();
       renderList(records);
       closeModal();
       setTimeout(closeEditModal, 800);
@@ -1911,6 +1949,182 @@ async function saveEdit() {
     statusEl.textContent = 'Error: ' + e.message;
     statusEl.style.color = '#ff3b30';
   }
+}
+
+// ============ CONSIGNMENT SUMMARY IN DASHBOARD ============
+function renderConsSummaryDash() {
+  var el = document.getElementById('db-cons-summary');
+  if (!el) return;
+  if (!_consignments || !_consignments.length) {
+    el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin consignments cargados</div>';
+    return;
+  }
+  var refs = {};
+  _consignments.forEach(function(r) {
+    var k = r.referencia || 'Sin ref';
+    if (!refs[k]) refs[k] = {items:[], fecha:r.fecha};
+    refs[k].items.push(r);
+  });
+  el.innerHTML = Object.keys(refs).map(function(ref) {
+    var g = refs[ref];
+    var ton = g.items.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
+    var scanned = g.items.filter(function(r){return isCoilScanned(r.lot_no);}).length;
+    var missing = g.items.length - scanned;
+    var pct = Math.round((scanned/g.items.length)*100);
+    var color = pct===100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div>' +
+          '<span style="font-size:13px;font-weight:700;color:#1a2332">Ref: '+esc(ref)+'</span>' +
+          (g.fecha?' <span style="font-size:11px;color:#8e9aab">'+esc(g.fecha)+'</span>':'') +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<span style="font-size:13px;font-weight:700;color:'+color+'">'+scanned+'/'+g.items.length+'</span>' +
+          '<span style="font-size:11px;color:#8e9aab;margin-left:4px">'+ton.toFixed(3)+'t</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#f0f2f5;border-radius:4px;height:8px;overflow:hidden">' +
+        '<div style="height:100%;border-radius:4px;background:'+color+';width:'+pct+'%;transition:width .4s"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:3px">' +
+        '<span style="font-size:11px;color:#34c759;font-weight:600">✓ '+scanned+' escaneados</span>' +
+        (missing>0?'<span style="font-size:11px;color:#ff3b30;font-weight:600">✗ '+missing+' faltantes</span>':'<span style="font-size:11px;color:#34c759;font-weight:600">✓ Completo</span>') +
+        '<span style="font-size:11px;color:#8e9aab;font-weight:600">'+pct+'%</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ============ STOCK ALERT ============
+function checkStockAlerts() {
+  if (!_produccion || !_produccion.length) return;
+  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean));
+  var alerts = [];
+  wos.forEach(function(wo) {
+    var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
+    var producido = _produccion.filter(function(p){return p.wo===wo;}).reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
+    var stock = entrada - producido;
+    if (stock < 0) alerts.push('WO '+wo+': stock negativo ('+stock.toFixed(3)+'t)');
+    else if (stock < 0.5 && producido > 0) alerts.push('WO '+wo+': stock bajo ('+stock.toFixed(3)+'t)');
+  });
+  if (alerts.length) {
+    setStatus('Alerta: '+alerts.join(' | '), 'warn');
+  }
+}
+
+// ============ CHANGE LOG ============
+var _changeLog = [];
+
+function logChange(recId, field, oldVal, newVal) {
+  _changeLog.unshift({
+    ts: new Date().toISOString(),
+    id: recId,
+    field: field,
+    from: oldVal,
+    to: newVal
+  });
+  // Save to localStorage
+  try { localStorage.setItem('coil_changelog', JSON.stringify(_changeLog.slice(0,100))); } catch(e) {}
+}
+
+function loadChangeLog() {
+  try {
+    var saved = localStorage.getItem('coil_changelog');
+    if (saved) _changeLog = JSON.parse(saved);
+  } catch(e) { _changeLog = []; }
+}
+
+function renderChangeLog() {
+  var el = document.getElementById('change-log-list');
+  if (!el) return;
+  if (!_changeLog.length) {
+    el.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin ediciones registradas</div>';
+    return;
+  }
+  var fieldNames = {peso:'Peso',cast:'Cast',coil:'Coil',maquina:'Maquina',wo:'WO'};
+  el.innerHTML = _changeLog.map(function(log) {
+    var d = new Date(log.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return '<div style="padding:10px 0;border-bottom:1px solid #f2f2f7;display:flex;align-items:center;gap:10px">' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600">' + (fieldNames[log.field]||log.field) + ': ' +
+          '<span style="color:#ff3b30;text-decoration:line-through">' + esc(String(log.from||'-')) + '</span>' +
+          ' → <span style="color:#34c759">' + esc(String(log.to||'-')) + '</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#8e8e93;margin-top:2px">ID: '+esc(log.id.substring(0,8))+'... · '+d+'</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+var _histView = 'grouped';
+
+function setHistView(v) {
+  _histView = v;
+  document.getElementById('view-grouped').style.background = v==='grouped' ? 'var(--blue)' : 'var(--bg)';
+  document.getElementById('view-grouped').style.color = v==='grouped' ? '#fff' : 'var(--muted)';
+  document.getElementById('view-flat').style.background = v==='flat' ? 'var(--blue)' : 'var(--bg)';
+  document.getElementById('view-flat').style.color = v==='flat' ? '#fff' : 'var(--muted)';
+  renderHistorial();
+}
+
+function getHistDate() {
+  var el = document.getElementById('hist-date');
+  return el ? el.value : '';
+}
+
+function renderHistorial() {
+  var q = (document.getElementById('search-inp')||{}).value ? document.getElementById('search-inp').value.toLowerCase() : '';
+  var wo = (document.getElementById('wo-filter')||{}).value ? document.getElementById('wo-filter').value.toLowerCase() : '';
+  var dateFilter = getHistDate();
+  var filtered = records.filter(function(r) {
+    if (q && ![r.producto,r.coil,r.cast,r.operario,r.notas].some(function(v){return(v||'').toLowerCase().indexOf(q)>=0;})) return false;
+    if (wo && (r.wo||'').toLowerCase().indexOf(wo)<0) return false;
+    if (dateFilter && r.created_at) {
+      var d = new Date(r.created_at).toISOString().slice(0,10);
+      if (d !== dateFilter) return false;
+    }
+    return true;
+  });
+  if (_histView === 'flat') {
+    renderFlatList(filtered);
+  } else {
+    renderList(filtered);
+  }
+}
+
+function renderFlatList(list) {
+  var el = document.getElementById('rec-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Sin registros</div></div>';
+    return;
+  }
+  // Sort by created_at descending
+  var sorted = list.slice().sort(function(a,b){
+    return new Date(b.created_at||0) - new Date(a.created_at||0);
+  });
+  el.innerHTML = '';
+  sorted.forEach(function(r, i) {
+    var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    var mc = r.maquina==='EVG'?'#007aff':r.maquina==='PITTINI'?'#af52de':'#8e8e93';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--card);border-radius:12px;padding:13px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;cursor:pointer';
+    card.innerHTML =
+      '<div style="font-size:13px;font-weight:800;color:var(--muted);min-width:28px;text-align:center">' + (i+1) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">' +
+          '<span style="font-size:14px;font-weight:700">'+esc(r.coil||'Sin coil')+'</span>' +
+          (r.maquina?'<span style="font-size:11px;font-weight:700;color:'+mc+'">'+esc(r.maquina)+'</span>':'') +
+          (r.wo?'<span style="background:#fff8e8;color:#7a5c00;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px">'+esc(r.wo)+'</span>':'') +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--muted)">'+esc(normalizeProductoKey(r.producto)||'')+'  ·  Cast: '+esc(r.cast||'—')+'</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">&#128337; '+d+'</div>' +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0">' +
+        '<div style="font-size:16px;font-weight:700;color:var(--blue)">'+esc(r.peso||'—')+'t</div>' +
+      '</div>';
+    card.addEventListener('click', function(){openModal(r);});
+    el.appendChild(card);
+  });
 }
 
 window.addEventListener('load', function() {
@@ -1927,10 +2141,15 @@ window.addEventListener('load', function() {
   safe('btn-share','click',shareData);
   safe('search-inp','input',filterRecords);
   safe('wo-filter','input',filterRecords);
+  safe('hist-date','change',renderHistorial);
+  safe('db-search','input',renderDash);
+  safe('db-search','input',function(){renderDash();});
+  safe('wo-filter','input',filterRecords);
   var mbg=document.getElementById('modal-bg');
   if(mbg)mbg.addEventListener('click',function(e){if(e.target===this)closeModal();});
   var pdfIn=document.getElementById('pdf-in');
   if(pdfIn)pdfIn.addEventListener('change',handlePDFUpload);
+  loadChangeLog();
   loadRecords();
 });
 </script>
