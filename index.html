@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coil Scanner">
-<link rel="manifest" href="/manifest.json">
 <title>Coil Scanner</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1837,7 +1836,6 @@ window.addEventListener('load', function() {
   if(mbg)mbg.addEventListener('click',function(e){if(e.target===this)closeModal();});
   var pdfIn=document.getElementById('pdf-in');
   if(pdfIn)pdfIn.addEventListener('change',handlePDFUpload);
-  requestNotifications();
   loadRecords();
 });
 </script>
