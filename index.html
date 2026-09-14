@@ -1601,16 +1601,27 @@ function renderSavedCons() {
     var g = refs[ref];
     var ton = g.items.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
     var scanned = g.items.filter(function(r){return isCoilScanned(r.lot_no);}).length;
-    return '<div style="padding:12px 0;border-bottom:1px solid #f2f2f7;cursor:pointer" onclick="showConsMatch(\'' + ref + '\')">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
-        '<div style="font-size:14px;font-weight:700;color:#1c1c1e">Ref: '+esc(ref)+'</div>'+
-        '<div style="font-size:13px;font-weight:700;color:#007aff">'+ton.toFixed(3)+'t</div>'+
+    var missing = g.items.length - scanned;
+    var prods = unique(g.items.map(function(r){return r.producto;}).filter(Boolean));
+    var pct = g.items.length > 0 ? Math.round((scanned/g.items.length)*100) : 0;
+    return '<div style="padding:14px 0;border-bottom:1px solid #f2f2f7;cursor:pointer" onclick="showConsMatch(\'' + ref + '\')">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+        '<div>'+
+          '<div style="font-size:14px;font-weight:700;color:#1c1c1e">Ref: '+esc(ref)+'</div>'+
+          '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+prods.map(function(p){return'<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:3px">'+esc(p)+'</span>';}).join('')+(g.fecha?' · '+esc(g.fecha):'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:15px;font-weight:700;color:#007aff">'+ton.toFixed(3)+'t</div>'+
+          '<div style="font-size:10px;color:#8e8e93">'+g.items.length+' coils</div>'+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:10px;font-size:12px;color:#8e8e93">'+
-        '<span>'+g.items.length+' coils</span>'+
-        '<span style="color:#34c759;font-weight:600">'+scanned+' escaneados</span>'+
-        '<span style="color:#ff3b30;font-weight:600">'+(g.items.length-scanned)+' faltantes</span>'+
-        (g.fecha?'<span>'+esc(g.fecha)+'</span>':'')+
+      '<div style="background:#f2f2f7;border-radius:4px;height:6px;overflow:hidden;margin-bottom:5px">'+
+        '<div style="height:100%;border-radius:4px;background:'+(pct===100?'#34c759':'#007aff')+';width:'+pct+'%"></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:12px;font-size:11px;font-weight:600">'+
+        '<span style="color:#34c759">✓ '+scanned+' escaneados</span>'+
+        (missing>0?'<span style="color:#ff3b30">✗ '+missing+' faltantes</span>':'')+
+        '<span style="color:#8e8e93">'+pct+'% completado</span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1624,7 +1635,10 @@ function isCoilScanned(lotNo) {
 
 function showConsMatch(ref) {
   var items = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
+  var prods2 = unique(items.map(function(r){return r.producto;}).filter(Boolean));
   document.getElementById('cons-ref-lbl').textContent = 'Ref: '+ref;
+  var prodEl = document.getElementById('cons-prod-lbl');
+  if (prodEl) prodEl.innerHTML = prods2.map(function(p){return'<span style="background:#f0f5ff;color:#007aff;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:4px">'+esc(p)+'</span>';}).join('');
   document.getElementById('cons-kpis').style.display = 'grid';
   document.getElementById('cons-ton-summary').style.display = 'block';
   document.getElementById('cons-filters').style.display = 'flex';
@@ -1694,13 +1708,17 @@ function renderConsList(items) {
     var scanRec = st==='ok' ? records.find(function(rec){return String(rec.coil||'').trim()===String(r.lot_no||'').trim();}) : null;
     var row = document.createElement('div');
     row.className = 'match-row';
+    var prodLabel = r.producto ? '<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;margin-left:4px">'+esc(r.producto)+'</span>' : '';
     row.innerHTML =
       '<div class="match-dot" style="background:'+dotColor+'"></div>'+
       '<div class="match-info">'+
-        '<div class="match-coil">'+esc(r.lot_no||'')+'</div>'+
-        '<div class="match-sub">Cast: '+esc(r.cast_no||'')+' · '+parseFloat(r.peso||0).toFixed(3)+'t'+(scanRec&&scanRec.maquina?' · '+esc(scanRec.maquina):'')+(scanRec&&scanRec.wo?' · WO: '+esc(scanRec.wo):'')+'</div>'+
+        '<div class="match-coil" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+esc(r.lot_no||'')+prodLabel+'</div>'+
+        '<div class="match-sub">Cast: '+esc(r.cast_no||'')+' · '+parseFloat(r.peso||0).toFixed(3)+'t'+(scanRec&&scanRec.maquina?' · <b style="color:'+(scanRec.maquina==='EVG'?'#007aff':'#af52de')+'">'+esc(scanRec.maquina)+'</b>':'')+(scanRec&&scanRec.wo?' · <span style="background:#fff8e8;color:#7a5c00;border-radius:3px;padding:1px 5px;font-weight:700">'+esc(scanRec.wo)+'</span>':'')+'</div>'+
       '</div>'+
-      '<span class="match-status '+stClass+'">'+stLabel+'</span>';
+      '<div style="text-align:right;flex-shrink:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#1c1c1e">'+parseFloat(r.peso||0).toFixed(3)+'t</div>'+
+        '<span class="match-status '+stClass+'">'+stLabel+'</span>'+
+      '</div>';
     list.appendChild(row);
   });
 }
