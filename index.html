@@ -3,10 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#007aff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coil Scanner">
+<link rel="manifest" href="/manifest.json">
 <title>Coil Scanner</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--card:#2c2c2e;--border:#3a3a3c;--text:#fff;--muted:#8e8e93}}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
@@ -137,7 +144,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <body>
 <div class="nav">
   <div class="nav-title">&#128297; Coil Scanner</div>
-  <div class="nav-pill" id="nav-pill">0 registros</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="shareDailySummary()" title="Resumen del dia" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px">&#128200;</button>
+    <button onclick="requestNotifications();toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px" id="dark-btn">&#9790;</button>
+    <div class="nav-pill" id="nav-pill">0 registros</div>
+  </div>
 </div>
 <div class="tabs">
   <button class="tab on" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
@@ -359,9 +370,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
+<!-- CAST PROGRESS -->
+<div class="db2-card">
+  <div class="db2-hdr">Progreso por Cast <span class="db2-hdr-val">meta: 48 coils</span></div>
+  <div id="cast-progress"></div>
+</div>
+
 <!-- CAST BARS -->
 <div class="db2-card">
-  <div class="db2-hdr">Por Cast <span class="db2-hdr-val" id="cast-tot-lbl"></span></div>
+  <div class="db2-hdr">Toneladas por Cast <span class="db2-hdr-val" id="cast-tot-lbl"></span></div>
   <div id="cast-bars"></div>
 </div>
 
@@ -567,6 +584,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div id="m-fields"></div>
       <div class="modal-btns">
         <button class="modal-del" id="btn-del">&#128465; Eliminar</button>
+        <button onclick="if(activeRec)editRecord(activeRec)" style="flex:1;padding:13px;background:#ff9500;color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">&#9998; Editar</button>
         <button class="modal-close" id="btn-modal-close">Cerrar</button>
       </div>
     </div>
@@ -820,7 +838,19 @@ function showResult(d, wo) {
 async function loadRecords() {
   try {
     var resp = await fetch('/records');
-    records = await resp.json();
+    var newRecords = await resp.json();
+    // Check for newly completed casts
+    if (records.length > 0) {
+      var oldCasts = {};
+      records.forEach(function(r){if(r.cast)oldCasts[r.cast]=(oldCasts[r.cast]||0)+1;});
+      newRecords.forEach(function(r){
+        if(r.cast && (oldCasts[r.cast]||0) < 48) {
+          var newCount = newRecords.filter(function(x){return x.cast===r.cast;}).length;
+          if (newCount >= 48) checkCastCompletion(r.cast);
+        }
+      });
+    }
+    records = newRecords;
     document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
     renderWoChips();
   } catch(e) { records = []; }
@@ -1033,6 +1063,7 @@ function renderDash() {
   renderDonut2('donut-wo','donut-wo-leg',byWO,function(k){document.getElementById('f-wo').value=(k==='Sin WO'?'':k);renderDash();});
 
   // Bars
+  document.getElementById('cast-progress').innerHTML = renderCastProgress();
   document.getElementById('cast-tot-lbl').textContent = tot.toFixed(3)+'t — '+Object.keys(groupSum(data,function(r){return r.cast||'';})).length+' casts';
   renderBars2('cast-bars',groupSum(data,function(r){return r.cast||'Sin Cast';}),tot,function(k){document.getElementById('f-cast').value=(k==='Sin Cast'?'':k);renderDash();});
 
@@ -1227,6 +1258,23 @@ function makeChart(title, byKey, ft) {
     h += '<div class="brow"><span class="brow-lbl'+(isLink?' link':'')+'"'+(isLink?' data-ft="'+ft+'" data-fv="'+esc(e[0])+'"':'')+' title="'+esc(e[0])+'">'+esc(e[0])+'</span><div class="brow-track"><div class="brow-fill" style="width:'+(Math.round((e[1]/mx)*88)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(3)+'t</div></div><span class="brow-val">'+Math.round((e[1]/totV)*100)+'%</span></div>';
   });
   return h + '</div>';
+}
+var _darkMode = false;
+function toggleDarkMode() {
+  _darkMode = !_darkMode;
+  document.documentElement.style.setProperty('color-scheme', _darkMode ? 'dark' : 'light');
+  document.getElementById('dark-btn').textContent = _darkMode ? '☀' : '☾';
+  if (_darkMode) {
+    document.documentElement.style.setProperty('--bg', '#1c1c1e');
+    document.documentElement.style.setProperty('--card', '#2c2c2e');
+    document.documentElement.style.setProperty('--border', '#3a3a3c');
+    document.documentElement.style.setProperty('--text', '#fff');
+  } else {
+    document.documentElement.style.setProperty('--bg', '#f2f2f7');
+    document.documentElement.style.setProperty('--card', '#fff');
+    document.documentElement.style.setProperty('--border', '#e5e5ea');
+    document.documentElement.style.setProperty('--text', '#1c1c1e');
+  }
 }
 function clearFilters() { ['f-prod','f-cast','f-wo','f-maq'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); renderDash(); }
 function renderTable(data) {
@@ -1700,6 +1748,7 @@ function renderConsList(items) {
     return;
   }
   list.innerHTML = '';
+  toShow.reverse();
   toShow.forEach(function(item) {
     var r = item.r, st = item.st;
     var dotColor = st==='ok'?'#34c759':st==='miss'?'#ff3b30':'#ff9500';
@@ -1736,69 +1785,61 @@ async function handlePDFUpload(e) {
   var status = document.getElementById('pdf-status');
   var prog = document.getElementById('pdf-progress');
   var fill = document.getElementById('pdf-prog-fill');
-  var txt = document.getElementById('pdf-prog-txt');
-
-  status.textContent = 'Procesando PDF...';
-  status.style.color = '#007aff';
-  prog.style.display = 'block';
-  fill.style.width = '10%';
-  txt.textContent = 'Cargando PDF.js...';
-
-  try {
-    if (!window.pdfjsLib) {
-      await new Promise(function(res, rej) {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
-
-    fill.style.width = '20%';
-    txt.textContent = 'Leyendo PDF...';
-
-    var arrayBuffer = await file.arrayBuffer();
-    var pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
-    var numPages = pdf.numPages;
-    var allRows = [];
-
-    for (var pageNum = 1; pageNum <= numPages; pageNum++) {
-      fill.style.width = (20 + (pageNum/numPages)*60)+'%';
-      txt.textContent = 'Analizando pagina '+pageNum+' de '+numPages+'...';
-
-      var page = await pdf.getPage(pageNum);
-      var viewport = page.getViewport({scale: 2.5});
-      var canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
-      var imgBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
-
-      var resp = await fetch('/extractpdf', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
-      });
-      var data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
-      if (data.rows) allRows = allRows.concat(data.rows);
-    }
-
-    fill.style.width = '100%';
-    status.textContent = '✓ ' + allRows.length + ' coils importados';
-    status.style.color = '#34c759';
-    await loadConsignments();
-    setTimeout(function(){prog.style.display='none';}, 2000);
-
-  } catch(err) {
-    status.textContent = '✗ ' + err.message;
-    status.style.color = '#ff3b30';
-    prog.style.display = 'none';
+  var txt = 'Resumen Coil Scanner\n' + fecha + '\n\n';
+  txt += 'Total: ' + todayRecs.length + ' coils / ' + ton.toFixed(3) + 't\n\n';
+  if (Object.keys(byMaq).length > 1 || byMaq['EVG'] || byMaq['PITTINI']) {
+    txt += 'Por maquina:\n';
+    Object.keys(byMaq).forEach(function(m){ txt += '  ' + m + ': ' + byMaq[m].toFixed(3) + 't\n'; });
+    txt += '\n';
+  }
+  txt += 'Por producto:\n';
+  Object.keys(byProd).forEach(function(p){ txt += '  ' + p + ': ' + byProd[p].toFixed(3) + 't\n'; });
+  if (wos.length) { txt += '\nWOs: ' + wos.join(', '); }
+  if (navigator.share) {
+    navigator.share({title:'Coil Scanner - '+fecha, text:txt});
+  } else {
+    navigator.clipboard.writeText(txt).then(function(){setStatus('Resumen copiado al portapapeles', 'ok');});
   }
 }
 
+// ============ CAST PROGRESS VIEW ============
+function renderCastProgress() {
+  var byCast = {};
+  records.forEach(function(r){
+    if (!r.cast) return;
+    if (!byCast[r.cast]) byCast[r.cast] = {coils:0, ton:0, prod:r.producto};
+    byCast[r.cast].coils++;
+    byCast[r.cast].ton += parseTon(r.peso);
+  });
+  var TARGET = 48;
+  return Object.keys(byCast).map(function(cast) {
+    var d = byCast[cast];
+    var pct = Math.min(Math.round((d.coils/TARGET)*100), 100);
+    var color = pct >= 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
+    return '<div style="margin-bottom:12px">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+        '<div style="font-size:12px;font-weight:700">Cast: '+esc(cast)+(d.prod?' <span style="font-size:10px;color:#8e8e93;font-weight:400">'+esc(normalizeProductoKey(d.prod))+'</span>':'')+'</div>'+
+        '<div style="font-size:12px;font-weight:700;color:'+color+'">'+d.coils+'/'+TARGET+' ('+pct+'%)</div>'+
+      '</div>'+
+      '<div style="background:#f2f2f7;border-radius:5px;height:10px;overflow:hidden">'+
+        '<div style="height:100%;border-radius:5px;background:'+color+';width:'+pct+'%;transition:width .3s"></div>'+
+      '</div>'+
+      '<div style="font-size:10px;color:#8e8e93;margin-top:2px">'+d.ton.toFixed(3)+'t escaneadas</div>'+
+    '</div>';
+  }).join('');
+}
 
+// ============ SERVICE WORKER (offline) ============
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(){});
+}
+
+// ============ NOTIFICATIONS PERMISSION ============
+function requestNotifications() {
+  if (Notification && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
 
 window.addEventListener('load', function() {
   document.getElementById('file-in').addEventListener('change', onFiles);
