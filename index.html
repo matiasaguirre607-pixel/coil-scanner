@@ -555,6 +555,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <button onclick="var wo=document.getElementById('sel-wo-inp').value.trim();if(wo)assignWOToSelected(wo);else alert('Escribi la WO');" style="padding:9px 16px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Asignar WO</button>
   <button onclick="_selectedIds={};updateSelectionBar();document.querySelectorAll('.coil-chk').forEach(function(cb){cb.checked=false;});" style="padding:9px 12px;background:#636366;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">Cancelar</button>
 </div>
+<div id="edit-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:20px 16px 30px">
+    <div style="width:36px;height:4px;background:#e5e5ea;border-radius:99px;margin:0 auto 16px"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Editar registro</div>
+    <div style="font-size:12px;color:#8e8e93;margin-bottom:16px" id="edit-coil-lbl"></div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Peso (toneladas)</label>
+      <input id="edit-peso" type="number" step="0.001" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 1.475">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Cast</label>
+      <input id="edit-cast" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 534735">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Coil</label>
+      <input id="edit-coil" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 6260300548">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeEditModal()" style="flex:1;padding:13px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancelar</button>
+      <button onclick="saveEdit()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Guardar cambios</button>
+    </div>
+    <div id="edit-status" style="text-align:center;font-size:13px;margin-top:10px;min-height:18px"></div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1817,6 +1841,56 @@ async function handlePDFUpload(e) {
   }
 }
 
+
+var _editRec = null;
+
+function editRecord(r) {
+  _editRec = r;
+  document.getElementById('edit-coil-lbl').textContent = 'Coil: ' + (r.coil||'') + ' — Cast: ' + (r.cast||'');
+  document.getElementById('edit-peso').value = r.peso || '';
+  document.getElementById('edit-cast').value = r.cast || '';
+  document.getElementById('edit-coil').value = r.coil || '';
+  document.getElementById('edit-status').textContent = '';
+  var bg = document.getElementById('edit-modal-bg');
+  bg.style.cssText = 'display:flex;flex-direction:column;justify-content:flex-end;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;align-items:center';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal-bg').style.display = 'none';
+  _editRec = null;
+}
+
+async function saveEdit() {
+  if (!_editRec) return;
+  var peso = normalizePeso(document.getElementById('edit-peso').value);
+  var cast = document.getElementById('edit-cast').value.trim();
+  var coil = document.getElementById('edit-coil').value.trim();
+  var statusEl = document.getElementById('edit-status');
+  statusEl.textContent = 'Guardando...';
+  statusEl.style.color = '#007aff';
+  try {
+    var resp = await fetch('/updatewo', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id: _editRec.id, wo: _editRec.wo, peso: peso, cast: cast||_editRec.cast, coil: coil||_editRec.coil})
+    });
+    if (resp.ok) {
+      statusEl.textContent = 'Guardado';
+      statusEl.style.color = '#34c759';
+      await loadRecords();
+      renderList(records);
+      closeModal();
+      setTimeout(closeEditModal, 800);
+      setStatus('Registro actualizado', 'ok');
+    } else {
+      statusEl.textContent = 'Error al guardar';
+      statusEl.style.color = '#ff3b30';
+    }
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+    statusEl.style.color = '#ff3b30';
+  }
+}
 
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
