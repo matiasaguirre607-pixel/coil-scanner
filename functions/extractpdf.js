@@ -5,35 +5,37 @@ export async function onRequestPost(context) {
 
   let body;
   try { body = await context.request.json(); } catch(e) { return rj({error:"Body invalido"},400); }
-  const { pdfBase64 } = body;
-  if (!pdfBase64) return rj({error:"Sin PDF"},400);
+  const { imageBase64, mediaType } = body;
+  if (!imageBase64) return rj({error:"Sin imagen"},400);
 
   const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       contents: [{parts: [
-        {inline_data: {mime_type: "application/pdf", data: pdfBase64}},
-        {text: "Extract all coil data from this Pacific Steel consignment note. Return ONLY a JSON array, no markdown, no explanation: [{\"referencia\":\"R810242355\",\"fecha\":\"14/08/26\",\"cast_no\":\"534735-01\",\"lot_no\":\"6261990075\",\"producto\":\"9.0 Ductile Rod\",\"peso\":1.435}]. Include every row. referencia=Pacific Steel Reference number, fecha=DATE field, cast_no=Cast No column, lot_no=Lot no column, producto=Product column, peso=Weight/tns as number."}
+        {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
+        {text: "This is a Pacific Steel consignment note. Extract ALL rows from the table and return ONLY a JSON array with no other text:\n[{\"referencia\":\"R810242355\",\"fecha\":\"14/08/26\",\"cast_no\":\"534735-01\",\"lot_no\":\"6261990075\",\"producto\":\"9.0 Ductile Rod\",\"peso\":1.435}]\nreferencia = the Pacific Steel Reference number (top right)\nfecha = the DATE field\ncast_no = Cast No column\nlot_no = Lot no column\nproducto = Product column\npeso = Weight/tns column as a number\nInclude EVERY row. Return empty array [] if no table found."}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 8192}
+      generationConfig: {temperature: 0, maxOutputTokens: 4096}
     })
   });
 
   const gd = await gr.json();
   if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
 
-  const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
   let rows;
   try {
     const clean = raw.replace(/```json/gi,"").replace(/```/g,"").trim();
     rows = JSON.parse(clean);
+    if (!Array.isArray(rows)) rows = [];
   } catch(e) {
-    return rj({error: "No se pudo parsear. Raw: " + raw.substring(0,200)}, 422);
+    return rj({error: "Parse error: " + raw.substring(0,150)}, 422);
   }
 
   let saved = 0;
   for (const r of rows) {
+    if (!r.lot_no) continue;
     const resp = await fetch(SB_BASE+"/rest/v1/consignments", {
       method: "POST",
       headers: {"Content-Type":"application/json", apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, Prefer:"return=minimal"},
@@ -41,7 +43,7 @@ export async function onRequestPost(context) {
         referencia: r.referencia||null,
         fecha: r.fecha||null,
         cast_no: r.cast_no||null,
-        lot_no: r.lot_no||null,
+        lot_no: String(r.lot_no),
         producto: r.producto||null,
         peso: parseFloat(r.peso)||null
       })
