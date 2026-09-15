@@ -324,44 +324,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   .pbi-hdr { margin: -20px -48px 16px -48px; padding: 10px 48px; }
 }
 
-/* ===== DESKTOP (900px+) ===== */
-@media (min-width: 900px) {
-  .pane { max-width: 100%; padding: 24px 40px 60px; }
-  
-  /* Dashboard KPI 4-col */
-  .pbi-row-2col { display: grid !important; grid-template-columns: 1fr 1fr 1fr 1fr !important; }
-  
-  /* Dashboard side-by-side sections */
-  .db-desktop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
-  .db-desktop-grid .pbi-card { margin-bottom: 0; }
-
-  /* Filter bar sticky */
-  .pbi-hdr { position: sticky; top: 0; z-index: 20; margin: -24px -40px 16px; padding: 12px 40px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-
-  /* Scan: center column */
-  #p-scan.on { max-width: 640px; margin: 0 auto; }
-
-  /* Historial flat: 2 cols */
-  .hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .hist-grid .flat-card { margin-bottom: 0 !important; }
-
-  /* Produccion: 2 cols */
-  .prod-desktop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  .prod-desktop-grid .bal-card { margin-bottom: 0; }
-
-  /* Consignment: 2 cols */
-  .cons-desktop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  .cons-desktop-grid .cons-card { margin-bottom: 0; }
-  
-  /* Nav tabs don't wrap */
-  .tabs { overflow-x: auto; }
-  .tab { padding: 0 24px; font-size: 14px; }
-}
-
-@media (min-width: 1400px) {
-  .pane { padding: 24px 80px 60px; }
-  .pbi-hdr { margin: -24px -80px 16px; padding: 12px 80px; }
-}
 </style>
 </head>
 <body>
@@ -626,7 +588,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <!-- MAQUINA DISTRIBUCION + PRODUCTO -->
-<div class="db-desktop-grid"><div class="pbi-row" style="grid-template-columns:1fr 1fr">
+<div class="pbi-row" style="grid-template-columns:1fr 1fr">
   <div class="pbi-card">
     <div class="pbi-card-title">Distribucion por maquina</div>
     <canvas id="db-maq-donut" style="display:block;width:100%;height:120px"></canvas>
@@ -638,20 +600,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
-</div><!-- CAST PROGRESS -->
+<!-- CAST PROGRESS -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Progreso por Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">meta: 48 coils</span></div>
   <div id="db-cast-prog"></div>
 </div>
 
-<div class="db-desktop-grid">
 <!-- CONSIGNMENT SUMMARY IN DASHBOARD -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Estado de Consignments</div>
   <div id="db-cons-summary"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Carga un consignment en la tab Consignment</div></div>
 </div>
 
-</div><!-- PIVOT -->
+<!-- PIVOT -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Pivot — Producto × WO</div>
   <div style="overflow-x:auto">
