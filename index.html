@@ -638,9 +638,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
-</div></div><!-- end db-desktop-grid -->
-
-<!-- CAST PROGRESS -->
+</div><!-- CAST PROGRESS -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Progreso por Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">meta: 48 coils</span></div>
   <div id="db-cast-prog"></div>
@@ -653,9 +651,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="db-cons-summary"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Carga un consignment en la tab Consignment</div></div>
 </div>
 
-</div></div><!-- end db-desktop-grid cast+cons -->
-
-<!-- PIVOT -->
+</div><!-- PIVOT -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Pivot — Producto × WO</div>
   <div style="overflow-x:auto">
@@ -679,7 +675,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
-
 <div class="pane" id="p-prod">
   <style>
   .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
@@ -696,7 +691,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   .prod-inp:focus{border-color:#007aff;background:#fff}
   </style>
 
-  <div class="prod-desktop-grid">
   <!-- Registrar produccion -->
   <div class="bal-card">
     <div class="bal-hdr">Registrar produccion por WO</div>
@@ -732,8 +726,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div id="prod-hist-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros</div></div>
   </div>
 
-  </div><!-- end prod-desktop-grid -->
-  <!-- Historial de cambios -->
+<!-- Historial de cambios -->
   <div class="bal-card">
     <div class="bal-hdr">Historial de ediciones <button onclick="renderChangeLog()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
     <div id="change-log-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin ediciones registradas</div></div>
@@ -759,9 +752,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 </style>
 
-  <div class="cons-desktop-grid">
-  <div><!-- Upload PDF -->
-  <div class="cons-card">
+    <div class="cons-card">
     <div class="cons-hdr">Subir Consignment Note (PDF)</div>
     <div class="upload-pdf-zone" id="pdf-zone">
       <input type="file" accept=".pdf,application/pdf" id="pdf-in" multiple>
@@ -821,8 +812,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div id="cons-list"></div>
   </div>
 
-  </div><!-- end cons left col -->
-  <div><!-- Consignments saved -->
   <div class="cons-card">
     <div class="cons-hdr">Consignments guardados <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
     <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
@@ -999,6 +988,7 @@ function renderWoChips() {
   var seen = {}, wos = [];
   records.forEach(function(r) { if (r.wo && !seen[r.wo]) { seen[r.wo]=1; wos.push(r.wo); } });
   var wrap = document.getElementById('wo-chips');
+  if (!wrap) return;
   wrap.innerHTML = '';
   wos.slice(0,6).forEach(function(w) {
     var el = document.createElement('span');
@@ -1163,6 +1153,7 @@ function showResult(d, wo) {
 async function loadRecords() {
   try {
     var resp = await fetch('/records');
+    if (!resp.ok) { console.error('loadRecords error:', resp.status, resp.statusText); return; }
     var newRecords = await resp.json();
     // Check for newly completed casts
     if (records.length > 0) {
@@ -1178,11 +1169,13 @@ async function loadRecords() {
     records = newRecords;
     document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
     renderWoChips();
-  } catch(e) { records = []; }
+  } catch(e) { console.error('loadRecords exception:', e); records = []; }
 }
 function renderList(list) {
   var el = document.getElementById('rec-list');
   if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Sin registros</div></div>'; return; }
+  var container = el;
+  el.innerHTML = '';
   var groups = {};
   list.forEach(function(r) {
     var normProd = normalizeProductoKey(r.producto);
@@ -1992,7 +1985,7 @@ function renderSavedCons() {
           '<div style="font-size:15px;font-weight:700;color:#007aff">'+ton.toFixed(3)+'t</div>'+
           '<div style="font-size:10px;color:#8e8e93">'+g.items.length+' coils</div>'+
         '</div>'+
-      '</div>'+
+      ''+
       '<div style="background:#f2f2f7;border-radius:4px;height:6px;overflow:hidden;margin-bottom:5px">'+
         '<div style="height:100%;border-radius:4px;background:'+(pct===100?'#34c759':'#007aff')+';width:'+pct+'%"></div>'+
       '</div>'+
