@@ -651,6 +651,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div class="modal-title" id="m-title"></div>
       <div class="modal-date" id="m-date"></div>
       <div id="m-fields"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
+        <input id="modal-wo-inp" type="text" placeholder="Asignar WO..." style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg)">
+        <button onclick="saveModalWO()" style="padding:10px 14px;background:#34c759;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Guardar WO</button>
+      </div>
       <div class="modal-btns">
         <button class="modal-del" id="btn-del">&#128465; Eliminar</button>
         <button onclick="if(activeRec)editRecord(activeRec)" style="flex:1;padding:13px;background:#ff9500;color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">&#9998; Editar</button>
@@ -1003,6 +1007,8 @@ function filterRecords() {
 }
 function openModal(r) {
   activeRec = r;
+  var woInp = document.getElementById('modal-wo-inp');
+  if (woInp) woInp.value = r.wo || '';
   document.getElementById('m-title').textContent = r.producto || 'Registro';
   document.getElementById('m-date').textContent = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   var mf = document.getElementById('m-fields'); mf.innerHTML = '';
@@ -2472,6 +2478,27 @@ function calcProjection(wo) {
   var rate = scanned / Math.max(daysDiff, 1);
   var daysLeft = remaining / rate;
   return {scanned:scanned, total:consTotal, remaining:remaining, daysLeft:Math.ceil(daysLeft), rate:rate.toFixed(1)};
+}
+
+async function saveModalWO() {
+  if (!activeRec) return;
+  var wo = document.getElementById('modal-wo-inp').value.trim();
+  var btn = document.querySelector('#modal-wo-inp + button');
+  var orig = btn.textContent;
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  try {
+    var resp = await fetch('/updatewo', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id: activeRec.id, wo: wo})
+    });
+    if (resp.ok) {
+      btn.textContent = '✓ Guardado'; btn.style.background = '#007aff';
+      await loadRecords();
+      renderList(records);
+      setTimeout(function(){btn.textContent=orig;btn.style.background='#34c759';btn.disabled=false;}, 1500);
+    }
+  } catch(e) { btn.textContent = 'Error'; btn.disabled = false; }
 }
 
 window.addEventListener('load', function() {
