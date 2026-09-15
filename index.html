@@ -281,6 +281,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 /* ===== DESKTOP LAYOUT ===== */
 
 
+
+/* Power BI Dashboard Styles */
+.pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.pbi-hdr{background:#f8fafc;border:1.5px solid #e8ecf0;border-radius:10px;padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.pbi-seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pbi-seg-lbl{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.pbi-chip{padding:6px 14px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
+.pbi-chip:hover{border-color:#007aff;color:#007aff;background:#f0f5ff}
+.pbi-chip.on{background:#007aff;color:#fff;border-color:#007aff;box-shadow:0 2px 6px rgba(0,122,255,.3)}
+.pbi-chip.on-evg{background:#007aff;color:#fff;border-color:#007aff}
+.pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
+.pbi-row{display:grid;gap:10px;margin-bottom:10px}
+.pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
+.pbi-card-title{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #f0f2f5}
+.pbi-kpi-num{font-size:44px;font-weight:700;line-height:1;color:#1a2332}
+.pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
+.pbi-kpi-sub{font-size:14px;color:#8e9aab;margin-top:4px}
+.pbi-kpi-trend{font-size:13px;font-weight:700;margin-top:4px}
+.pbi-bar-lbl{font-size:14px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbi-bar-track{flex:1;background:#f0f2f5;border-radius:3px;height:20px;overflow:hidden}
+.pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;font-size:10px;font-weight:700;color:#fff;transition:width .35s}
+.pbi-bar-val{font-size:13px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
+.pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.pbi-tbl th{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
+.pbi-tbl td{padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:14px;color:#374151;vertical-align:middle}
+.pbi-tbl tr:hover td{background:#f8fafc}
+.pbi-tbl-val{font-weight:700;color:#007aff}
+.pbi-tbl-tot td{background:#f0f5ff;font-weight:700;border-top:2px solid #c5d8ff}
+.maq-evg{color:#007aff;font-weight:700}
+.maq-pit{color:#af52de;font-weight:700}
+.pbi-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.pbi-date-chip{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151}
+.pbi-date-chip.on{background:#1a2332;color:#fff;border-color:#1a2332}
+
+  .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
+  .bal-hdr{font-size:11px;font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .bal-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f2f2f7}
+  .bal-row:last-child{border-bottom:none}
+  .bal-wo{font-size:16px;font-weight:700;color:#1c1c1e}
+  .bal-nums{display:flex;gap:16px;text-align:right}
+  .bal-num{font-size:15px;font-weight:700}
+  .bal-lbl{font-size:12px;color:#8e8e93;font-weight:500;margin-top:1px}
+  .bar-bal{height:8px;border-radius:4px;background:#f2f2f7;margin-top:8px;overflow:hidden}
+  .bar-bal-fill{height:100%;border-radius:4px}
+  .prod-inp{width:100%;padding:12px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:inherit;background:#f8f8f8;outline:none}
+  .prod-inp:focus{border-color:#007aff;background:#fff}
+  
+.cons-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
+.cons-hdr{font-size:11px;font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.match-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f2f2f7;cursor:pointer}
+.match-row:last-child{border-bottom:none}
+.match-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.match-info{flex:1;min-width:0}
+.match-coil{font-size:15px;font-weight:700;color:#1c1c1e}
+.match-sub{font-size:13px;color:#8e8e93;margin-top:1px}
+.match-status{font-size:13px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
+.status-ok{background:#e8ffe8;color:#1a7a3c}
+.status-miss{background:#fff0f0;color:#cc0000}
+.status-extra{background:#fff8e8;color:#7a5c00}
+.upload-pdf-zone{border:2px dashed #e5e5ea;border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;background:#f8f8f8;transition:all .2s;position:relative}
+.upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
+.upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -305,7 +367,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <button class="tab" id="t-cons" onclick="goTab('cons')">&#128196; Consignment</button>
 </div>
 
-<div class="pane on" id="p-scan">
+<div class="pane" id="p-scan">
   <div class="card">
     <div class="card-title">Work Order</div>
     <div class="field" style="margin-bottom:8px">
@@ -389,40 +451,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pane" id="p-dash">
-<style>
-/* Power BI Dashboard Styles */
-.pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.pbi-hdr{background:#f8fafc;border:1.5px solid #e8ecf0;border-radius:10px;padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.pbi-seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.pbi-seg-lbl{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
-.pbi-chip{padding:6px 14px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
-.pbi-chip:hover{border-color:#007aff;color:#007aff;background:#f0f5ff}
-.pbi-chip.on{background:#007aff;color:#fff;border-color:#007aff;box-shadow:0 2px 6px rgba(0,122,255,.3)}
-.pbi-chip.on-evg{background:#007aff;color:#fff;border-color:#007aff}
-.pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
-.pbi-row{display:grid;gap:10px;margin-bottom:10px}
-.pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
-.pbi-card-title{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #f0f2f5}
-.pbi-kpi-num{font-size:44px;font-weight:700;line-height:1;color:#1a2332}
-.pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
-.pbi-kpi-sub{font-size:14px;color:#8e9aab;margin-top:4px}
-.pbi-kpi-trend{font-size:13px;font-weight:700;margin-top:4px}
-.pbi-bar-lbl{font-size:14px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pbi-bar-track{flex:1;background:#f0f2f5;border-radius:3px;height:20px;overflow:hidden}
-.pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;font-size:10px;font-weight:700;color:#fff;transition:width .35s}
-.pbi-bar-val{font-size:13px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
-.pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.pbi-tbl th{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
-.pbi-tbl td{padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:14px;color:#374151;vertical-align:middle}
-.pbi-tbl tr:hover td{background:#f8fafc}
-.pbi-tbl-val{font-weight:700;color:#007aff}
-.pbi-tbl-tot td{background:#f0f5ff;font-weight:700;border-top:2px solid #c5d8ff}
-.maq-evg{color:#007aff;font-weight:700}
-.maq-pit{color:#af52de;font-weight:700}
-.pbi-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
-.pbi-date-chip{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151}
-.pbi-date-chip.on{background:#1a2332;color:#fff;border-color:#1a2332}
-</style>
+
 
 <!-- FILTER BAR (segmentador estilo Excel) -->
 <div class="pbi-hdr">
@@ -594,20 +623,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pane" id="p-prod">
-  <style>
-  .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
-  .bal-hdr{font-size:11px;font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .bal-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f2f2f7}
-  .bal-row:last-child{border-bottom:none}
-  .bal-wo{font-size:16px;font-weight:700;color:#1c1c1e}
-  .bal-nums{display:flex;gap:16px;text-align:right}
-  .bal-num{font-size:15px;font-weight:700}
-  .bal-lbl{font-size:12px;color:#8e8e93;font-weight:500;margin-top:1px}
-  .bar-bal{height:8px;border-radius:4px;background:#f2f2f7;margin-top:8px;overflow:hidden}
-  .bar-bal-fill{height:100%;border-radius:4px}
-  .prod-inp{width:100%;padding:12px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:inherit;background:#f8f8f8;outline:none}
-  .prod-inp:focus{border-color:#007aff;background:#fff}
-  </style>
+  
 
   <!-- Registrar produccion -->
   <div class="bal-card">
@@ -654,23 +670,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pane" id="p-cons">
-<style>
-.cons-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
-.cons-hdr{font-size:11px;font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.match-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f2f2f7;cursor:pointer}
-.match-row:last-child{border-bottom:none}
-.match-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.match-info{flex:1;min-width:0}
-.match-coil{font-size:15px;font-weight:700;color:#1c1c1e}
-.match-sub{font-size:13px;color:#8e8e93;margin-top:1px}
-.match-status{font-size:13px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
-.status-ok{background:#e8ffe8;color:#1a7a3c}
-.status-miss{background:#fff0f0;color:#cc0000}
-.status-extra{background:#fff8e8;color:#7a5c00}
-.upload-pdf-zone{border:2px dashed #e5e5ea;border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;background:#f8f8f8;transition:all .2s;position:relative}
-.upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
-.upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-</style>
+
 
     <div class="cons-card">
     <div class="cons-hdr">Subir Consignment Note (PDF)</div>
@@ -2719,6 +2719,7 @@ window.addEventListener('load', function() {
   loadChangeLog();
   loadRecords();
   loadConsignments();
+  goTab('scan');
 });
 </script>
 </body>
