@@ -302,7 +302,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div id="wo-chips-dash" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
   <!-- Clear -->
-  <button onclick="clearDashFilters()" style="margin-left:auto;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#5c6b7a">&#10005; Limpiar</button>
+  <div class="pbi-seg" style="margin-left:auto;align-items:center;gap:6px">
+    <span class="pbi-seg-lbl">Meta t/dia</span>
+    <input id="meta-diaria" type="number" min="0" step="1" placeholder="0" style="width:60px;padding:4px 8px;border:1.5px solid #d0d8e0;border-radius:4px;font-size:12px;font-weight:600;text-align:center;outline:none" oninput="renderDash()">
+    <button onclick="clearDashFilters()" style="padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#5c6b7a">&#10005; Limpiar</button>
+  </div>
 </div>
 
 <!-- KPI ROW -->
@@ -338,6 +342,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
+<!-- META DIARIA PROGRESS -->
+<div class="pbi-card" id="meta-card" style="margin-bottom:10px;display:none">
+  <div class="pbi-card-title">Progreso meta del dia <span id="meta-pct-lbl" style="font-size:11px;text-transform:none;font-weight:600"></span></div>
+  <div style="background:#f0f2f5;border-radius:6px;height:20px;overflow:hidden;margin-bottom:6px">
+    <div id="meta-bar" style="height:100%;border-radius:6px;background:#34c759;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">
+      <span id="meta-bar-lbl" style="font-size:11px;font-weight:700;color:#fff"></span>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:12px;color:#8e9aab">
+    <span id="meta-done-lbl"></span>
+    <span id="meta-remain-lbl"></span>
+    <span id="meta-proj-lbl"></span>
+  </div>
+</div>
+
 <!-- TN POR DIA (main chart) -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">
@@ -349,6 +368,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
   <canvas id="db-timeline" style="width:100%;height:160px;display:block"></canvas>
+</div>
+
+<!-- SEMANA ACTUAL VS ANTERIOR -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Semana actual vs semana anterior</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+    <div style="background:#f0f5ff;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">Esta semana</div>
+      <div style="font-size:24px;font-weight:700;color:#007aff" id="week-cur-ton">—</div>
+      <div style="font-size:11px;color:#8e9aab" id="week-cur-cnt">—</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">Semana anterior</div>
+      <div style="font-size:24px;font-weight:700;color:#8e9aab" id="week-prev-ton">—</div>
+      <div style="font-size:11px;color:#8e9aab" id="week-prev-cnt">—</div>
+    </div>
+  </div>
+  <div id="week-diff-lbl" style="text-align:center;font-size:13px;font-weight:700"></div>
 </div>
 
 <!-- ESCANEOS POR DIA -->
@@ -856,7 +893,20 @@ async function analyze() {
   }
 }
 function showResult(d, wo) {
+  var peso = parseFloat(d.peso||0);
+  var isOutlier = peso > 0 && (peso < 1.2 || peso > 1.8);
   document.getElementById('res-title').textContent = d.producto || 'Datos extraidos';
+  if (isOutlier) {
+    setStatus('Atencion: peso inusual (' + d.peso + 't) — verificar etiqueta', 'warn');
+  }
+  // Check if coil is in a consignment
+  if (d.coil && _consignments && _consignments.length) {
+    var consMatch = _consignments.find(function(r){return String(r.lot_no||'').trim()===String(d.coil||'').trim();});
+    if (consMatch) {
+      var matchMsg = 'Coil en consignment Ref: '+(consMatch.referencia||'')+(consMatch.cast_no?' Cast: '+consMatch.cast_no:'');
+      setStatus(matchMsg, 'ok');
+    }
+  }
   var fields = document.getElementById('res-fields');
   fields.innerHTML = '';
   [['Peso (t)', d.peso, true], ['Producto', d.producto, false], ['Coil', d.coil, false], ['Cast', d.cast, false]].forEach(function(r) {
@@ -1108,6 +1158,9 @@ function renderDash() {
     document.getElementById('db-cnt-trend').innerHTML = '';
   }
 
+  // Meta diaria
+  var todayData = data.filter(function(r){return r.created_at&&new Date(r.created_at).toDateString()===new Date().toDateString();});
+  renderMetaDiaria(todayData);
   // Timelines
   renderTimeline(data);
   renderCountTimeline(data);
@@ -1121,6 +1174,23 @@ function renderDash() {
   var byProd = groupSum(data,function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
   renderBars2('db-prod-bars',byProd,tot,function(k){setProdFilter(k);});
 
+  // Week comparison
+  var curWeek = getWeekData(0);
+  var prevWeek = getWeekData(1);
+  var curTon2 = sumTon(curWeek), prevTon2 = sumTon(prevWeek);
+  var wCur = document.getElementById('week-cur-ton');
+  if (wCur) {
+    wCur.textContent = curTon2.toFixed(3)+'t';
+    document.getElementById('week-cur-cnt').textContent = curWeek.length+' coils';
+    document.getElementById('week-prev-ton').textContent = prevTon2.toFixed(3)+'t';
+    document.getElementById('week-prev-cnt').textContent = prevWeek.length+' coils';
+    var diffTon2 = curTon2-prevTon2;
+    var diffPct2 = prevTon2>0?((diffTon2/prevTon2)*100).toFixed(1):null;
+    var wDiff = document.getElementById('week-diff-lbl');
+    if (wDiff) wDiff.innerHTML = diffPct2 ?
+      '<span style="color:'+(diffTon2>=0?'#34c759':'#ff3b30')+'">'+(diffTon2>=0?'▲':'▼')+' '+Math.abs(diffPct2)+'% vs semana anterior</span>' :
+      '<span style="color:#8e9aab">Sin datos semana anterior</span>';
+  }
   // Cast progress
   renderCastProgressDB(data);
 
@@ -1579,6 +1649,26 @@ function renderBalance() {
     '<div><div style="font-size:22px;font-weight:700;color:#34c759">'+totalProducido.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total producido</div></div>'+
     '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock disponible</div></div>';
   list.appendChild(summary);
+
+  // Scrap section
+  var scrapDiv = document.createElement('div');
+  scrapDiv.style.cssText = 'margin-top:16px';
+  scrapDiv.innerHTML = '<div style="font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Eficiencia / Scrap por WO</div>';
+  var hasScrap = false;
+  wos.forEach(function(wo) {
+    var s = calcScrap(wo);
+    if (!s) return;
+    hasScrap = true;
+    var scrapColor = s.pctScrap > 10 ? '#ff3b30' : s.pctScrap > 5 ? '#ff9500' : '#34c759';
+    var sr = document.createElement('div');
+    sr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7';
+    sr.innerHTML = '<div><div style="font-size:13px;font-weight:700">WO: '+esc(wo)+'</div>'+
+      '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+s.entrada.toFixed(3)+'t entrada → '+s.producido.toFixed(3)+'t producido</div></div>'+
+      '<div style="text-align:right"><div style="font-size:15px;font-weight:700;color:'+scrapColor+'">'+s.scrap.toFixed(3)+'t</div>'+
+      '<div style="font-size:11px;color:'+scrapColor+';font-weight:600">'+s.pctScrap.toFixed(1)+'% scrap</div></div>';
+    scrapDiv.appendChild(sr);
+  });
+  if (hasScrap) list.appendChild(scrapDiv);
 }
 
 function renderProdHist() {
@@ -1639,10 +1729,13 @@ function renderSavedCons() {
     // Header row (clickable)
     var hdr = document.createElement('div');
     hdr.style.cssText = 'padding:14px 0;cursor:pointer;user-select:none';
+    var refCopy = ref;
     hdr.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
-        '<div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
           '<div style="font-size:14px;font-weight:700;color:#1c1c1e">Ref: '+esc(ref)+'</div>'+
+          '<button class="del-cons-btn" data-ref="'+esc(ref)+'" style="padding:2px 8px;background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'+
+        '</div>'+
           '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+
             prods.map(function(p){return'<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:3px">'+esc(p)+'</span>';}).join('')+
             (g.fecha?' · '+esc(g.fecha):'')+
@@ -1689,7 +1782,11 @@ function renderSavedCons() {
 
     // Toggle on click
     var open = false;
-    hdr.addEventListener('click', function() {
+    hdr.addEventListener('click', function(e) {
+      if (e.target.classList.contains('del-cons-btn')) {
+        deleteConsignment(e.target.getAttribute('data-ref'));
+        return;
+      }
       open = !open;
       detail.style.display = open ? 'block' : 'none';
       hdr.querySelector('.cons-chevron').innerHTML = open ? '&#8963;' : '&#8964;';
@@ -2270,6 +2367,113 @@ function renderPivot2(data) {
   tbl.innerHTML=html;
 }
 
+
+// ==========================================
+// META DIARIA RENDER
+// ==========================================
+function renderMetaDiaria(todayData) {
+  var metaEl = document.getElementById('meta-diaria');
+  var meta = metaEl ? parseFloat(metaEl.value) : 0;
+  var card = document.getElementById('meta-card');
+  if (!card) return;
+  if (!meta || meta <= 0) { card.style.display='none'; return; }
+  card.style.display='block';
+  var todayTon = sumTon(todayData);
+  var pct = Math.min(Math.round((todayTon/meta)*100), 150);
+  var color = pct >= 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
+  document.getElementById('meta-bar').style.width = Math.min(pct,100)+'%';
+  document.getElementById('meta-bar').style.background = color;
+  document.getElementById('meta-bar-lbl').textContent = todayTon.toFixed(2)+'t';
+  document.getElementById('meta-pct-lbl').textContent = pct+'%';
+  document.getElementById('meta-pct-lbl').style.color = color;
+  var remain = Math.max(0, meta - todayTon);
+  document.getElementById('meta-done-lbl').textContent = todayTon.toFixed(3)+'t escaneadas';
+  document.getElementById('meta-remain-lbl').textContent = remain > 0 ? remain.toFixed(3)+'t restantes' : 'Meta alcanzada!';
+  // Projection based on current rate
+  var now = new Date();
+  var hoursElapsed = now.getHours() + now.getMinutes()/60;
+  if (hoursElapsed > 0 && todayTon > 0 && remain > 0) {
+    var rate = todayTon / hoursElapsed;
+    var hoursNeeded = remain / rate;
+    var finishTime = new Date(now.getTime() + hoursNeeded * 3600000);
+    document.getElementById('meta-proj-lbl').textContent = 'Fin estimado: '+finishTime.getHours()+':'+String(finishTime.getMinutes()).padStart(2,'0');
+  } else if (remain <= 0) {
+    document.getElementById('meta-proj-lbl').textContent = 'Completado';
+    document.getElementById('meta-proj-lbl').style.color = '#34c759';
+  } else {
+    document.getElementById('meta-proj-lbl').textContent = '';
+  }
+}
+
+// ==========================================
+// DELETE CONSIGNMENT
+// ==========================================
+async function deleteConsignment(ref) {
+  if (!confirm('Eliminar todos los registros de Ref: '+ref+'?')) return;
+  var toDelete = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
+  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
+  var SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
+  var deleted = 0;
+  for (var i = 0; i < toDelete.length; i++) {
+    var r = await fetch(SB_BASE+'/rest/v1/consignments?id=eq.'+toDelete[i].id, {
+      method: 'DELETE',
+      headers: {apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY}
+    });
+    if (r.ok) deleted++;
+  }
+  await loadConsignments();
+  renderDash();
+}
+
+// ==========================================
+// WEEK COMPARISON
+// ==========================================
+function getWeekData(weeksAgo) {
+  var now = new Date();
+  var start = new Date(now);
+  start.setDate(start.getDate() - start.getDay() - (weeksAgo * 7));
+  start.setHours(0,0,0,0);
+  var end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return records.filter(function(r){
+    if (!r.created_at) return false;
+    var d = new Date(r.created_at);
+    return d >= start && d < end;
+  });
+}
+
+// ==========================================
+// SCRAP CALCULATION
+// ==========================================
+function calcScrap(wo) {
+  var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
+  var producido = (_produccion||[]).filter(function(p){return p.wo===wo;}).reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
+  if (!entrada || !producido) return null;
+  var scrap = entrada - producido;
+  var pct = (scrap/entrada)*100;
+  return {entrada:entrada, producido:producido, scrap:scrap, pctScrap:pct};
+}
+
+// ==========================================
+// PROJECTION FOR WO
+// ==========================================
+function calcProjection(wo) {
+  var woRecs = records.filter(function(r){return r.wo===wo;});
+  if (!woRecs.length) return null;
+  // From consignments, get total expected
+  var consTotal = _consignments.filter(function(r){return r.wo===wo;}).length;
+  if (!consTotal) return null;
+  var scanned = woRecs.length;
+  var remaining = consTotal - scanned;
+  if (remaining <= 0) return {done: true};
+  // Rate: coils per day
+  var dates = woRecs.map(function(r){return new Date(r.created_at);}).sort();
+  var daysDiff = (dates[dates.length-1] - dates[0]) / 86400000 + 1;
+  var rate = scanned / Math.max(daysDiff, 1);
+  var daysLeft = remaining / rate;
+  return {scanned:scanned, total:consTotal, remaining:remaining, daysLeft:Math.ceil(daysLeft), rate:rate.toFixed(1)};
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -2286,7 +2490,6 @@ window.addEventListener('load', function() {
   safe('wo-filter','input',filterRecords);
   safe('hist-date','change',renderHistorial);
   safe('db-search','input',renderDash);
-  safe('db-search','input',function(){renderDash();});
   safe('wo-filter','input',filterRecords);
   var mbg=document.getElementById('modal-bg');
   if(mbg)mbg.addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -2294,6 +2497,7 @@ window.addEventListener('load', function() {
   if(pdfIn)pdfIn.addEventListener('change',handlePDFUpload);
   loadChangeLog();
   loadRecords();
+  loadConsignments();
 });
 </script>
 </body>
