@@ -12,7 +12,7 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px}
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
 .nav-pill{background:#e8f0fe;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600}
@@ -244,26 +244,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 .pbi-hdr{background:#fff;border-bottom:2px solid #e8ecf0;padding:0 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-14px -14px 12px -14px;padding-top:10px;padding-bottom:10px}
 .pbi-seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.pbi-seg-lbl{font-size:10px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
-.pbi-chip{padding:5px 12px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
+.pbi-seg-lbl{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.pbi-chip{padding:6px 14px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
 .pbi-chip:hover{border-color:#007aff;color:#007aff;background:#f0f5ff}
 .pbi-chip.on{background:#007aff;color:#fff;border-color:#007aff;box-shadow:0 2px 6px rgba(0,122,255,.3)}
 .pbi-chip.on-evg{background:#007aff;color:#fff;border-color:#007aff}
 .pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
 .pbi-row{display:grid;gap:10px;margin-bottom:10px}
 .pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
-.pbi-card-title{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.pbi-kpi-num{font-size:40px;font-weight:700;line-height:1;color:#1a2332}
+.pbi-card-title{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.pbi-kpi-num{font-size:44px;font-weight:700;line-height:1;color:#1a2332}
 .pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
-.pbi-kpi-sub{font-size:13px;color:#8e9aab;margin-top:4px}
-.pbi-kpi-trend{font-size:11px;font-weight:700;margin-top:4px}
-.pbi-bar-lbl{font-size:13px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbi-kpi-sub{font-size:14px;color:#8e9aab;margin-top:4px}
+.pbi-kpi-trend{font-size:13px;font-weight:700;margin-top:4px}
+.pbi-bar-lbl{font-size:14px;color:#374151;font-weight:500;width:80px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pbi-bar-track{flex:1;background:#f0f2f5;border-radius:3px;height:20px;overflow:hidden}
 .pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;font-size:10px;font-weight:700;color:#fff;transition:width .35s}
 .pbi-bar-val{font-size:13px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
 .pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.pbi-tbl th{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
-.pbi-tbl td{padding:9px 10px;border-bottom:1px solid #f0f2f5;font-size:13px;color:#374151;vertical-align:middle}
+.pbi-tbl th{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
+.pbi-tbl td{padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:14px;color:#374151;vertical-align:middle}
 .pbi-tbl tr:hover td{background:#f8fafc}
 .pbi-tbl-val{font-weight:700;color:#007aff}
 .pbi-tbl-tot td{background:#f0f5ff;font-weight:700;border-top:2px solid #c5d8ff}
@@ -447,13 +447,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pane" id="p-prod">
   <style>
   .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
-  .bal-hdr{font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+  .bal-hdr{font-size:12px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
   .bal-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f2f2f7}
   .bal-row:last-child{border-bottom:none}
-  .bal-wo{font-size:14px;font-weight:700;color:#1c1c1e}
+  .bal-wo{font-size:16px;font-weight:700;color:#1c1c1e}
   .bal-nums{display:flex;gap:16px;text-align:right}
-  .bal-num{font-size:13px;font-weight:700}
-  .bal-lbl{font-size:10px;color:#8e8e93;font-weight:500;margin-top:1px}
+  .bal-num{font-size:15px;font-weight:700}
+  .bal-lbl{font-size:12px;color:#8e8e93;font-weight:500;margin-top:1px}
   .bar-bal{height:8px;border-radius:4px;background:#f2f2f7;margin-top:8px;overflow:hidden}
   .bar-bal-fill{height:100%;border-radius:4px}
   .prod-inp{width:100%;padding:12px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:inherit;background:#f8f8f8;outline:none}
@@ -505,14 +505,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pane" id="p-cons">
 <style>
 .cons-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
-.cons-hdr{font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.cons-hdr{font-size:12px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .match-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f2f2f7;cursor:pointer}
 .match-row:last-child{border-bottom:none}
 .match-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .match-info{flex:1;min-width:0}
-.match-coil{font-size:14px;font-weight:700;color:#1c1c1e}
-.match-sub{font-size:12px;color:#8e8e93;margin-top:1px}
-.match-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
+.match-coil{font-size:15px;font-weight:700;color:#1c1c1e}
+.match-sub{font-size:13px;color:#8e8e93;margin-top:1px}
+.match-status{font-size:13px;font-weight:700;padding:3px 8px;border-radius:99px;flex-shrink:0}
 .status-ok{background:#e8ffe8;color:#1a7a3c}
 .status-miss{background:#fff0f0;color:#cc0000}
 .status-extra{background:#fff8e8;color:#7a5c00}
@@ -525,10 +525,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="cons-card">
     <div class="cons-hdr">Subir Consignment Note (PDF)</div>
     <div class="upload-pdf-zone" id="pdf-zone">
-      <input type="file" accept=".pdf,application/pdf" id="pdf-in">
+      <input type="file" accept=".pdf,application/pdf" id="pdf-in" multiple>
       <div style="font-size:32px;margin-bottom:8px">&#128196;</div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Subir PDF de Pacific Steel</div>
-      <div style="font-size:12px;color:#8e8e93">La IA extrae todos los coils automaticamente</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Subir PDFs de Pacific Steel</div>
+      <div style="font-size:12px;color:#8e8e93">Podés subir varios PDFs a la vez — se procesan uno por uno</div>
     </div>
     <div id="pdf-status" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px"></div>
     <div id="pdf-progress" style="display:none;margin-top:8px">
@@ -1727,6 +1727,7 @@ function renderSavedCons() {
     var scanned = g.items.filter(function(r){return isCoilScanned(r.lot_no);}).length;
     var missing = g.items.length - scanned;
     var prods = unique(g.items.map(function(r){return r.producto;}).filter(Boolean));
+    var mms = unique(prods.map(function(p){return extractMM(p);}).filter(Boolean));
     var pct = g.items.length > 0 ? Math.round((scanned/g.items.length)*100) : 0;
 
     var wrap = document.createElement('div');
@@ -1743,7 +1744,8 @@ function renderSavedCons() {
           '<button class="del-cons-btn" data-ref="'+esc(ref)+'" style="padding:2px 8px;background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'+
         '</div>'+
           '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+
-            prods.map(function(p){return'<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:3px">'+esc(p)+'</span>';}).join('')+
+            mms.map(function(mm){return'<span style="background:#f0f5ff;color:#007aff;font-size:12px;font-weight:700;border-radius:5px;padding:2px 8px;margin-right:3px">'+mm+'mm</span>';}).join('')+
+          (mms.length?'':prods.map(function(p){var mm=extractMM(p);return'<span style="background:#f0f5ff;color:#007aff;font-size:12px;font-weight:700;border-radius:5px;padding:2px 8px;margin-right:3px">'+(mm?mm+'mm':esc(p))+'</span>';}).join(''))+
             (g.fecha?' · '+esc(g.fecha):'')+
           '</div>'+
         '</div>'+
@@ -1909,22 +1911,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function handlePDFUpload(e) {
-  var file = e.target.files[0];
+  var files = Array.from(e.target.files);
   e.target.value = '';
-  if (!file) return;
+  if (!files.length) return;
   var status = document.getElementById('pdf-status');
   var prog = document.getElementById('pdf-progress');
   var fill = document.getElementById('pdf-prog-fill');
   var txt2 = document.getElementById('pdf-prog-txt');
 
-  status.textContent = 'Procesando PDF...';
+  status.textContent = 'Procesando '+files.length+' PDF'+(files.length>1?'s':'')+'...';
   status.style.color = '#007aff';
   prog.style.display = 'block';
-  fill.style.width = '10%';
-  txt2.textContent = 'Cargando PDF.js...';
+  fill.style.width = '5%';
 
   try {
     if (!window.pdfjsLib) {
+      txt2.textContent = 'Cargando PDF.js...';
       await new Promise(function(res, rej) {
         var s = document.createElement('script');
         s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -1934,41 +1936,56 @@ async function handlePDFUpload(e) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
-    fill.style.width = '20%';
-    txt2.textContent = 'Leyendo PDF...';
+    var totalRows = 0;
+    var errors = [];
 
-    var arrayBuffer = await file.arrayBuffer();
-    var pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
-    var numPages = pdf.numPages;
-    var allRows = [];
+    for (var fi = 0; fi < files.length; fi++) {
+      var file = files[fi];
+      txt2.textContent = 'PDF '+(fi+1)+' de '+files.length+': '+file.name;
+      fill.style.width = (5 + (fi/files.length)*90)+'%';
 
-    for (var pageNum = 1; pageNum <= numPages; pageNum++) {
-      fill.style.width = (20 + (pageNum/numPages)*60)+'%';
-      txt2.textContent = 'Analizando pagina '+pageNum+' de '+numPages+'...';
+      try {
+        var arrayBuffer = await file.arrayBuffer();
+        var pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
+        var numPages = pdf.numPages;
+        var allRows = [];
 
-      var page = await pdf.getPage(pageNum);
-      var viewport = page.getViewport({scale: 2.5});
-      var canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
-      var imgBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+        for (var pageNum = 1; pageNum <= numPages; pageNum++) {
+          txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages;
+          var page = await pdf.getPage(pageNum);
+          var viewport = page.getViewport({scale: 2.5});
+          var canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+          var imgBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
 
-      var resp = await fetch('/extractpdf', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
-      });
-      var data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
-      if (data.rows) allRows = allRows.concat(data.rows);
+          var resp = await fetch('/extractpdf', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
+          });
+          var data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
+          if (data.rows) allRows = allRows.concat(data.rows);
+        }
+        totalRows += allRows.length;
+      } catch(fileErr) {
+        errors.push(file.name+': '+fileErr.message);
+      }
     }
 
     fill.style.width = '100%';
-    status.textContent = '✓ ' + allRows.length + ' coils importados';
-    status.style.color = '#34c759';
+    if (errors.length) {
+      status.textContent = '✓ '+totalRows+' coils importados. Errores: '+errors.join(', ');
+      status.style.color = '#ff9500';
+    } else {
+      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'');
+      status.style.color = '#34c759';
+    }
     await loadConsignments();
-    setTimeout(function(){prog.style.display='none';}, 2000);
+    renderDash();
+    setTimeout(function(){prog.style.display='none';}, 3000);
 
   } catch(err) {
     status.textContent = '✗ ' + err.message;
@@ -2499,6 +2516,16 @@ async function saveModalWO() {
       setTimeout(function(){btn.textContent=orig;btn.style.background='#34c759';btn.disabled=false;}, 1500);
     }
   } catch(e) { btn.textContent = 'Error'; btn.disabled = false; }
+}
+
+function extractMM(producto) {
+  if (!producto) return null;
+  var m = String(producto).match(/(\d+\.?\d*)\s*[Mm][Mm]/);
+  if (m) return parseFloat(m[1]).toString();
+  // Also try "9.0 Ductile Rod" -> extract leading number
+  var m2 = String(producto).match(/^(\d+\.?\d*)/);
+  if (m2) return parseFloat(m2[1]).toString();
+  return null;
 }
 
 window.addEventListener('load', function() {
