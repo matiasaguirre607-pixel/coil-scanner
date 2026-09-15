@@ -19,7 +19,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:49px;z-index:99}
 .tab{flex:1;padding:12px 4px;background:none;border:none;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue)}
-.pane{display:none;padding:14px;padding-bottom:40px;max-width:900px;margin:0 auto}
+.pane{display:none;padding:14px 20px;padding-bottom:40px;width:100%}
 .pane.on{display:block}
 .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
@@ -137,6 +137,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .prog-bar-wrap{background:var(--border);border-radius:99px;height:6px;overflow:hidden;margin-top:8px}
 .prog-bar-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .3s}
 .prog-txt{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
+
+/* ===== DESKTOP LAYOUT ===== */
+@media (min-width: 900px) {
+  body { overflow: hidden; }
+  
+  /* Main content area fills screen */
+  #app-body { display: flex; flex-direction: column; height: calc(100vh - 54px - 44px); overflow: hidden; }
+  
+  /* Panes fill full width with scroll */
+  .pane { padding: 20px 32px; padding-bottom: 40px; overflow-y: auto; height: 100%; }
+  
+  /* Dashboard: 2 column layout */
+  #p-dash { display: none; }
+  #p-dash.on { display: grid !important; grid-template-columns: 340px 1fr; grid-template-rows: auto; gap: 0; padding: 0; height: 100%; overflow: hidden; }
+  
+  .dash-left { padding: 20px 20px 40px 32px; overflow-y: auto; height: 100%; border-right: 1px solid var(--border); }
+  .dash-right { padding: 20px 32px 40px 20px; overflow-y: auto; height: 100%; }
+
+  /* Scan tab: centered but wider */
+  #p-scan.on { max-width: 600px; margin: 0 auto; }
+
+  /* Historial: wider */
+  #p-hist.on { max-width: 100%; }
+
+  /* Consignment: 2 columns */
+  #p-cons.on { display: grid !important; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
+
+  /* Produccion: 2 columns */  
+  #p-prod.on { display: grid !important; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
+
+  /* PBI filter bar sticky */
+  .pbi-hdr { position: sticky; top: 0; z-index: 10; margin: -20px -32px 16px -32px; padding: 10px 32px; }
+
+  /* KPI row: 4 columns on desktop */
+  #p-dash.on .pbi-row[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  /* Historial flat list: 2 cols on desktop */
+  .hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* Consignment desktop cols */
+.cons-col-left { }
+.cons-col-right { }
+
+/* Flat hist grid */
+.hist-grid { display: block; }
+@media (min-width: 900px) {
+  .hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .flat-card { margin-bottom: 0 !important; }
+  #p-hist.on { display: block !important; }
+}
+
+@media (min-width: 900px) {@media (min-width: 1200px) {
+  .pane { padding: 20px 48px; }
+  #p-dash.on .dash-left { padding: 20px 24px 40px 48px; }
+  #p-dash.on .dash-right { padding: 20px 48px 40px 24px; }
+  .pbi-hdr { margin: -20px -48px 16px -48px; padding: 10px 48px; }
+}
 </style>
 </head>
 <body>
@@ -147,7 +205,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div class="nav-pill" id="nav-pill">0 registros</div>
   </div>
 </div>
-<div class="tabs">
+<div id="app-body"><div class="tabs">
   <button class="tab on" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
   <button class="tab" id="t-hist" onclick="goTab('hist')">&#128203; Historial</button>
   <button class="tab" id="t-dash" onclick="goTab('dash')">&#128202; Dashboard</button>
@@ -235,10 +293,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Por escaneo</button>
     </div>
   </div>
-  <div id="rec-list"></div>
+  <div id="rec-list" class="hist-grid-wrap"></div>
 </div>
 
-<div class="pane" id="p-dash">
+<div class="pane" id="p-dash"><div class="dash-left">
 <style>
 /* Power BI Dashboard Styles */
 .pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -388,7 +446,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="week-diff-lbl" style="text-align:center;font-size:13px;font-weight:700"></div>
 </div>
 
-<!-- ESCANEOS POR DIA -->
+</div><div class="dash-right"><!-- ESCANEOS POR DIA -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Coils escaneados por dia</div>
   <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
@@ -443,7 +501,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
-</div>
+</div></div>
 <div class="pane" id="p-prod">
   <style>
   .bal-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
@@ -670,6 +728,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="load-sub" id="load-sub">La IA esta leyendo la etiqueta</div>
 </div>
 
+</div>
 <script>
 
 var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
@@ -999,7 +1058,7 @@ function renderList(list) {
     card.querySelector('.rec-top').addEventListener('click', function() {
       itemsDiv.style.display = itemsDiv.style.display === 'block' ? 'none' : 'block';
     });
-    el.appendChild(card);
+    container.appendChild(card);
   });
 }
 function filterRecords() {
@@ -2225,10 +2284,16 @@ function renderFlatList(list) {
     return new Date(b.created_at||0) - new Date(a.created_at||0);
   });
   el.innerHTML = '';
+  el.style.cssText = '';
+  var grid = document.createElement('div');
+  grid.className = 'hist-grid';
+  el.appendChild(grid);
+  var container = grid;
   sorted.forEach(function(r, i) {
     var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     var mc = r.maquina==='EVG'?'#007aff':r.maquina==='PITTINI'?'#af52de':'#8e8e93';
     var card = document.createElement('div');
+    card.className = 'flat-card';
     card.style.cssText = 'background:var(--card);border-radius:12px;padding:13px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;cursor:pointer';
     card.innerHTML =
       '<div style="font-size:13px;font-weight:800;color:var(--muted);min-width:28px;text-align:center">' + (i+1) + '</div>' +
@@ -2245,7 +2310,7 @@ function renderFlatList(list) {
         '<div style="font-size:16px;font-weight:700;color:var(--blue)">'+esc(r.peso||'—')+'t</div>' +
       '</div>';
     card.addEventListener('click', function(){openModal(r);});
-    el.appendChild(card);
+    container.appendChild(card);
   });
 }
 
