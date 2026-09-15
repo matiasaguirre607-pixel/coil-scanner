@@ -16,10 +16,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
 .nav-pill{background:#e8f0fe;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600}
-.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:54px;z-index:99;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:54px;z-index:99;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{flex:1;padding:12px 4px;background:none;border:none;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);background:rgba(0,122,255,.04)}
-.pane{display:none;padding:14px;padding-bottom:40px;max-width:560px;margin:0 auto}
+.pane{display:none;padding:16px;padding-bottom:80px;max-width:100%;box-sizing:border-box}
 .pane.on{display:block}
 .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -156,10 +156,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .nav-title{font-size:17px;font-weight:700}
 .nav-pill{background:#e8f0fe;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600}
-.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:54px;z-index:99;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:54px;z-index:99;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{flex:1;padding:12px 4px;background:none;border:none;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);background:rgba(0,122,255,.04)}
-.pane{display:none;padding:14px;padding-bottom:40px;max-width:560px;margin:0 auto}
+.pane{display:none;padding:16px;padding-bottom:80px;max-width:100%;box-sizing:border-box}
 .pane.on{display:block}
 .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -279,50 +279,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .prog-txt{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
 
 /* ===== DESKTOP LAYOUT ===== */
-@media (min-width: 900px) {
-  body { overflow: hidden; }
-  
-  /* Main content area fills screen */
-  #app-body { display: flex; flex-direction: column; height: calc(100vh - 54px - 44px); overflow: hidden; }
-  
-  /* Panes fill full width with scroll */
-  .pane { padding: 20px 32px; padding-bottom: 40px; overflow-y: auto; height: 100%; }
-  
-  /* Dashboard: 2 column layout */
-  #p-dash { display: none; }
-  #p-dash.on { display: grid !important; grid-template-columns: 340px 1fr; grid-template-rows: auto; gap: 0; padding: 0; height: 100%; overflow: hidden; }
-  
-  .dash-left { padding: 20px 20px 40px 32px; overflow-y: auto; height: 100%; border-right: 1px solid var(--border); }
-  .dash-right { padding: 20px 32px 40px 20px; overflow-y: auto; height: 100%; }
 
-  /* Scan tab: centered but wider */
-  #p-scan.on { max-width: 600px; margin: 0 auto; }
-
-  /* Historial: wider */
-  #p-hist.on { max-width: 100%; }
-
-  /* Consignment: 2 columns */
-  #p-cons.on { display: grid !important; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
-
-  /* Produccion: 2 columns */  
-  #p-prod.on { display: grid !important; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
-
-  /* PBI filter bar sticky */
-  .pbi-hdr { position: sticky; top: 0; z-index: 10; margin: -20px -32px 16px -32px; padding: 10px 32px; }
-
-  /* KPI row: 4 columns on desktop */
-  #p-dash.on .pbi-row[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr 1fr 1fr; }
-
-  /* Historial flat list: 2 cols on desktop */
-  .hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-}
-
-@media (min-width: 900px) {@media (min-width: 1200px) {
-  .pane { padding: 20px 48px; }
-  #p-dash.on .dash-left { padding: 20px 24px 40px 48px; }
-  #p-dash.on .dash-right { padding: 20px 48px 40px 24px; }
-  .pbi-hdr { margin: -20px -48px 16px -48px; padding: 10px 48px; }
-}
 
 </style>
 </head>
@@ -435,7 +392,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <style>
 /* Power BI Dashboard Styles */
 .pbi{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.pbi-hdr{background:#fff;border-bottom:2px solid #e8ecf0;padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-24px -40px 16px;position:sticky;top:100px;z-index:15;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.pbi-hdr{background:#f8fafc;border:1.5px solid #e8ecf0;border-radius:10px;padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .pbi-seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .pbi-seg-lbl{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
 .pbi-chip{padding:6px 14px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#374151;transition:all .12s;white-space:nowrap}
