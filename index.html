@@ -1698,19 +1698,21 @@ async function loadProduccion() {
   // Populate WO selector from records
   var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
   var sel = document.getElementById('prod-wo-sel');
-  sel.innerHTML = '<option value="">Selecciona una WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
+  if (sel) sel.innerHTML = '<option value="">Selecciona una WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
 
   // Load produccion records
   try {
     var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion?order=created_at.desc&limit=200', {
       headers: {apikey: SB_KEY_PROD, Authorization: 'Bearer '+SB_KEY_PROD}
     });
-    _produccion = await resp.json();
+    if (resp.ok) _produccion = await resp.json();
+    else _produccion = [];
   } catch(e) { _produccion = []; }
 
-  renderBalance();
-  renderProdHist();
-  renderChangeLog();
+  var el;
+  el = document.getElementById('bal-list'); if (el) renderBalance();
+  el = document.getElementById('prod-hist-list'); if (el) renderProdHist();
+  el = document.getElementById('change-log-list'); if (el) renderChangeLog();
   checkStockAlerts();
 }
 
@@ -1748,6 +1750,7 @@ async function saveProduccion() {
 function renderBalance() {
   var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
   var list = document.getElementById('bal-list');
+  if (!list) return;
   if (!wos.length) {
     list.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No hay WOs asignadas. Asignalas en el Historial.</div>';
     return;
@@ -1833,6 +1836,7 @@ function renderBalance() {
 
 function renderProdHist() {
   var hist = document.getElementById('prod-hist-list');
+  if (!hist) return;
   if (!_produccion.length) {
     hist.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros de produccion.</div>';
     return;
@@ -1857,13 +1861,16 @@ async function loadConsignments() {
     var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?order=created_at.desc&limit=500', {
       headers: {apikey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ',Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ'}
     });
-    _consignments = await resp.json();
+    if (resp.ok) _consignments = await resp.json();
+    else _consignments = [];
   } catch(e) { _consignments = []; }
-  renderSavedCons();
+  var el = document.getElementById('saved-cons-list');
+  if (el) renderSavedCons();
 }
 
 function renderSavedCons() {
   var el = document.getElementById('saved-cons-list');
+  if (!el) return;
   if (!_consignments.length) {
     el.innerHTML = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Sin consignments. Subi un PDF arriba.</div>';
     return;
