@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#007aff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coil Scanner">
 <title>Coil Scanner</title>
 <style>
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px}
@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coil Scanner">
 <title>Coil Scanner</title>
-<style>
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f2f2f7;--card:#fff;--border:#e5e5ea;--text:#1c1c1e;--muted:#8e8e93;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--purple:#af52de;--r:14px;--rs:10px}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px}
@@ -158,10 +158,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .nav-pill{background:#e8f0fe;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600}
 .tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);position:sticky;top:54px;z-index:99;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{flex:1;padding:12px 4px;background:none;border:none;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent}
-.tab.on{color:var(--blue);border-bottom-color:var(--blue);background:rgba(0,122,255,.04)}
-.pane{display:none;padding:16px;padding-bottom:80px;max-width:100%;box-sizing:border-box}
-.pane.on{display:block}
-.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);background:rgba(0,122,255,.04)}.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:12px;font-weight:600;color:#636366;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
@@ -343,14 +340,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .upload-pdf-zone{border:2px dashed #e5e5ea;border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;background:#f8f8f8;transition:all .2s;position:relative}
 .upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
 .upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
 </style>
 </head>
 <body>
+
+<!-- NAV -->
 <div class="nav">
   <div style="display:flex;align-items:center;gap:10px">
     <div style="width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">&#128247;</div>
     <div>
-      <div class="nav-title" style="font-size:15px;font-weight:800;letter-spacing:-.02em">Coil Scanner</div>
+      <div class="nav-title">Coil Scanner</div>
       <div style="font-size:10px;color:var(--muted);font-weight:500;margin-top:-1px">United Steel · Wire Rod</div>
     </div>
   </div>
@@ -359,16 +359,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <button onclick="shareDailySummary()" title="Resumen del dia" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128200;</button>
   </div>
 </div>
+
+<!-- TABS -->
 <div class="tabs">
-  <button class="tab on" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
+  <button class="tab" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
   <button class="tab" id="t-hist" onclick="goTab('hist')">&#128203; Historial</button>
   <button class="tab" id="t-dash" onclick="goTab('dash')">&#128202; Dashboard</button>
   <button class="tab" id="t-prod" onclick="goTab('prod')">&#9878; Produccion</button>
   <button class="tab" id="t-cons" onclick="goTab('cons')">&#128196; Consignment</button>
 </div>
 
+<!-- PANE: ESCANEAR -->
 <div class="pane" id="p-scan">
-  <div class="card">
+<div class="card">
     <div class="card-title">Work Order</div>
     <div class="field" style="margin-bottom:8px">
       <input class="wo-inp" type="text" id="wo-input" placeholder="Ej: WO-2026-001" autocomplete="off">
@@ -433,8 +436,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
+
+<!-- PANE: HISTORIAL -->
 <div class="pane" id="p-hist">
-  <div class="filters">
+<div class="filters">
     <input class="filter-inp" type="text" id="search-inp" placeholder="Buscar coil, cast, producto...">
     <input class="filter-inp" type="text" id="wo-filter" placeholder="WO..." style="max-width:110px">
     <button class="btn-sm" id="btn-refresh" style="max-width:50px;flex:none;padding:10px">&#8634;</button>
@@ -450,9 +455,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="rec-list" class="hist-grid-wrap"></div>
 </div>
 
+
+<!-- PANE: DASHBOARD -->
 <div class="pane" id="p-dash">
-
-
 <!-- FILTER BAR (segmentador estilo Excel) -->
 <div class="pbi-hdr">
   <!-- Fecha -->
@@ -622,10 +627,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 </div>
 
-<div class="pane" id="p-prod">
-  
 
-  <!-- Registrar produccion -->
+<!-- PANE: PRODUCCION -->
+<div class="pane" id="p-prod">
+<!-- Registrar produccion -->
   <div class="bal-card">
     <div class="bal-hdr">Registrar produccion por WO</div>
     <div class="field">
@@ -667,12 +672,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 
 
+
+
 </div>
 
+
+<!-- PANE: CONSIGNMENT -->
 <div class="pane" id="p-cons">
-
-
-    <div class="cons-card">
+<div class="cons-card">
     <div class="cons-hdr">Subir Consignment Note (PDF)</div>
     <div class="upload-pdf-zone" id="pdf-zone">
       <input type="file" accept=".pdf,application/pdf" id="pdf-in" multiple>
@@ -739,23 +746,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 
 </div>
-<div id="cam-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:250;flex-direction:column">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.7)">
-    <button onclick="closeCamera()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.15)">&#10006; Cerrar</button>
-    <div style="color:#fff;font-size:14px;font-weight:600">Apunta a la etiqueta</div>
-    <div style="width:80px"></div>
-  </div>
-  <div style="flex:1;position:relative;overflow:hidden">
-    <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-      <div style="width:75%;max-width:340px;aspect-ratio:1.6;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div>
-    </div>
-  </div>
-  <div style="padding:20px 16px 30px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px">
-    <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #007aff;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,122,255,.5)">&#128247;</button>
-    <div id="cam-status" style="color:rgba(255,255,255,.7);font-size:12px;text-align:center;min-height:18px;max-width:280px"></div>
-  </div>
-</div>
+
 
 <div id="sel-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;padding:12px 16px;z-index:190;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="sel-count" style="color:#fff;font-size:14px;font-weight:600;flex:1"></span>
@@ -819,7 +810,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="load-title" id="load-title">Analizando...</div>
   <div class="load-sub" id="load-sub">La IA esta leyendo la etiqueta</div>
 </div>
+
 <script>
+
 
 var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
 var records = [], activeRec = null, pendingImg = null, busy = false, currentMachine = null;
@@ -2721,6 +2714,7 @@ window.addEventListener('load', function() {
   loadConsignments();
   goTab('scan');
 });
+
 </script>
 </body>
 </html>
