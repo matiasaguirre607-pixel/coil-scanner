@@ -2175,6 +2175,101 @@ function renderTimeline(data) {
   });
 }
 
+function renderDonut2(canvasId, legId, byKey, onClick) {
+  var canvas = document.getElementById(canvasId);
+  var leg = document.getElementById(legId);
+  if (!canvas || !leg) return;
+  var ents = Object.keys(byKey).map(function(k){return{k:k,v:byKey[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,7);
+  var total = ents.reduce(function(s,e){return s+e.v;},0);
+  leg.innerHTML = '';
+  if(!total) {
+    canvas.style.display='none';
+    leg.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">Sin datos</div>';
+    return;
+  }
+  canvas.style.display='block';
+  var size = 100;
+  canvas.width=size; canvas.height=size;
+  canvas.style.cssText='width:'+size+'px;height:'+size+'px;float:left;margin-right:10px;flex-shrink:0';
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+  var cx=size/2, cy=size/2, r=size/2-3, start=-Math.PI/2;
+  ents.forEach(function(e,i){
+    var a=(e.v/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+a);ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+    start+=a;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,r*.56,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+  ctx.fillStyle='#1a2332';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(total.toFixed(1)+'t',cx,cy);
+  leg.style.cssText='overflow:hidden;min-height:'+size+'px;flex:1';
+  ents.forEach(function(e,i){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:4px;margin-bottom:5px;cursor:pointer;border-radius:4px;padding:2px 4px';
+    row.innerHTML='<div style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+COLORS[i%COLORS.length]+'"></div>'+
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#374151">'+esc(e.k)+'</span>'+
+      '<span style="font-size:11px;font-weight:700;color:#007aff;flex-shrink:0">'+e.v.toFixed(2)+'t</span>'+
+      '<span style="font-size:10px;color:#8e9aab;flex-shrink:0;margin-left:2px">'+Math.round((e.v/total)*100)+'%</span>';
+    row.addEventListener('click',function(){if(onClick)onClick(e.k);});
+    row.addEventListener('mouseover',function(){this.style.background='#f0f2f5';});
+    row.addEventListener('mouseout',function(){this.style.background='';});
+    leg.appendChild(row);
+  });
+}
+
+function renderBars2(containerId, byKey, total, onClick) {
+  var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+  var mx=ents.length?ents[0][1]:1;
+  var container=document.getElementById(containerId);
+  if(!container)return;
+  container.innerHTML='';
+  if(!ents.length){container.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">Sin datos</div>';return;}
+  ents.forEach(function(e,i){
+    var pct=total>0?Math.round((e[1]/total)*100):0;
+    var row=document.createElement('div');
+    row.className='pbi-bar-row';
+    row.style.cursor='pointer';
+    row.innerHTML='<span class="pbi-bar-lbl" title="'+esc(e[0])+'">'+esc(e[0])+'</span>'+
+      '<div class="pbi-bar-track"><div class="pbi-bar-fill" style="width:'+(Math.round((e[1]/mx)*84)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(2)+'t</div></div>'+
+      '<span class="pbi-bar-val">'+pct+'%</span>';
+    row.addEventListener('click',function(){if(onClick)onClick(e[0]);});
+    row.addEventListener('mouseover',function(){this.style.background='#f8fafc';this.style.borderRadius='4px';});
+    row.addEventListener('mouseout',function(){this.style.background='';});
+    container.appendChild(row);
+  });
+}
+
+function renderPivot2(data) {
+  var prods=unique(data.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
+  var wos=unique(data.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var tbl=document.getElementById('pivot-tbl');
+  if(!tbl)return;
+  if(!prods.length||!wos.length){
+    tbl.innerHTML='<tr><td style="padding:14px;color:#8e9aab;font-size:13px">'+(wos.length===0?'Asigna WOs en el Historial para ver la tabla pivot.':'Sin datos.')+'</td></tr>';
+    return;
+  }
+  var html='<thead><tr><th style="text-align:left">Producto</th>';
+  wos.forEach(function(w){html+='<th>'+esc(w)+'</th>';});
+  html+='<th style="color:#007aff">Total</th></tr></thead><tbody>';
+  prods.forEach(function(p){
+    var row=data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
+    var rowTot=sumTon(row);
+    html+='<tr><td style="font-weight:600;font-size:12px;white-space:nowrap;padding:8px 10px">'+esc(p)+'</td>';
+    wos.forEach(function(w){
+      var cell=row.filter(function(r){return r.wo===w;});
+      var v=sumTon(cell);
+      html+='<td style="text-align:center;padding:8px 10px">'+(v>0?'<div class="pbi-tbl-val">'+v.toFixed(3)+'</div><div style="font-size:10px;color:#8e9aab">'+cell.length+' coils</div>':'<span style="color:#e8ecf0">—</span>')+'</td>';
+    });
+    html+='<td style="text-align:center;padding:8px 10px"><div class="pbi-tbl-val">'+rowTot.toFixed(3)+'</div><div style="font-size:10px;color:#8e9aab">'+row.length+' coils</div></td></tr>';
+  });
+  var totRow='<tr class="pbi-tbl-tot"><td style="padding:8px 10px;font-weight:700">TOTAL</td>';
+  wos.forEach(function(w){var v=sumTon(data.filter(function(r){return r.wo===w;}));totRow+='<td style="text-align:center;padding:8px 10px;font-weight:700;color:#007aff">'+v.toFixed(3)+'</td>';});
+  totRow+='<td style="text-align:center;padding:8px 10px;font-weight:700;color:#007aff">'+sumTon(data).toFixed(3)+'</td></tr>';
+  html+=totRow+'</tbody>';
+  tbl.innerHTML=html;
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
