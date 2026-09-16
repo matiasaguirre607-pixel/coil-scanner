@@ -291,6 +291,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .pbi-chip.on-pit{background:#af52de;color:#fff;border-color:#af52de}
 .pbi-row{display:grid;gap:10px;margin-bottom:10px}
 .pbi-card{background:#fff;border-radius:6px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e8ecf0}
+.db2-hdr{font-size:11px;font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.db2-card{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.09);margin-bottom:10px}
 .pbi-card-title{font-size:11px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #f0f2f5}
 .pbi-kpi-num{font-size:44px;font-weight:700;line-height:1;color:#1a2332}
 .pbi-kpi-unit{font-size:14px;font-weight:400;color:#8e9aab;margin-left:3px}
@@ -434,10 +436,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
     <div id="res-fields"></div>
   </div>
-</div>
+
 
 
 <!-- PANE: HISTORIAL -->
+</div>
+
 <div class="pane" id="p-hist">
 <div class="filters">
     <input class="filter-inp" type="text" id="search-inp" placeholder="Buscar coil, cast, producto...">
@@ -453,10 +457,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
   <div id="rec-list" class="hist-grid-wrap"></div>
-</div>
+
 
 
 <!-- PANE: DASHBOARD -->
+</div>
+
 <div class="pane" id="p-dash">
 <!-- FILTER BAR (segmentador estilo Excel) -->
 <div class="pbi-hdr">
@@ -572,7 +578,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="week-diff-lbl" style="text-align:center;font-size:13px;font-weight:700"></div>
 </div>
 
-</div><!-- ESCANEOS POR DIA -->
+<!-- ESCANEOS POR DIA -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Coils escaneados por dia</div>
   <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
@@ -629,6 +635,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 
 <!-- PANE: PRODUCCION -->
+</div>
+
 <div class="pane" id="p-prod">
 <!-- Registrar produccion -->
   <div class="bal-card">
@@ -674,10 +682,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 
 
-</div>
+
 
 
 <!-- PANE: CONSIGNMENT -->
+</div>
+
 <div class="pane" id="p-cons">
 <div class="cons-card">
     <div class="cons-hdr">Subir Consignment Note (PDF)</div>
@@ -747,6 +757,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 </div>
 
+
+<div id="cam-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:250;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.7)">
+    <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:8px">&#10006; Cerrar</button>
+    <div style="color:#fff;font-size:14px;font-weight:600">Apunta a la etiqueta</div>
+    <div style="width:80px"></div>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden">
+    <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <div style="width:75%;max-width:340px;aspect-ratio:1.6;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div>
+    </div>
+  </div>
+  <div style="padding:20px 16px 34px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px">
+    <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #007aff;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,122,255,.5)">&#128247;</button>
+    <div id="cam-status" style="color:rgba(255,255,255,.8);font-size:13px;text-align:center;min-height:18px;max-width:280px"></div>
+  </div>
+</div>
 
 <div id="sel-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;padding:12px 16px;z-index:190;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="sel-count" style="color:#fff;font-size:14px;font-weight:600;flex:1"></span>
@@ -1702,10 +1730,9 @@ async function loadProduccion() {
     else _produccion = [];
   } catch(e) { _produccion = []; }
 
-  var el;
-  el = document.getElementById('bal-list'); if (el) renderBalance();
-  el = document.getElementById('prod-hist-list'); if (el) renderProdHist();
-  el = document.getElementById('change-log-list'); if (el) renderChangeLog();
+  renderBalance();
+  renderProdHist();
+  renderChangeLog();
   checkStockAlerts();
 }
 
@@ -1857,8 +1884,7 @@ async function loadConsignments() {
     if (resp.ok) _consignments = await resp.json();
     else _consignments = [];
   } catch(e) { _consignments = []; }
-  var el = document.getElementById('saved-cons-list');
-  if (el) renderSavedCons();
+  renderSavedCons();
 }
 
 function renderSavedCons() {
