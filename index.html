@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Coil Scanner">
+<link rel="manifest" href="/manifest.json">
 <title>Coil Scanner</title>
 <style>
 
@@ -148,6 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coil Scanner">
+<link rel="manifest" href="/manifest.json">
 <title>Coil Scanner</title>
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -358,6 +360,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <div id="offline-badge" style="display:none;background:#ff9500;color:#fff;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="flushOfflineQueue()">0 pendientes</div><div id="nav-pill" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:4px 10px;border:1px solid var(--border)">0 registros</div>
+    <button onclick="toggleGlobalSearch()" title="Buscar" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128269;</button>
     <button onclick="shareDailySummary()" title="Resumen del dia" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128200;</button>
   </div>
 </div>
@@ -391,6 +394,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div class="card-title">Foto de la etiqueta</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button id="btn-open-camera" onclick="openCamera()" style="flex:1;padding:20px 14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em">&#127909; Camara en vivo</button>
+    </div>
+    <div id="notif-banner" style="display:none;background:#f0f5ff;border:1px solid #007aff;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-size:13px;color:#007aff;font-weight:600">&#128276; Activar notificaciones para alertas de cast completo</span>
+      <button onclick="requestNotifPermission()" style="padding:7px 14px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Activar</button>
     </div>
     <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:8px">— o subí una foto —</div>
     <div class="upload-zone" id="upload-zone">
@@ -757,6 +764,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div style="padding:20px 16px 34px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px">
     <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #007aff;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,122,255,.5)">&#128247;</button>
     <div id="cam-status" style="color:rgba(255,255,255,.8);font-size:13px;text-align:center;min-height:18px;max-width:280px"></div>
+  </div>
+</div>
+
+<div id="global-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:400">
+  <div style="background:var(--card);margin:60px 16px 0;border-radius:14px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="global-search-inp" type="text" placeholder="Buscar coil, cast, WO, producto..." style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;outline:none" oninput="runGlobalSearch(this.value)">
+      <button onclick="closeGlobalSearch()" style="padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-weight:700">✕</button>
+    </div>
+    <div id="global-search-results" style="max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -2473,6 +2490,7 @@ function renderTimeline(data) {
   canvas.width = W; canvas.height = H;
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
+  canvas._days = days; canvas._byDay = byDay; canvas._byDayE = byDayE; canvas._byDayP = byDayP; canvas._pL = pL; canvas._bw = bw; canvas._pT = pT; canvas._cH = cH; canvas._mx = mx; canvas._W = W;
   var byDay={}, byDayE={}, byDayP={};
   data.forEach(function(r){
     if(!r.created_at) return;
@@ -2852,6 +2870,88 @@ window.addEventListener('online', function() {
 var SB_KEY_BAK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
 var SB_BASE_BAK = 'https://xqzqrlxjzfxpqigjuzor.supabase.co';
 
+// ============ GLOBAL SEARCH ============
+function toggleGlobalSearch() {
+  var overlay = document.getElementById('global-search-overlay');
+  if (overlay.style.display === 'none') {
+    overlay.style.display = 'block';
+    setTimeout(function(){ document.getElementById('global-search-inp').focus(); }, 100);
+  } else {
+    closeGlobalSearch();
+  }
+}
+
+function closeGlobalSearch() {
+  document.getElementById('global-search-overlay').style.display = 'none';
+  document.getElementById('global-search-inp').value = '';
+  document.getElementById('global-search-results').innerHTML = '';
+}
+
+function runGlobalSearch(q) {
+  var el = document.getElementById('global-search-results');
+  q = q.trim().toLowerCase();
+  if (!q || q.length < 2) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Escribi al menos 2 caracteres</div>'; return; }
+  var results = records.filter(function(r){
+    return [r.coil,r.cast,r.wo,r.producto,r.maquina,r.operario].some(function(v){return (v||'').toLowerCase().indexOf(q)>=0;});
+  }).slice(0,30);
+  if (!results.length) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Sin resultados para "'+esc(q)+'"</div>'; return; }
+  el.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">'+results.length+' resultado'+(results.length>1?'s':'')+'</div>' +
+    results.map(function(r){
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      var mc = r.maquina==='EVG'?'#007aff':r.maquina==='PITTINI'?'#af52de':'#8e8e93';
+      return '<div data-coil="'+esc(r.coil||'')+'" onclick="var r2=records.find(function(x){return x.coil===this.dataset.coil;}.bind(this));closeGlobalSearch();if(r2)openModal(r2);" style="padding:12px;border-radius:10px;background:var(--bg);margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px">'+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:14px;font-weight:700">'+esc(r.coil||'—')+'<span style="font-size:12px;color:'+mc+';font-weight:700;margin-left:6px">'+(r.maquina||'')+'</span>'+(r.wo?'<span style="background:#fff8e8;color:#7a5c00;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px">'+esc(r.wo)+'</span>':'')+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(normalizeProductoKey(r.producto)||'')+(r.cast?' · Cast: '+esc(r.cast):'')+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+d+'</div>'+
+        '</div>'+
+        '<div style="font-size:15px;font-weight:700;color:var(--blue);flex-shrink:0">'+esc(r.peso||'')+'t</div>'+
+      '</div>';
+    }).join('');
+}
+
+// Close on overlay click
+document.addEventListener('click', function(e) {
+  var overlay = document.getElementById('global-search-overlay');
+  if (overlay && e.target === overlay) closeGlobalSearch();
+});
+
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeGlobalSearch();
+});
+
+// ============ TOOLTIPS FOR CHARTS ============
+var _chartTooltip = null;
+function showChartTooltip(canvas, x, y, content) {
+  if (!_chartTooltip) {
+    _chartTooltip = document.createElement('div');
+    _chartTooltip.style.cssText = 'position:fixed;background:rgba(28,28,30,.92);color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;z-index:600;pointer-events:none;transform:translateX(-50%);max-width:200px;text-align:center;line-height:1.4';
+    document.body.appendChild(_chartTooltip);
+  }
+  var rect = canvas.getBoundingClientRect();
+  _chartTooltip.innerHTML = content;
+  _chartTooltip.style.display = 'block';
+  _chartTooltip.style.left = (rect.left + x) + 'px';
+  _chartTooltip.style.top = (rect.top + y - 50) + 'px';
+}
+function hideChartTooltip() {
+  if (_chartTooltip) _chartTooltip.style.display = 'none';
+}
+
+function requestNotifPermission() {
+  if (!window.Notification) return;
+  Notification.requestPermission().then(function(p) {
+    var banner = document.getElementById('notif-banner');
+    if (p === 'granted') {
+      if (banner) banner.style.display = 'none';
+      setStatus('Notificaciones activadas', 'ok');
+      try { new Notification('Coil Scanner', {body: 'Notificaciones activadas. Te avisaremos cuando un cast se complete.'}); } catch(e){}
+    } else {
+      if (banner) banner.style.display = 'none';
+    }
+  });
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -2878,8 +2978,50 @@ window.addEventListener('load', function() {
   loadRecords();
   loadConsignments();
   goTab('scan');
+  // Show notification banner if not yet decided
+  if (window.Notification && Notification.permission === 'default') {
+    var nb = document.getElementById('notif-banner');
+    if (nb) nb.style.display = 'flex';
+  }
+  // Real-time sync: poll every 30 seconds
+  setInterval(function() {
+    if (!document.hidden) {
+      loadRecords().then(function() {
+        var activeTab = document.querySelector('.tab.on');
+        if (activeTab && activeTab.id === 't-dash') renderDash();
+        if (activeTab && activeTab.id === 't-hist') renderHistorial();
+      });
+    }
+  }, 30000);
+  // Also sync when tab becomes visible
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      loadRecords();
+      if (_offlineQueue.length > 0) flushOfflineQueue();
+    }
+  });
 });
 
 </script>
 </body>
-</html>
+</html
+  // Tooltip on click/touch
+  canvas.onclick = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var i = Math.floor((x - canvas._pL) / canvas._bw);
+    if (i >= 0 && i < canvas._days.length) {
+      var day = canvas._days[i];
+      var d = new Date(day);
+      var lbl = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+      var evgV = canvas._byDayE[day] || 0;
+      var pitV = canvas._byDayP[day] || 0;
+      var totV = canvas._byDay[day] || 0;
+      var content = '<b>' + lbl + '</b><br>' + totV.toFixed(3) + 't total';
+      if (evgV > 0) content += '<br>EVG: ' + evgV.toFixed(3) + 't';
+      if (pitV > 0) content += '<br>PITTINI: ' + pitV.toFixed(3) + 't';
+      showChartTooltip(canvas, x, 10, content);
+      setTimeout(hideChartTooltip, 3000);
+    }
+  };
+>
