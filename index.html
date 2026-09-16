@@ -3000,28 +3000,7 @@ window.addEventListener('load', function() {
       if (_offlineQueue.length > 0) flushOfflineQueue();
     }
   });
-});
 
-</script>
+});</script>
 </body>
-</html
-  // Tooltip on click/touch
-  canvas.onclick = function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var i = Math.floor((x - canvas._pL) / canvas._bw);
-    if (i >= 0 && i < canvas._days.length) {
-      var day = canvas._days[i];
-      var d = new Date(day);
-      var lbl = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
-      var evgV = canvas._byDayE[day] || 0;
-      var pitV = canvas._byDayP[day] || 0;
-      var totV = canvas._byDay[day] || 0;
-      var content = '<b>' + lbl + '</b><br>' + totV.toFixed(3) + 't total';
-      if (evgV > 0) content += '<br>EVG: ' + evgV.toFixed(3) + 't';
-      if (pitV > 0) content += '<br>PITTINI: ' + pitV.toFixed(3) + 't';
-      showChartTooltip(canvas, x, 10, content);
-      setTimeout(hideChartTooltip, 3000);
-    }
-  };
->
+</html>
