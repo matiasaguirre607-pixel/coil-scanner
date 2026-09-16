@@ -476,10 +476,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <!-- Fecha -->
   <div class="pbi-seg">
     <span class="pbi-seg-lbl">Periodo</span>
-    <button class="pbi-date-chip on" id="pd-today" onclick="setPeriod('today')">Hoy</button>
+    <button class="pbi-date-chip" id="pd-today" onclick="setPeriod('today')">Hoy</button>
     <button class="pbi-date-chip" id="pd-week" onclick="setPeriod('week')">7 dias</button>
     <button class="pbi-date-chip" id="pd-month" onclick="setPeriod('month')">30 dias</button>
-    <button class="pbi-date-chip" id="pd-all" onclick="setPeriod('all')">Todo</button>
+    <button class="pbi-date-chip on" id="pd-all" onclick="setPeriod('all')">Todo</button>
   </div>
   <!-- Maquina -->
   <div class="pbi-seg" style="margin-left:6px">
@@ -496,6 +496,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <!-- WO -->
   <div class="pbi-seg" style="margin-left:6px">
     <span class="pbi-seg-lbl">WO</span>
+    <button id="pm-nowo" onclick="setNoWOFilter()" class="pbi-chip" style="background:#fff0f0;color:#cc0000;border-color:#ffcdd2">Sin WO</button>
     <div id="wo-chips-dash" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
   <!-- Clear -->
@@ -575,6 +576,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
 </div>
 
+<!-- CALENDARIO -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">
+    Calendario de produccion
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="calPrev()" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #d0d8e0;background:#fff;cursor:pointer;font-size:14px">&#8592;</button>
+      <span id="cal-month-lbl" style="font-size:12px;font-weight:700;color:#1a2332;min-width:100px;text-align:center"></span>
+      <button onclick="calNext()" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #d0d8e0;background:#fff;cursor:pointer;font-size:14px">&#8594;</button>
+    </div>
+  </div>
+  <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+</div>
+
+<!-- COMPARAR PERIODOS -->
+<div class="pbi-card" style="margin-bottom:10px">
+  <div class="pbi-card-title">Comparar periodos</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Periodo A</div>
+      <select id="cmp-a" onchange="renderComparison()" style="width:100%;padding:8px;border:1.5px solid #e8ecf0;border-radius:8px;font-size:13px;font-family:inherit;background:#f8fafc;outline:none">
+        <option value="week0">Esta semana</option>
+        <option value="week1">Semana anterior</option>
+        <option value="month0">Este mes</option>
+        <option value="month1">Mes anterior</option>
+      </select>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Periodo B</div>
+      <select id="cmp-b" onchange="renderComparison()" style="width:100%;padding:8px;border:1.5px solid #e8ecf0;border-radius:8px;font-size:13px;font-family:inherit;background:#f8fafc;outline:none">
+        <option value="week1">Semana anterior</option>
+        <option value="week0">Esta semana</option>
+        <option value="month1">Mes anterior</option>
+        <option value="month0">Este mes</option>
+      </select>
+    </div>
+  </div>
+  <div id="cmp-result"></div>
+</div>
+
 <!-- MAQUINA DISTRIBUCION + PRODUCTO -->
 <div class="pbi-row" style="grid-template-columns:1fr 1fr">
   <div class="pbi-card">
@@ -640,7 +680,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
     <div class="field">
       <label>Toneladas producidas</label>
-      <input type="number" id="prod-ton-inp" class="prod-inp" placeholder="Ej: 93.500" step="0.001" min="0">
+      <input type="number" id="prod-ton-inp" class="prod-inp" placeholder="Ej: 93.500" step="0.001" min="0" onkeydown="if(event.key==='Enter')saveProduccion()">
     </div>
     <div class="field" style="margin-bottom:0">
       <label>Notas (opcional)</label>
@@ -700,16 +740,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <!-- Summary KPIs -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px" id="cons-kpis" style="display:none">
     <div style="background:#f0f5ff;border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:22px;font-weight:700;color:#007aff" id="cons-total-n">0</div>
-      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase">Total</div>
+      <div style="font-size:22px;font-weight:700;color:#007aff;cursor:pointer" id="cons-total-n" onclick="filterCons('all')">0</div>
+      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('all')">Total</div>
     </div>
     <div style="background:#e8ffe8;border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:22px;font-weight:700;color:#1a7a3c" id="cons-match-n">0</div>
-      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase">Escaneados</div>
+      <div style="font-size:22px;font-weight:700;color:#1a7a3c;cursor:pointer" id="cons-match-n" onclick="filterCons('ok')">0</div>
+      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('ok')">Escaneados</div>
     </div>
     <div style="background:#fff0f0;border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:22px;font-weight:700;color:#cc0000" id="cons-miss-n">0</div>
-      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase">Faltantes</div>
+      <div style="font-size:22px;font-weight:700;color:#cc0000;cursor:pointer" id="cons-miss-n" onclick="filterCons('miss')">0</div>
+      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('miss')">Faltantes</div>
     </div>
   </div>
 
@@ -770,7 +810,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div id="global-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:400">
   <div style="background:var(--card);margin:60px 16px 0;border-radius:14px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="global-search-inp" type="text" placeholder="Buscar coil, cast, WO, producto..." style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;outline:none" oninput="runGlobalSearch(this.value)">
+      <input id="global-search-inp" type="text" placeholder="Buscar coil, cast, WO, producto..." style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;outline:none" oninput="runGlobalSearch(this.value)" onkeydown="if(event.key==='Escape')closeGlobalSearch()">
       <button onclick="closeGlobalSearch()" style="padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-weight:700">✕</button>
     </div>
     <div id="global-search-results" style="max-height:60vh;overflow-y:auto"></div>
@@ -779,7 +819,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div id="sel-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;padding:12px 16px;z-index:190;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="sel-count" style="color:#fff;font-size:14px;font-weight:600;flex:1"></span>
-  <input id="sel-wo-inp" type="text" placeholder="Escribi la WO..." style="padding:9px 12px;border:none;border-radius:8px;font-size:14px;font-family:inherit;width:160px;outline:none">
+  <input id="sel-wo-inp" type="text" placeholder="Escribi la WO..." onkeydown="if(event.key==='Enter'){var wo=this.value.trim();if(wo)assignWOToSelected(wo);}" style="padding:9px 12px;border:none;border-radius:8px;font-size:14px;font-family:inherit;width:160px;outline:none">
   <button onclick="var wo=document.getElementById('sel-wo-inp').value.trim();if(wo)assignWOToSelected(wo);else alert('Escribi la WO');" style="padding:9px 16px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Asignar WO</button>
   <button onclick="_selectedIds={};updateSelectionBar();document.querySelectorAll('.coil-chk').forEach(function(cb){cb.checked=false;});" style="padding:9px 12px;background:#636366;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">Cancelar</button>
 </div>
@@ -822,8 +862,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div class="modal-date" id="m-date"></div>
       <div id="m-fields"></div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
-        <input id="modal-wo-inp" type="text" placeholder="Asignar WO..." style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg)">
+        <input id="modal-wo-inp" type="text" placeholder="Asignar WO..." onkeydown="if(event.key==='Enter')saveModalWO()" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg)">
         <button onclick="saveModalWO()" style="padding:10px 14px;background:#34c759;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Guardar WO</button>
+      </div>
+      <div id="modal-history" style="display:none;padding:10px 0;border-top:1px solid var(--border);margin-top:8px">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Historial de cambios</div>
+        <div id="modal-history-list" style="font-size:12px;color:var(--muted)"></div>
       </div>
       <div class="modal-btns">
         <button class="modal-del" id="btn-del">&#128465; Eliminar</button>
@@ -1224,6 +1268,26 @@ function openModal(r) {
   activeRec = r;
   var woInp = document.getElementById('modal-wo-inp');
   if (woInp) woInp.value = r.wo || '';
+  // Show change history for this record
+  var histDiv = document.getElementById('modal-history');
+  var histList = document.getElementById('modal-history-list');
+  var recHistory = _changeLog.filter(function(log){return log.id === r.id;});
+  if (histDiv && histList) {
+    if (recHistory.length) {
+      var fieldNames = {peso:'Peso',cast:'Cast',coil:'Coil',maquina:'Maquina',wo:'WO'};
+      histDiv.style.display = 'block';
+      histList.innerHTML = recHistory.map(function(log){
+        var d = new Date(log.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        return '<div style="padding:5px 0;border-bottom:1px solid var(--border)">' +
+          '<span style="font-weight:600;color:var(--text)">'+(fieldNames[log.field]||log.field)+':</span> ' +
+          '<span style="color:#ff3b30;text-decoration:line-through">'+(log.from||'—')+'</span> ' +
+          '<span style="color:#34c759">→ '+(log.to||'—')+'</span> ' +
+          '<span style="color:var(--muted);font-size:10px">' + d + '</span></div>';
+      }).join('');
+    } else {
+      histDiv.style.display = 'none';
+    }
+  }
   document.getElementById('m-title').textContent = r.producto || 'Registro';
   document.getElementById('m-date').textContent = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   var mf = document.getElementById('m-fields'); mf.innerHTML = '';
@@ -1246,10 +1310,11 @@ async function delRecord() {
 function parseTon(p) { if(!p)return 0; var n=parseFloat(String(p).replace(',','.')); return isNaN(n)?0:n; }
 function sumTon(arr) { return arr.reduce(function(s,r){return s+parseTon(r.peso);},0); }
 // ============ DASHBOARD STATE ============
-var _dbPeriod = 'today';
+var _dbPeriod = 'all';
 var _dbMaq = '';
 var _dbProd = '';
 var _dbWO = '';
+var _dbNoWO = false;
 
 function setPeriod(p) {
   _dbPeriod = p;
@@ -1257,6 +1322,16 @@ function setPeriod(p) {
     var b = document.getElementById('pd-'+x);
     if (b) b.className = 'pbi-date-chip'+(p===x?' on':'');
   });
+  renderDash();
+}
+
+function setNoWOFilter() {
+  _dbNoWO = !_dbNoWO;
+  var btn = document.getElementById('pm-nowo');
+  if (btn) {
+    btn.style.background = _dbNoWO ? '#ff3b30' : '#fff0f0';
+    btn.style.color = _dbNoWO ? '#fff' : '#cc0000';
+  }
   renderDash();
 }
 
@@ -1293,6 +1368,7 @@ function getFilteredData() {
     if (_dbMaq && r.maquina !== _dbMaq) return false;
     if (_dbProd && normalizeProductoKey(r.producto) !== _dbProd) return false;
     if (_dbWO && r.wo !== _dbWO) return false;
+    if (_dbNoWO && r.wo) return false;
     if (_dbPeriod !== 'all' && r.created_at) {
       var d = new Date(r.created_at);
       var diff = (now - d) / 86400000;
@@ -1414,6 +1490,10 @@ function renderDash() {
   }
   // Cast progress
   renderCastProgressDB(data);
+  // Calendar
+  renderCalendar();
+  // Comparison
+  renderComparison();
 
   // Consignment summary
   renderConsSummaryDash();
@@ -1938,6 +2018,23 @@ function renderSavedCons() {
     el.innerHTML = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Sin consignments. Subi un PDF arriba.</div>';
     return;
   }
+  // Update global KPIs
+  var totalAll = _consignments.length;
+  var scannedAll = _consignments.filter(function(r){return isCoilScanned(r.lot_no);}).length;
+  var missingAll = totalAll - scannedAll;
+  var tonTotal = _consignments.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
+  var tonScanned = _consignments.filter(function(r){return isCoilScanned(r.lot_no);}).reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
+  // Update KPI elements
+  var tn = document.getElementById('cons-total-n'); if(tn) tn.textContent = totalAll;
+  var mn = document.getElementById('cons-match-n'); if(mn) mn.textContent = scannedAll;
+  var msn = document.getElementById('cons-miss-n'); if(msn) msn.textContent = missingAll;
+  var tt = document.getElementById('cons-ton-total'); if(tt) tt.textContent = tonTotal.toFixed(3)+'t';
+  var tm = document.getElementById('cons-ton-match'); if(tm) tm.textContent = tonScanned.toFixed(3)+'t';
+  var tmiss = document.getElementById('cons-ton-miss'); if(tmiss) tmiss.textContent = (tonTotal-tonScanned).toFixed(3)+'t';
+  // Show KPI sections
+  var kpis = document.getElementById('cons-kpis'); if(kpis) kpis.style.display='grid';
+  var tonsec = document.getElementById('cons-ton-summary'); if(tonsec) tonsec.style.display='block';
+  var filters = document.getElementById('cons-filters'); if(filters) filters.style.display='flex';
   var refs = {};
   _consignments.forEach(function(r) {
     var k = r.referencia || 'Sin ref';
@@ -2038,7 +2135,7 @@ function isCoilScanned(lotNo) {
 }
 
 function showConsMatch(ref) {
-  var items = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
+  var items = ref === '__all__' ? _consignments : _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
   var prods2 = unique(items.map(function(r){return r.producto;}).filter(Boolean));
   document.getElementById('cons-ref-lbl').textContent = 'Ref: '+ref;
   var prodEl = document.getElementById('cons-prod-lbl');
@@ -2058,7 +2155,12 @@ var _consCurrentItems = [];
 function filterCons(f) {
   _consFilter = f;
   updateConsFilterBtns();
-  renderConsList(_consCurrentItems);
+  // If no specific ref selected, show all consignments filtered
+  if (!_consCurrentItems.length) {
+    showConsMatch('__all__');
+  } else {
+    renderConsList(_consCurrentItems);
+  }
 }
 
 function updateConsFilterBtns() {
@@ -2952,6 +3054,192 @@ function requestNotifPermission() {
   });
 }
 
+// Event delegation for Enter key on WO inputs
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var t = e.target;
+  // WO assign in historial
+  if (t.id && t.id.startsWith('wo-inp-')) {
+    e.preventDefault();
+    assignWO(t.id.substr(7));
+  }
+});
+
+// ============ CALENDARIO ============
+var _calYear = new Date().getFullYear();
+var _calMonth = new Date().getMonth();
+
+function calPrev() {
+  _calMonth--;
+  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+  renderCalendar();
+}
+function calNext() {
+  _calMonth++;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  var grid = document.getElementById('cal-grid');
+  var lbl = document.getElementById('cal-month-lbl');
+  if (!grid) return;
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if (lbl) lbl.textContent = meses[_calMonth] + ' ' + _calYear;
+  
+  // Build day map
+  var byDay = {};
+  records.forEach(function(r) {
+    if (!r.created_at) return;
+    var d = new Date(r.created_at);
+    if (d.getFullYear() !== _calYear || d.getMonth() !== _calMonth) return;
+    var k = d.getDate();
+    if (!byDay[k]) byDay[k] = {coils:0, ton:0};
+    byDay[k].coils++;
+    byDay[k].ton += parseTon(r.peso);
+  });
+
+  var maxTon = Math.max.apply(null, Object.values(byDay).map(function(v){return v.ton;})) || 1;
+  
+  // Day headers
+  var dias = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+  var html = dias.map(function(d){return '<div style="text-align:center;font-size:10px;font-weight:700;color:#8e9aab;padding:4px 0">' + d + '</div>';}).join('');
+  
+  // First day of month
+  var firstDay = new Date(_calYear, _calMonth, 1).getDay();
+  var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
+  var today = new Date();
+  
+  // Empty cells
+  for (var i = 0; i < firstDay; i++) html += '<div></div>';
+  
+  // Day cells
+  for (var d2 = 1; d2 <= daysInMonth; d2++) {
+    var data = byDay[d2];
+    var isToday = today.getDate()===d2 && today.getMonth()===_calMonth && today.getFullYear()===_calYear;
+    var intensity = data ? Math.max(0.15, Math.min(1, data.ton/maxTon)) : 0;
+    var bg = data ? 'rgba(0,122,255,' + intensity + ')' : '#f8fafc';
+    var textColor = data && intensity > 0.5 ? '#fff' : data ? '#007aff' : '#c7c7cc';
+    var border = isToday ? '2px solid #007aff' : '1px solid #e8ecf0';
+    html += '<div style="aspect-ratio:1;border-radius:8px;background:' + bg + ';border:' + border + ';display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:' + (data?'pointer':'default') + ';padding:2px"' + 
+      (data ? ' onclick="filterByDay(' + _calYear + ',' + _calMonth + ',' + d2 + ')" title="' + (data?data.coils+' coils, '+data.ton.toFixed(2)+'t':'') + '"' : '') + '>' +
+      '<div style="font-size:12px;font-weight:' + (isToday?'800':'600') + ';color:' + textColor + '">' + d2 + '</div>' +
+      (data ? '<div style="font-size:9px;color:' + textColor + ';font-weight:700">' + data.ton.toFixed(1) + 't</div>' : '') +
+    '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function filterByDay(year, month, day) {
+  // Set date filter and go to historial
+  var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+  var histDate = document.getElementById('hist-date');
+  if (histDate) { histDate.value = dateStr; renderHistorial(); goTab('hist'); }
+}
+
+// ============ COMPARAR PERIODOS ============
+function getPeriodData(val) {
+  var now = new Date();
+  var start, end;
+  if (val === 'week0') {
+    start = new Date(now); start.setDate(start.getDate() - start.getDay()); start.setHours(0,0,0,0);
+    end = new Date(start); end.setDate(end.getDate() + 7);
+  } else if (val === 'week1') {
+    end = new Date(now); end.setDate(end.getDate() - end.getDay()); end.setHours(0,0,0,0);
+    start = new Date(end); start.setDate(start.getDate() - 7);
+  } else if (val === 'month0') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  } else if (val === 'month1') {
+    start = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    end = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return records.filter(function(r){
+    if (!r.created_at) return false;
+    var d = new Date(r.created_at);
+    return d >= start && d < end;
+  });
+}
+
+function getPeriodLabel(val) {
+  var labels = {week0:'Esta semana', week1:'Semana anterior', month0:'Este mes', month1:'Mes anterior'};
+  return labels[val] || val;
+}
+
+function renderComparison() {
+  var aVal = document.getElementById('cmp-a').value;
+  var bVal = document.getElementById('cmp-b').value;
+  var aData = getPeriodData(aVal);
+  var bData = getPeriodData(bVal);
+  var aTon = sumTon(aData), bTon = sumTon(bData);
+  var aCount = aData.length, bCount = bData.length;
+  var tonDiff = aTon - bTon;
+  var cntDiff = aCount - bCount;
+  var tonPct = bTon > 0 ? ((tonDiff/bTon)*100).toFixed(1) : null;
+  var cntPct = bCount > 0 ? ((cntDiff/bCount)*100).toFixed(1) : null;
+  
+  var el = document.getElementById('cmp-result');
+  if (!el) return;
+  
+  function arrow(diff) { return diff >= 0 ? '▲' : '▼'; }
+  function color(diff) { return diff >= 0 ? '#34c759' : '#ff3b30'; }
+  
+  el.innerHTML = 
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+      '<div style="background:#f0f5ff;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">' + getPeriodLabel(aVal) + '</div>' +
+        '<div style="font-size:24px;font-weight:700;color:#007aff">' + aTon.toFixed(3) + 't</div>' +
+        '<div style="font-size:12px;color:#8e9aab">' + aCount + ' coils</div>' +
+      '</div>' +
+      '<div style="background:#f8fafc;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">' + getPeriodLabel(bVal) + '</div>' +
+        '<div style="font-size:24px;font-weight:700;color:#8e9aab">' + bTon.toFixed(3) + 't</div>' +
+        '<div style="font-size:12px;color:#8e9aab">' + bCount + ' coils</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="background:#f8fafc;border-radius:10px;padding:12px;display:flex;gap:16px;justify-content:space-around;text-align:center">' +
+      '<div>' +
+        '<div style="font-size:18px;font-weight:700;color:' + color(tonDiff) + '">' + arrow(tonDiff) + ' ' + Math.abs(tonDiff).toFixed(3) + 't</div>' +
+        '<div style="font-size:11px;color:#8e9aab">' + (tonPct ? tonPct + '% toneladas' : 'Sin comparacion') + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:18px;font-weight:700;color:' + color(cntDiff) + '">' + arrow(cntDiff) + ' ' + Math.abs(cntDiff) + ' coils</div>' +
+        '<div style="font-size:11px;color:#8e9aab">' + (cntPct ? cntPct + '% coils' : 'Sin comparacion') + '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// ============ WOs DEL SCHEDULE ============
+var _scheduleWOs = [];
+
+async function loadScheduleWOs() {
+  // Try to fetch WOs from Schedule app
+  try {
+    // Schedule stores data in localStorage under 'prod_schedule_v1'
+    // Since it's a different domain we can't access it directly
+    // But we can read from our own records
+    var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
+    _scheduleWOs = wos;
+    updateWOChipsFromSchedule();
+  } catch(e) {}
+}
+
+function updateWOChipsFromSchedule() {
+  var chips = document.getElementById('wo-chips');
+  if (!chips) return;
+  chips.innerHTML = '';
+  _scheduleWOs.forEach(function(w) {
+    var el = document.createElement('span');
+    el.className = 'wo-chip';
+    el.textContent = w;
+    el.addEventListener('click', function() {
+      document.getElementById('wo-input').value = w;
+      document.querySelectorAll('.wo-chip').forEach(function(c){c.classList.toggle('on', c===el);});
+    });
+    chips.appendChild(el);
+  });
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -2975,7 +3263,7 @@ window.addEventListener('load', function() {
   if(pdfIn)pdfIn.addEventListener('change',handlePDFUpload);
   loadChangeLog();
   loadOfflineQueue();
-  loadRecords();
+  loadRecords().then(loadScheduleWOs);
   loadConsignments();
   goTab('scan');
   // Show notification banner if not yet decided
