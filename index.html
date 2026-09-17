@@ -968,19 +968,17 @@ async function callGemini(base64, mType) {
     saveOfflineQueue();
     throw new Error('Sin conexion - guardado en cola offline (' + _offlineQueue.length + ' pendiente' + (_offlineQueue.length>1?'s':'') + ')');
   }
-  var wo = document.getElementById('wo-input').value.trim();
-  var operario = document.getElementById('operario-input').value.trim();
-  var notas = document.getElementById('notas-input').value.trim();
-  var resp = await fetch('/scan', {
+  // Only EXTRACT - do NOT save yet
+  var resp = await fetch('/extract', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({imageBase64: base64, mediaType: mType, wo: wo, operario: operario, notas: notas, maquina: currentMachine})
+    body: JSON.stringify({imageBase64: base64, mediaType: mType})
   });
   var data = await resp.json();
-  if (resp.status === 409) { data._dup = true; return data; }
   if (!resp.ok) throw new Error(data.error || 'Error ' + resp.status);
   return data;
 }
+
 
 async function saveToDB(wo, producto, coil, cast, peso, operario, notas, maquina) {
   return {ok: true}; // scan.js already saved
@@ -3525,12 +3523,18 @@ async function confirmScan() {
   if (!coil) { setStatus('Ingresa el numero de coil', 'err'); if(btn){btn.disabled=false;btn.textContent='✓ Confirmar y guardar';} return; }
 
   try {
-    var result = await saveToDB(wo, producto, coil, cast, peso, operario, notas, currentMachine);
-    if (result && result.duplicate) {
+    var saveResp = await fetch('/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({wo:wo, producto:producto, coil:coil, cast:cast, peso:peso, operario:operario, notas:notas, maquina:currentMachine})
+    });
+    var saveData = await saveResp.json();
+    if (saveResp.status === 409 || saveData.duplicate) {
       setStatus('Coil duplicado: ' + coil + ' ya fue escaneado', 'warn');
       if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
       return;
     }
+    if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
     // Check consignment match with confirmed data
     checkCoilVsConsignment(coil, cast, producto, peso, currentMachine, wo);
     setStatus('&#10003; Guardado: ' + coil + (wo ? ' — WO: ' + wo : ''), 'ok');
