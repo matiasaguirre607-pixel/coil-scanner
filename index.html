@@ -1598,6 +1598,7 @@ function renderCountTimeline(data) {
   var pL=30,pB=20,pT=12,pR=8;
   var cW=W-pL-pR,cH=H-pB-pT;
   var bw=cW/Math.max(days.length,1);
+  canvas._days=days;canvas._byDay=byDay;canvas._byDayE=byDayE;canvas._byDayP=byDayP;canvas._pL=pL;canvas._bw=bw;
   ctx.fillStyle='#f8fafc';ctx.fillRect(pL,pT,cW,cH);
   [0,0.5,1].forEach(function(f){
     var y=pT+cH*(1-f);
@@ -1868,31 +1869,40 @@ async function captureAndAnalyze() {
   var notas = document.getElementById('notas-input').value.trim();
 
   try {
-    var resp = await fetch('/scan', {
+    // Extract only - do not save yet
+    var extractResp = await fetch('/extract', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({imageBase64: base64, mediaType: 'image/jpeg', wo: wo, operario: operario, notas: notas, maquina: currentMachine})
+      body: JSON.stringify({imageBase64: base64, mediaType: 'image/jpeg'})
     });
-    var data = await resp.json();
+    var data = await extractResp.json();
+    if (!extractResp.ok) throw new Error(data.error || 'Error extrayendo datos');
 
-    if (resp.status === 409 && data.duplicate) {
-      var ex = data.existing;
-      status.textContent = '⚠ DUPLICADO — Coil ' + (ex.coil||'') + ' ya escaneado el ' + (ex.created_at ? new Date(ex.created_at).toLocaleDateString('es') : '');
-      status.style.color = '#ff9500';
-      btn.disabled = false; btn.style.background = '#fff';
-      return;
-    }
-    if (!resp.ok) throw new Error(data.error || 'Error');
+    // Close camera and show confirm card
+    closeCamera();
+    
+    // Store pending scan
+    _pendingScan = {
+      base64: base64, mediaType: 'image/jpeg',
+      wo: wo, operario: operario, notas: notas,
+      parsed: data,
+      coil: data.coil ? String(data.coil).trim() : null,
+      peso: normalizePeso(data.peso),
+      producto: normalizeProducto(data.producto)
+    };
 
-    status.textContent = '✓ Guardado: ' + (data.producto||'') + ' — ' + (data.peso||'') + 't — Coil ' + (data.coil||'');
-    status.style.color = '#34c759';
-    await loadRecords();
-    setTimeout(function() {
-      status.textContent = 'Listo para siguiente etiqueta';
-      status.style.color = 'rgba(255,255,255,.7)';
-      btn.disabled = false;
-      btn.style.background = '#fff';
-    }, 2000);
+    // Show image preview
+    var previewImg = document.getElementById('preview-img');
+    var previewWrap = document.getElementById('preview-wrap');
+    if (previewImg) { previewImg.src = 'data:image/jpeg;base64,' + base64; }
+    if (previewWrap) previewWrap.style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+    pendingImg = 'data:image/jpeg;base64,' + base64;
+
+    // Show result card with editable fields
+    showResult({peso:data.peso, producto:data.producto, coil:data.coil, cast:data.cast}, wo);
+    setStatus('Revisá los datos y confirmá para guardar', 'warn');
+
   } catch(err) {
     status.textContent = '✗ ' + err.message;
     status.style.color = '#ff3b30';
@@ -2661,7 +2671,6 @@ function renderTimeline(data) {
   canvas.width = W; canvas.height = H;
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  canvas._days = days; canvas._byDay = byDay; canvas._byDayE = byDayE; canvas._byDayP = byDayP; canvas._pL = pL; canvas._bw = bw; canvas._pT = pT; canvas._cH = cH; canvas._mx = mx; canvas._W = W;
   var byDay={}, byDayE={}, byDayP={};
   data.forEach(function(r){
     if(!r.created_at) return;
@@ -2672,12 +2681,14 @@ function renderTimeline(data) {
     else if(r.maquina==='PITTINI')byDayP[k]=(byDayP[k]||0)+parseTon(r.peso);
   });
   var days=Object.keys(byDay).sort();
+  var pL=36,pB=24,pT=14,pR=8;
+  var cW2=W-pL-pR,cH=160-pB-pT;
+  var bw=days.length>0?cW2/days.length:1;
   if(!days.length){canvas.height=40;ctx.fillStyle='#8e9aab';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Sin datos para el periodo',W/2,25);return;}
   canvas.height=H;
   var vals=days.map(function(d){return byDay[d];});
   var mx=Math.max.apply(null,vals)||1;
-  var pL=36,pB=24,pT=14,pR=8,cW=W-pL-pR,cH=H-pB-pT;
-  var bw=cW/Math.max(days.length,1);
+  var cW=W-pL-pR;
   ctx.fillStyle='#f8fafc';ctx.fillRect(pL,pT,cW,cH);
   [0,0.25,0.5,0.75,1].forEach(function(f){
     var y=pT+cH*(1-f);
