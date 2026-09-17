@@ -763,6 +763,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
 
+  <!-- PARA VERIFICAR -->
+  <div id="para-verificar-card" class="cons-card" style="margin-bottom:10px;display:none">
+    <div class="cons-hdr" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="color:#ff3b30">&#9888; Para verificar</span>
+      <span id="pv-count-lbl" style="font-size:12px;color:#ff3b30;font-weight:700;background:#fff0f0;padding:3px 8px;border-radius:99px"></span>
+    </div>
+    <div style="font-size:12px;color:#636366;margin-bottom:8px">Coils escaneados que NO coinciden con ningun consignment cargado. Verificar si el escaner leyó correctamente.</div>
+    <div id="para-verificar-list"></div>
+  </div>
+
+  <!-- VERIFICACION CRUZADA -->
+  <div id="cross-check-card" class="cons-card" style="margin-bottom:10px;display:none">
+    <div class="cons-hdr" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span>&#10003; Verificacion cruzada completa</span>
+      <button onclick="runCrossCheck()" style="padding:5px 12px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">&#8635; Actualizar</button>
+    </div>
+    <div id="cross-check-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px"></div>
+    <div id="cross-check-list"></div>
+  </div>
+
   <!-- Filter tabs -->
   <div id="cons-filters" style="display:none;display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
     <button onclick="filterCons('all')" id="cf-all" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#007aff;color:#fff">Todos</button>
@@ -977,7 +997,7 @@ function goTab(n) {
   if (n === 'hist') renderHistorial();
   if (n === 'dash') requestAnimationFrame(function(){requestAnimationFrame(renderDash);});
   if (n === 'prod') loadProduccion();
-  if (n === 'cons') loadConsignments();
+  if (n === 'cons') { loadConsignments(); renderParaVerificar(); runCrossCheck(); }
 }
 function renderWoChips() {
   var seen = {}, wos = [];
@@ -1135,6 +1155,9 @@ function showResult(d, wo) {
     setStatus('Atencion: peso inusual (' + d.peso + 't) — verificar etiqueta', 'warn');
   }
   // Check if coil is in a consignment
+  if (d.coil) {
+    checkCoilVsConsignment(d.coil, d.cast, d.producto, d.peso, currentMachine, document.getElementById('wo-input').value.trim());
+  }
   if (d.coil && _consignments && _consignments.length) {
     var consMatch = _consignments.find(function(r){return String(r.lot_no||'').trim()===String(d.coil||'').trim();});
     if (consMatch) {
@@ -3242,6 +3265,195 @@ function updateWOChipsFromSchedule() {
   });
 }
 
+// ============ VERIFICACION CRUZADA ============
+
+// Para Verificar - localStorage persistence
+var _paraVerificar = []; // {coil, cast, producto, peso, maquina, wo, ts, base64thumb}
+
+function loadParaVerificar() {
+  try {
+    var saved = localStorage.getItem('coil_para_verificar');
+    if (saved) _paraVerificar = JSON.parse(saved);
+  } catch(e) { _paraVerificar = []; }
+}
+
+function saveParaVerificar() {
+  try { localStorage.setItem('coil_para_verificar', JSON.stringify(_paraVerificar.slice(0,200))); } catch(e){}
+}
+
+function addToParaVerificar(coil, cast, producto, peso, maquina, wo, reason) {
+  // Check if already in list
+  if (_paraVerificar.find(function(x){return x.coil === coil;})) return;
+  _paraVerificar.unshift({
+    coil: coil, cast: cast, producto: producto,
+    peso: peso, maquina: maquina, wo: wo,
+    reason: reason || 'No encontrado en consignment',
+    ts: new Date().toISOString()
+  });
+  saveParaVerificar();
+}
+
+function removeFromParaVerificar(coil) {
+  _paraVerificar = _paraVerificar.filter(function(x){return x.coil !== coil;});
+  saveParaVerificar();
+  renderParaVerificar();
+}
+
+function renderParaVerificar() {
+  var card = document.getElementById('para-verificar-card');
+  var list = document.getElementById('para-verificar-list');
+  var lbl = document.getElementById('pv-count-lbl');
+  if (!card || !list) return;
+
+  if (!_paraVerificar.length) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  if (lbl) lbl.textContent = _paraVerificar.length + ' pendiente' + (_paraVerificar.length > 1 ? 's' : '');
+
+  list.innerHTML = _paraVerificar.map(function(r) {
+    var d = new Date(r.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+    return '<div style="padding:10px;background:#fff8f8;border-radius:8px;margin-bottom:6px;border-left:3px solid #ff3b30">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:14px;font-weight:700;font-family:monospace">' + esc(r.coil||'—') + '</div>' +
+          '<div style="font-size:12px;color:#636366;margin-top:2px">' +
+            esc(r.producto||'') + (r.cast ? ' · Cast: ' + esc(r.cast) : '') +
+            (r.peso ? ' · ' + esc(r.peso) + 't' : '') +
+            ' <span style="color:' + mc + ';font-weight:700">' + esc(r.maquina||'') + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#ff3b30;margin-top:3px">⚠ ' + esc(r.reason) + '</div>' +
+          '<div style="font-size:10px;color:#8e8e93;margin-top:2px">' + d + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px;flex-shrink:0">' +
+          '<button data-coil="' + esc(r.coil) + '" onclick="removeFromParaVerificar(this.dataset.coil);renderParaVerificar()" title="Marcar como revisado" style="padding:5px 8px;background:#34c759;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">&#10003; OK</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// Cross-check: scan all records against consignments
+function runCrossCheck() {
+  var card = document.getElementById('cross-check-card');
+  var summary = document.getElementById('cross-check-summary');
+  var list = document.getElementById('cross-check-list');
+  if (!card) return;
+
+  if (!_consignments.length) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+
+  var totalScanned = records.length;
+  var inCons = 0, notInCons = 0, consNotScanned = 0;
+  var missingFromScan = []; // consignments not yet scanned
+  var extraScans = []; // scanned but not in consignment
+
+  // Check each record against consignments
+  records.forEach(function(r) {
+    if (!r.coil) return;
+    var found = _consignments.find(function(c){
+      return String(c.lot_no||'').trim() === String(r.coil||'').trim();
+    });
+    if (found) { inCons++; }
+    else { notInCons++; extraScans.push(r); }
+  });
+
+  // Check each consignment against scanned records
+  _consignments.forEach(function(con) {
+    if (!con.lot_no) return;
+    var found = records.find(function(r){
+      return String(r.coil||'').trim() === String(con.lot_no||'').trim();
+    });
+    if (!found) {
+      consNotScanned++;
+      missingFromScan.push(con);
+    }
+  });
+
+  // Summary tiles
+  if (summary) {
+    summary.innerHTML = [
+      {n: inCons, lbl: 'Coinciden', color: '#34c759', bg: '#e8ffe8'},
+      {n: notInCons, lbl: 'Extra (sin cons.)', color: '#ff9500', bg: '#fff5e8'},
+      {n: consNotScanned, lbl: 'Sin escanear', color: '#ff3b30', bg: '#fff0f0'},
+    ].map(function(t) {
+      return '<div style="background:' + t.bg + ';border-radius:10px;padding:10px;text-align:center">' +
+        '<div style="font-size:24px;font-weight:800;color:' + t.color + '">' + t.n + '</div>' +
+        '<div style="font-size:10px;font-weight:700;color:' + t.color + ';text-transform:uppercase">' + t.lbl + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Detail list
+  var html = '';
+
+  if (notInCons > 0) {
+    html += '<div style="font-size:11px;font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Escaneados SIN consignment (' + notInCons + ')</div>';
+    html += extraScans.map(function(r) {
+      var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      return '<div style="padding:8px 10px;background:#fff8f0;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff9500;display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:700;font-family:monospace">' + esc(r.coil||'—') + '</div>' +
+          '<div style="font-size:11px;color:#636366">' + esc(r.producto||'') + (r.cast?' · '+esc(r.cast):'') + ' <span style="color:'+mc+';font-weight:700">'+esc(r.maquina||'')+'</span></div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#8e8e93;flex-shrink:0">' + d + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (consNotScanned > 0) {
+    html += '<div style="font-size:11px;font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments SIN escanear (' + consNotScanned + ')</div>';
+    html += missingFromScan.slice(0,50).map(function(con) {
+      return '<div style="padding:8px 10px;background:#fff8f8;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff3b30;display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
+          '<div style="font-size:11px;color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#8e8e93;flex-shrink:0">' + esc(con.cast_no||'') + '</div>' +
+      '</div>';
+    }).join('');
+    if (missingFromScan.length > 50) html += '<div style="font-size:12px;color:#8e8e93;text-align:center;padding:8px">... y ' + (missingFromScan.length-50) + ' mas</div>';
+  }
+
+  if (!notInCons && !consNotScanned) {
+    html = '<div style="color:#34c759;font-weight:700;font-size:14px;text-align:center;padding:12px">&#10003; Todo coincide perfectamente</div>';
+  }
+
+  if (list) list.innerHTML = html;
+}
+
+// Check a single coil against consignments after scan
+function checkCoilVsConsignment(coil, cast, producto, peso, maquina, wo) {
+  if (!_consignments.length) return; // no consignments loaded, skip
+  var found = _consignments.find(function(c){
+    return String(c.lot_no||'').trim() === String(coil||'').trim();
+  });
+  if (!found) {
+    addToParaVerificar(coil, cast, producto, peso, maquina, wo, 'No encontrado en consignment');
+    renderParaVerificar();
+    // Show warning banner
+    var warnBanner = document.getElementById('cons-warn-banner');
+    if (!warnBanner) {
+      warnBanner = document.createElement('div');
+      warnBanner.id = 'cons-warn-banner';
+      warnBanner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#ff9500;color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:700;z-index:500;box-shadow:0 4px 20px rgba(255,149,0,.4);text-align:center;max-width:90vw;cursor:pointer';
+      warnBanner.onclick = function(){this.style.display='none';goTab('cons');};
+      document.body.appendChild(warnBanner);
+    }
+    warnBanner.innerHTML = '&#9888; Coil ' + coil + ' NO en consignment<br><span style="font-size:12px;opacity:.9">Guardado en "Para verificar" · Tap para ver</span>';
+    warnBanner.style.display = 'block';
+    setTimeout(function(){if(warnBanner)warnBanner.style.display='none';}, 6000);
+  }
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -3265,6 +3477,7 @@ window.addEventListener('load', function() {
   if(pdfIn)pdfIn.addEventListener('change',handlePDFUpload);
   loadChangeLog();
   loadOfflineQueue();
+  loadParaVerificar();
   loadRecords().then(loadScheduleWOs);
   loadConsignments();
   goTab('scan');
