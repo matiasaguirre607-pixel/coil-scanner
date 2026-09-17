@@ -828,7 +828,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div style="width:75%;max-width:340px;aspect-ratio:1.6;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div>
     </div>
   </div>
-  <div style="padding:20px 16px 34px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px">
+  <!-- CONFIRM OVERLAY inside camera -->
+  <div id="cam-confirm" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.92);padding:16px 16px 34px;z-index:10">
+    <div id="cam-confirm-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="camReject()" style="flex:1;padding:16px;background:#ff3b30;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer">&#10005; No</button>
+      <button onclick="camConfirm()" id="cam-confirm-btn" style="flex:2;padding:16px;background:#34c759;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer">&#10003; Confirmar</button>
+    </div>
+  </div>
+
+  <div style="padding:20px 16px 34px;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:10px" id="cam-shoot-bar">
     <button onclick="captureAndAnalyze()" id="cam-capture-btn" style="width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid #007aff;cursor:pointer;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,122,255,.5)">&#128247;</button>
     <div id="cam-status" style="color:rgba(255,255,255,.8);font-size:13px;text-align:center;min-height:18px;max-width:280px"></div>
   </div>
@@ -1878,30 +1887,18 @@ async function captureAndAnalyze() {
     var data = await extractResp.json();
     if (!extractResp.ok) throw new Error(data.error || 'Error extrayendo datos');
 
-    // Close camera and show confirm card
-    closeCamera();
-    
     // Store pending scan
     _pendingScan = {
       base64: base64, mediaType: 'image/jpeg',
       wo: wo, operario: operario, notas: notas,
-      parsed: data,
       coil: data.coil ? String(data.coil).trim() : null,
+      cast: data.cast || null,
       peso: normalizePeso(data.peso),
       producto: normalizeProducto(data.producto)
     };
 
-    // Show image preview
-    var previewImg = document.getElementById('preview-img');
-    var previewWrap = document.getElementById('preview-wrap');
-    if (previewImg) { previewImg.src = 'data:image/jpeg;base64,' + base64; }
-    if (previewWrap) previewWrap.style.display = 'block';
-    document.getElementById('upload-zone').style.display = 'none';
-    pendingImg = 'data:image/jpeg;base64,' + base64;
-
-    // Show result card with editable fields
-    showResult({peso:data.peso, producto:data.producto, coil:data.coil, cast:data.cast}, wo);
-    setStatus('Revisá los datos y confirmá para guardar', 'warn');
+    // Show confirm overlay INSIDE camera (don't close)
+    showCamConfirm(data);
 
   } catch(err) {
     status.textContent = '✗ ' + err.message;
@@ -3513,6 +3510,107 @@ function checkCoilVsConsignment(coil, cast, producto, peso, maquina, wo) {
 }
 
 // ============ CONFIRM / REJECT SCAN ============
+function showCamConfirm(data) {
+  var overlay = document.getElementById('cam-confirm');
+  var shootBar = document.getElementById('cam-shoot-bar');
+  var fields = document.getElementById('cam-confirm-fields');
+  if (!overlay || !fields) return;
+
+  // Build editable fields
+  var inputStyle = 'background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-size:15px;font-weight:700;font-family:monospace;padding:8px 10px;width:100%;box-sizing:border-box;outline:none';
+  fields.innerHTML =
+    '<div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Coil N°</div>' +
+      '<input id="cc-coil" value="' + esc(data.coil||'') + '" style="' + inputStyle + ';font-size:14px">' +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Cast</div>' +
+      '<input id="cc-cast" value="' + esc(data.cast||'') + '" style="' + inputStyle + ';font-size:14px">' +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Peso (t)</div>' +
+      '<input id="cc-peso" value="' + esc(data.peso||'') + '" type="number" step="0.001" style="' + inputStyle + ';font-size:18px;color:#34c759">' +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Producto</div>' +
+      '<input id="cc-prod" value="' + esc(normalizeProducto(data.producto)||'') + '" style="' + inputStyle + ';font-size:12px">' +
+    '</div>';
+
+  overlay.style.display = 'block';
+  if (shootBar) shootBar.style.display = 'none';
+
+  // Focus coil field
+  setTimeout(function(){ var el=document.getElementById('cc-coil'); if(el)el.select(); }, 100);
+}
+
+async function camConfirm() {
+  var btn = document.getElementById('cam-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  var coil = (document.getElementById('cc-coil').value||'').trim();
+  var cast = (document.getElementById('cc-cast').value||'').trim();
+  var peso = (document.getElementById('cc-peso').value||'').trim();
+  var producto = (document.getElementById('cc-prod').value||'').trim();
+
+  if (!coil) {
+    document.getElementById('cam-status').textContent = 'Ingresá el número de coil';
+    document.getElementById('cam-status').style.color = '#ff3b30';
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+    return;
+  }
+
+  try {
+    var saveResp = await fetch('/save', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        wo: _pendingScan.wo, producto: producto, coil: coil,
+        cast: cast, peso: peso, operario: _pendingScan.operario,
+        notas: _pendingScan.notas, maquina: currentMachine
+      })
+    });
+    var saveData = await saveResp.json();
+
+    if (saveResp.status === 409 || saveData.duplicate) {
+      document.getElementById('cam-status').textContent = '⚠ DUPLICADO — ' + coil + ' ya fue escaneado';
+      document.getElementById('cam-status').style.color = '#ff9500';
+      camReject();
+      return;
+    }
+    if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
+
+    // Success
+    checkCoilVsConsignment(coil, cast, producto, peso, currentMachine, _pendingScan.wo);
+    _pendingScan = null;
+    await loadRecords();
+
+    // Show success briefly then reset for next scan
+    document.getElementById('cam-confirm').style.display = 'none';
+    document.getElementById('cam-shoot-bar').style.display = 'flex';
+    document.getElementById('cam-status').textContent = '✓ Guardado: ' + coil + ' · ' + peso + 't';
+    document.getElementById('cam-status').style.color = '#34c759';
+    setTimeout(function() {
+      document.getElementById('cam-status').textContent = 'Listo para siguiente etiqueta';
+      document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
+    }, 2500);
+
+  } catch(err) {
+    document.getElementById('cam-status').textContent = '✗ ' + err.message;
+    document.getElementById('cam-status').style.color = '#ff3b30';
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+  }
+}
+
+function camReject() {
+  _pendingScan = null;
+  document.getElementById('cam-confirm').style.display = 'none';
+  document.getElementById('cam-shoot-bar').style.display = 'flex';
+  document.getElementById('cam-capture-btn').disabled = false;
+  document.getElementById('cam-capture-btn').style.background = '#fff';
+  document.getElementById('cam-status').textContent = 'Cancelado — intentá de nuevo';
+  document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
+}
+
 function confNext(el, nextId) {
   if (event.key === 'Enter') { var n = document.getElementById(nextId); if(n) n.focus(); }
 }
