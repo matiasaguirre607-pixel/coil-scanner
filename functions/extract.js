@@ -6,15 +6,37 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key="+GEMINI_KEY, {
+  const prompt = `You are a data extractor for steel coil labels. There are TWO types of labels:
+
+TYPE 1 (Pacific Steel / standard):
+- peso: weight in tonnes (e.g. "1.460")
+- producto: product type with MM size (e.g. "COIL REIN 6.1mm", "COIL REIN 8mm", "COIL REIN 9mm")
+- coil: Coil number (numeric, e.g. "6260300548")
+- cast: Cast number (numeric, e.g. "530736", may have suffix like "530736-01")
+
+TYPE 2 (alternative label - may show date, machine name, etc):
+- peso: weight in tonnes (e.g. "1.536")
+- producto: product type with MM size (e.g. "COIL REIN 6mm")
+- coil: Coil number (numeric, e.g. "40260214349")
+- cast: Cast number in format GRADE-HEATCODE (e.g. "SAE1012-3D18470/4", "SAE1008-2B15230/1")
+
+Rules:
+- Extract EXACTLY these 4 fields only
+- For cast: capture the FULL string including letters, numbers, hyphens and slashes
+- For peso: extract only the number (e.g. "1.536" not "1.536 t")
+- For producto: always include the MM size
+- Respond with ONLY a JSON object, nothing else, no markdown:
+{"peso": "1.460", "producto": "COIL REIN 6.1mm", "coil": "6260300548", "cast": "530736"}`;
+
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: "You are a data extractor for steel coil labels. Extract exactly these 4 fields and respond with ONLY a JSON object, nothing else:\n{\"peso\": \"1.460\", \"producto\": \"COIL REIN 6.1mm\", \"coil\": \"6260300548\", \"cast\": \"530736\"}\npeso = the large number (weight in tonnes, just the number)\nproducto = the product type including MM size (e.g. COIL REIN 6.1mm)\ncoil = the Coil number\ncast = the Cast number\nRespond with ONLY the JSON, no explanation, no markdown."}
+        {text: prompt}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 2048}
+      generationConfig: {temperature: 0, maxOutputTokens: 256}
     })
   });
   const gd = await gr.json();
@@ -30,8 +52,9 @@ export async function onRequestPost(context) {
   const coil = parsed.coil ? String(parsed.coil).trim() : null;
   const peso = normalizePeso(parsed.peso);
   const producto = normalizeProducto(parsed.producto);
+  const cast = parsed.cast ? String(parsed.cast).trim() : null;
 
-  return rj({ ok:true, peso, producto, coil, cast: parsed.cast||null });
+  return rj({ ok:true, peso, producto, coil, cast });
 }
 
 function normalizePeso(raw) {
