@@ -791,11 +791,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 
   <!-- Filter tabs -->
-  <div id="cons-filters" style="display:none;display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+  <div id="cons-filters" style="display:none;display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
     <button onclick="filterCons('all')" id="cf-all" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#007aff;color:#fff">Todos</button>
     <button onclick="filterCons('ok')" id="cf-ok" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10003; Escaneados</button>
     <button onclick="filterCons('miss')" id="cf-miss" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10007; Faltantes</button>
     <button onclick="filterCons('extra')" id="cf-extra" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#43; Extra</button>
+  </div>
+  <div id="cons-prod-filter" style="display:none;display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase">Producto:</span>
+    <div id="cons-prod-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
 
   <!-- Match list -->
@@ -1379,7 +1383,9 @@ function openModal(r) {
 }
 function closeModal() { document.getElementById('modal-bg').classList.remove('on'); activeRec = null; }
 async function delRecord() {
-  if (!activeRec || !confirm('Eliminar?')) return;
+  if (!activeRec) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar registro', function(){ delRecord(); }); return; }
+  if (!confirm('Eliminar?')) return;
   await fetch('/delete?id=' + activeRec.id, {method:'DELETE'});
   records = records.filter(function(r){return r.id!==activeRec.id;});
   document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
@@ -1745,6 +1751,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function unique(arr){var seen={};return arr.filter(function(v){return seen[v]?false:(seen[v]=true);});}
 function groupSum(arr,keyFn){var obj={};arr.forEach(function(r){var k=keyFn(r);obj[k]=(obj[k]||0)+parseTon(r.peso);});return obj;}
 async function assignWO(gi) {
+  guardedAction('Contrasena para asignar WO', async function() {
   var inp = document.getElementById('wo-inp-'+gi);
   var wo = inp ? inp.value.trim() : '';
   if (!wo) { setStatus('Escribi una WO primero.','err'); return; }
@@ -1778,6 +1785,7 @@ async function assignWO(gi) {
     btn.style.color = '#fff';
     btn.disabled = false;
   }, 2000);
+  }); // end guardedAction
 }
 
 // Selected coils for bulk WO assignment
@@ -1786,6 +1794,7 @@ var _selectedIds = {};
 async function assignWOToSelected(wo) {
   var ids = Object.keys(_selectedIds);
   if (!ids.length || !wo) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para asignar WO masivo', function(){ assignWOToSelected(wo); }); return; }
   var promises = ids.map(function(id) {
     return fetch('/updatewo', {
       method: 'POST',
@@ -1934,6 +1943,7 @@ async function loadProduccion() {
 }
 
 async function saveProduccion() {
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para registrar produccion', function(){ saveProduccion(); }); return; }
   var wo = document.getElementById('prod-wo-sel').value;
   var ton = parseFloat(document.getElementById('prod-ton-inp').value);
   var notas = document.getElementById('prod-notas-inp').value.trim();
@@ -1991,10 +2001,20 @@ function renderBalance() {
     div.className = 'bal-row';
     div.style.flexDirection = 'column';
     div.style.alignItems = 'stretch';
+    var woClosed = isWOClosed(wo);
+    var woRecs = records.filter(function(r){return r.wo===wo;});
+    var prods = unique(woRecs.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean));
+    var prodTags = prods.map(function(p){
+      return '<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;margin-right:3px">'+esc(p)+'</span>';
+    }).join('');
     div.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
-        '<div>'+
-          '<div class="bal-wo">WO: '+esc(wo)+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<div class="bal-wo">WO: '+esc(wo)+'</div>'+
+            (woClosed?'<span style="background:#fff0f0;color:#ff3b30;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px">CERRADA</span>':'')+
+          '</div>'+
+          '<div style="margin-top:4px">'+prodTags+'</div>'+
           '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+coils+' coils escaneados</div>'+
         '</div>'+
         '<div class="bal-nums">'+
@@ -2015,8 +2035,11 @@ function renderBalance() {
       '<div class="bar-bal">'+
         '<div class="bar-bal-fill" style="width:'+Math.min(pct,100)+'%;background:'+(pct>100?'#ff3b30':'#34c759')+'"></div>'+
       '</div>'+
-      '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:#8e8e93">'+
-        '<span>0</span><span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% producido</span><span>'+entrada.toFixed(1)+'t</span>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">'+
+        '<div style="font-size:10px;color:#8e8e93"><span>0</span> <span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% producido</span> <span>'+entrada.toFixed(1)+'t</span></div>'+
+        '<button data-wo="'+esc(wo)+'" onclick="toggleCloseWO(this.dataset.wo)" style="padding:4px 10px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;background:'+(woClosed?'#e8ffe8':'#fff0f0')+';color:'+(woClosed?'#1a7a3c':'#ff3b30')+'">'+
+          (woClosed?'&#128275; Reabrir WO':'&#128274; Cerrar WO')+
+        '</button>'+
       '</div>';
     list.appendChild(div);
   });
@@ -2075,6 +2098,7 @@ function renderProdHist() {
 
 var _consignments = [];
 var _consFilter = 'all';
+var _consProdFilter = '';
 
 async function loadConsignments() {
   try {
@@ -2111,8 +2135,32 @@ function renderSavedCons() {
   var kpis = document.getElementById('cons-kpis'); if(kpis) kpis.style.display='grid';
   var tonsec = document.getElementById('cons-ton-summary'); if(tonsec) tonsec.style.display='block';
   var filters = document.getElementById('cons-filters'); if(filters) filters.style.display='flex';
+  // Product filter chips
+  var prodFilter = document.getElementById('cons-prod-filter');
+  var prodChips = document.getElementById('cons-prod-chips');
+  if (prodFilter && prodChips) {
+    var allProds = unique(_consignments.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
+    if (allProds.length > 1) {
+      prodFilter.style.display = 'flex';
+      var allBtn = document.createElement('button');
+      allBtn.style.cssText = 'padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:'+(!_consProdFilter?'#007aff':'#f2f2f7')+';color:'+(!_consProdFilter?'#fff':'#8e8e93');
+      allBtn.textContent = 'Todos';
+      allBtn.onclick = function(){ setConsProdFilter(''); };
+      prodChips.appendChild(allBtn);
+      allProds.forEach(function(p) {
+        var btn = document.createElement('button');
+        btn.style.cssText = 'padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:'+(_consProdFilter===p?'#007aff':'#f2f2f7')+';color:'+(_consProdFilter===p?'#fff':'#8e8e93');
+        btn.textContent = p;
+        btn.onclick = function(){ setConsProdFilter(p); };
+        prodChips.appendChild(btn);
+      });
+    }
+  }
   var refs = {};
-  _consignments.forEach(function(r) {
+  var filteredCons = _consProdFilter
+    ? _consignments.filter(function(r){ return normalizeProductoKey(r.producto) === _consProdFilter; })
+    : _consignments;
+  filteredCons.forEach(function(r) {
     var k = r.referencia || 'Sin ref';
     if (!refs[k]) refs[k] = {items:[], ref:r.referencia, fecha:r.fecha};
     refs[k].items.push(r);
@@ -2228,6 +2276,11 @@ function showConsMatch(ref) {
 
 var _consCurrentItems = [];
 
+function setConsProdFilter(p) {
+  _consProdFilter = p;
+  renderSavedCons();
+}
+
 function filterCons(f) {
   _consFilter = f;
   updateConsFilterBtns();
@@ -2316,6 +2369,7 @@ async function handlePDFUpload(e) {
   var files = Array.from(e.target.files);
   e.target.value = '';
   if (!files.length) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para subir consignments', function(){ alert('Volvé a seleccionar el PDF'); }); return; }
   var status = document.getElementById('pdf-status');
   var prog = document.getElementById('pdf-progress');
   var fill = document.getElementById('pdf-prog-fill');
@@ -2371,6 +2425,12 @@ async function handlePDFUpload(e) {
           if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
           if (data.rows) allRows = allRows.concat(data.rows);
         }
+      // Filter duplicates before saving
+      var existingLots = _consignments.map(function(r){ return String(r.lot_no||'').trim(); });
+      var beforeDup = allRows.length;
+      allRows = allRows.filter(function(row){ var l=String(row.lot_no||'').trim(); return l && existingLots.indexOf(l)<0; });
+      var dupCount = beforeDup - allRows.length;
+      if (dupCount > 0) txt2.textContent = 'Ignorando ' + dupCount + ' duplicado' + (dupCount>1?'s':'') + '...';
         totalRows += allRows.length;
       } catch(fileErr) {
         errors.push(file.name+': '+fileErr.message);
@@ -2412,6 +2472,7 @@ function setEditMaq(m) {
 }
 
 function editRecord(r) {
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para editar', function(){ editRecord(r); }); return; }
   _editRec = r;
   _editMaq = r.maquina || '';
   document.getElementById('edit-coil-lbl').textContent = 'Coil: ' + (r.coil||'') + ' — Cast: ' + (r.cast||'');
@@ -2431,6 +2492,7 @@ function closeEditModal() {
 
 async function saveEdit() {
   if (!_editRec) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para editar registro', function(){ saveEdit(); }); return; }
   var peso = normalizePeso(document.getElementById('edit-peso').value);
   var cast = document.getElementById('edit-cast').value.trim();
   var coil = document.getElementById('edit-coil').value.trim();
@@ -2846,6 +2908,7 @@ function renderMetaDiaria(todayData) {
 // DELETE CONSIGNMENT
 // ==========================================
 async function deleteConsignment(ref) {
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsignment(ref); }); return; }
   if (!confirm('Eliminar todos los registros de Ref: '+ref+'?')) return;
   var toDelete = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
   var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
@@ -2913,6 +2976,7 @@ function calcProjection(wo) {
 
 async function saveModalWO() {
   if (!activeRec) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para asignar WO', function(){ saveModalWO(); }); return; }
   var wo = document.getElementById('modal-wo-inp').value.trim();
   var btn = document.querySelector('#modal-wo-inp + button');
   var orig = btn.textContent;
@@ -3552,6 +3616,14 @@ async function camConfirm() {
   var peso = (document.getElementById('cc-peso').value||'').trim();
   var producto = (document.getElementById('cc-prod').value||'').trim();
 
+  var camWo = _pendingScan ? _pendingScan.wo : '';
+  if (camWo && isWOClosed(camWo) && !_unlocked) {
+    document.getElementById('cam-status').textContent = '⚠ WO ' + camWo + ' CERRADA — ingresá contrasena';
+    document.getElementById('cam-status').style.color = '#ff3b30';
+    requirePassword('Contrasena para agregar a WO cerrada', function(){ camConfirm(); });
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+    return;
+  }
   if (!coil) {
     document.getElementById('cam-status').textContent = 'Ingresá el número de coil';
     document.getElementById('cam-status').style.color = '#ff3b30';
@@ -3630,6 +3702,16 @@ async function confirmScan() {
   var notas = _pendingScan.notas;
 
   if (!coil) { setStatus('Ingresa el numero de coil', 'err'); if(btn){btn.disabled=false;btn.textContent='✓ Confirmar y guardar';} return; }
+  if (wo && isWOClosed(wo)) {
+    if (!_unlocked) {
+      setStatus('WO ' + wo + ' está CERRADA. Ingresá contrasena para continuar.', 'err');
+      requirePassword('Contrasena para agregar a WO cerrada ' + wo, function(){
+        document.getElementById('btn-confirm-scan').click();
+      });
+      if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
+      return;
+    }
+  }
 
   try {
     var saveResp = await fetch('/save', {
@@ -3666,6 +3748,109 @@ function rejectScan() {
   resetImg();
 }
 
+// ============ PASSWORD SYSTEM ============
+var _unlocked = false;
+var _pwdCallback = null;
+var PASSWORD = 'Machine';
+
+function requirePassword(reason, callback) {
+  if (_unlocked) { callback(); return; }
+  _pwdCallback = callback;
+  document.getElementById('pwd-reason').textContent = reason || 'Ingresá la contrasena para continuar';
+  document.getElementById('pwd-inp').value = '';
+  document.getElementById('pwd-err').textContent = '';
+  var bg = document.getElementById('pwd-modal-bg');
+  bg.style.display = 'flex';
+  setTimeout(function(){ document.getElementById('pwd-inp').focus(); }, 100);
+}
+
+function checkPassword() {
+  var val = document.getElementById('pwd-inp').value;
+  if (val === PASSWORD) {
+    _unlocked = true;
+    closePwdModal();
+    // Show unlocked status in nav
+    var pill = document.getElementById('nav-pill');
+    if (pill) {
+      var lockEl = document.getElementById('lock-status');
+      if (!lockEl) {
+        lockEl = document.createElement('span');
+        lockEl.id = 'lock-status';
+        lockEl.style.cssText = 'font-size:11px;font-weight:700;color:#34c759;background:#e8ffe8;border-radius:99px;padding:3px 8px;margin-left:4px;cursor:pointer';
+        lockEl.title = 'Click para bloquear';
+        lockEl.onclick = lockApp;
+        pill.parentNode.insertBefore(lockEl, pill);
+      }
+      lockEl.textContent = '🔓 Admin';
+    }
+    if (_pwdCallback) { _pwdCallback(); _pwdCallback = null; }
+  } else {
+    document.getElementById('pwd-err').textContent = 'Contrasena incorrecta';
+    document.getElementById('pwd-inp').value = '';
+    document.getElementById('pwd-inp').focus();
+  }
+}
+
+function closePwdModal() {
+  document.getElementById('pwd-modal-bg').style.display = 'none';
+  _pwdCallback = null;
+}
+
+function lockApp() {
+  _unlocked = false;
+  var lockEl = document.getElementById('lock-status');
+  if (lockEl) lockEl.remove();
+  showLockBanner();
+}
+
+function showLockBanner() {
+  var b = document.getElementById('lock-banner');
+  if (!b) return;
+  b.style.display = 'block';
+  setTimeout(function(){ b.style.display = 'none'; }, 2000);
+}
+
+function guardedAction(reason, fn) {
+  if (_unlocked) { fn(); }
+  else { showLockBanner(); requirePassword(reason, fn); }
+}
+
+// ============ CLOSED WOs ============
+var _closedWOs = [];
+
+function loadClosedWOs() {
+  try {
+    var saved = localStorage.getItem('coil_closed_wos');
+    if (saved) _closedWOs = JSON.parse(saved);
+  } catch(e) { _closedWOs = []; }
+}
+
+function saveClosedWOs() {
+  try { localStorage.setItem('coil_closed_wos', JSON.stringify(_closedWOs)); } catch(e) {}
+}
+
+function isWOClosed(wo) {
+  return _closedWOs.indexOf(wo) >= 0;
+}
+
+function toggleCloseWO(wo) {
+  if (isWOClosed(wo)) {
+    // Reopen
+    guardedAction('Ingresar contrasena para reabrir WO ' + wo, function() {
+      _closedWOs = _closedWOs.filter(function(w){ return w !== wo; });
+      saveClosedWOs();
+      renderBalance();
+    });
+  } else {
+    // Close
+    guardedAction('Ingresar contrasena para cerrar WO ' + wo, function() {
+      if (!_closedWOs.includes(wo)) _closedWOs.push(wo);
+      saveClosedWOs();
+      renderBalance();
+    });
+  }
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -3690,6 +3875,7 @@ window.addEventListener('load', function() {
   loadChangeLog();
   loadOfflineQueue();
   loadParaVerificar();
+  loadClosedWOs();
   loadRecords().then(loadScheduleWOs);
   loadConsignments();
   goTab('scan');
@@ -3717,5 +3903,25 @@ window.addEventListener('load', function() {
   });
 
 });</script>
+
+<!-- PASSWORD MODAL -->
+<div id="pwd-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;width:90%;max-width:340px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <div style="font-size:20px;font-weight:700;margin-bottom:6px;text-align:center">&#128274; Acceso restringido</div>
+    <div style="font-size:13px;color:#8e8e93;text-align:center;margin-bottom:20px" id="pwd-reason">Ingresá la contrasena para continuar</div>
+    <input id="pwd-inp" type="password" placeholder="Contrasena..." style="width:100%;padding:13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:16px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div id="pwd-err" style="color:#ff3b30;font-size:12px;text-align:center;min-height:16px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closePwdModal()" style="flex:1;padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancelar</button>
+      <button onclick="checkPassword()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCK BANNER -->
+<div id="lock-banner" style="display:none;position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.9);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;pointer-events:none">
+  &#128274; Solo lectura — ingresá contrasena para editar
+</div>
+
 </body>
 </html>
