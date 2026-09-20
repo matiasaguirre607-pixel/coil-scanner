@@ -3935,20 +3935,19 @@ window.addEventListener('load', function() {
       if (_offlineQueue.length > 0) flushOfflineQueue();
     }
   });
-
-  // Tooltip on click
+  // Store for tooltip
   canvas._days = days; canvas._byDay = byDay; canvas._byDayE = byDayE; canvas._byDayP = byDayP; canvas._pL = pL; canvas._bw = bw;
   canvas.onclick = function(e) {
     var rect = canvas.getBoundingClientRect();
     var x = e.clientX - rect.left;
     var i = Math.floor((x - canvas._pL) / canvas._bw);
-    if (i >= 0 && i < canvas._days.length) {
+    if (i >= 0 && canvas._days && i < canvas._days.length) {
       var day = canvas._days[i];
       var d2 = new Date(day);
       var lbl = d2.getDate() + '/' + (d2.getMonth()+1) + '/' + d2.getFullYear();
-      var evgV = canvas._byDayE[day] || 0;
-      var pitV = canvas._byDayP[day] || 0;
-      var totV = canvas._byDay[day] || 0;
+      var evgV = (canvas._byDayE && canvas._byDayE[day]) || 0;
+      var pitV = (canvas._byDayP && canvas._byDayP[day]) || 0;
+      var totV = (canvas._byDay && canvas._byDay[day]) || 0;
       var content = '<b>' + lbl + '</b><br>' + totV.toFixed(3) + 't';
       if (evgV > 0) content += '<br>EVG: ' + evgV.toFixed(3) + 't';
       if (pitV > 0) content += '<br>PIT: ' + pitV.toFixed(3) + 't';
