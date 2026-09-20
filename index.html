@@ -976,7 +976,16 @@ function normalizeProducto(raw) {
   if (!raw) return null;
   var m = String(raw).match(/(\d+\.?\d*)\s*[Mm][Mm]/);
   if (m) return 'COIL REIN ' + m[1] + 'mm';
-  return String(raw).toUpperCase().trim();
+  var s = String(raw).trim().toUpperCase();
+  var m2 = s.match(/^(\d+\.?\d*)\s+(.*)/);
+  if (m2) {
+    var size = parseFloat(m2[1]).toFixed(1);
+    var type = m2[2].trim();
+    if (type.indexOf('DUCTILE') >= 0) return size + ' DUCTILE ROD';
+    if (type.indexOf('WIRE') >= 0) return size + ' WIRE ROD';
+    return size + ' ' + type;
+  }
+  return s;
 }
 async function callGemini(base64, mType) {
   // Check offline
@@ -2252,6 +2261,7 @@ function renderSavedCons() {
       var scanRec = ok ? records.find(function(rec){return String(rec.coil||'').trim()===String(r.lot_no||'').trim();}) : null;
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0 8px 12px;border-top:1px solid #f2f2f7';
+      var delBtn = '<button data-id="'+esc(r.id||'')+'" onclick="deleteConsRow(this.dataset.id,this.parentNode)" style="padding:3px 7px;background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0">&#10005;</button>';
       row.innerHTML =
         '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:'+(ok?'#34c759':'#ff3b30')+'"></div>'+
         '<div style="flex:1;min-width:0">'+
@@ -2261,7 +2271,8 @@ function renderSavedCons() {
         '<div style="text-align:right;flex-shrink:0">'+
           '<div style="font-size:12px;font-weight:700;color:#1c1c1e">'+parseFloat(r.peso||0).toFixed(3)+'t</div>'+
           '<div style="font-size:10px;font-weight:700;color:'+(ok?'#34c759':'#ff3b30')+'">'+(ok?'Escaneado':'Faltante')+'</div>'+
-        '</div>';
+        '</div>'+
+        delBtn;
       detail.appendChild(row);
     });
 
@@ -2965,6 +2976,23 @@ function renderMetaDiaria(todayData) {
 // ==========================================
 // DELETE CONSIGNMENT
 // ==========================================
+async function deleteConsRow(id, rowEl) {
+  if (!id) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsRow(id, rowEl); }); return; }
+  if (!confirm('Eliminar este coil del consignment?')) return;
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
+  var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: {apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY}
+  });
+  if (resp.ok) {
+    _consignments = _consignments.filter(function(r){ return r.id !== id; });
+    if (rowEl) rowEl.remove();
+    renderSavedCons();
+    runCrossCheck();
+  }
+}
+
 async function deleteConsignment(ref) {
   if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsignment(ref); }); return; }
   if (!confirm('Eliminar todos los registros de Ref: '+ref+'?')) return;
