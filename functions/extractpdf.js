@@ -8,15 +8,29 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="+GEMINI_KEY, {
+  // Use higher token limit and more explicit prompt to get ALL rows
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: "This is a Pacific Steel consignment note. Extract ALL rows from the table and return ONLY a JSON array with no other text:\n[{\"referencia\":\"R810242355\",\"fecha\":\"14/08/26\",\"cast_no\":\"534735-01\",\"lot_no\":\"6261990075\",\"producto\":\"9.0 Ductile Rod\",\"peso\":1.435}]\nreferencia = the Pacific Steel Reference number (top right)\nfecha = the DATE field\ncast_no = Cast No column\nlot_no = Lot no column\nproducto = Product column - copy EXACTLY as written in the document\npeso = Weight/tns column as a number\nInclude EVERY row. Return empty array [] if no table found."}
+        {text: `This is a Pacific Steel consignment note. Extract EVERY SINGLE ROW from the table - do not skip any rows.
+
+Return ONLY a JSON array, no other text, no markdown:
+[{"referencia":"R810242355","fecha":"14/08/26","cast_no":"534735-01","lot_no":"6261990075","producto":"9.0 Ductile Rod","peso":1.435}]
+
+Fields:
+- referencia: Pacific Steel Reference number (usually top right, format R8XXXXXXX)
+- fecha: date field
+- cast_no: Cast No column
+- lot_no: Lot No column (REQUIRED - skip row only if this is completely missing)
+- producto: Product column - copy EXACTLY as written
+- peso: Weight/tns column as decimal number
+
+IMPORTANT: Extract ALL rows from the table. Count the rows visually and make sure your array has the same count. If the table has 17 rows, return 17 objects.`}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 4096}
+      generationConfig: {temperature: 0, maxOutputTokens: 8192}
     })
   });
 
@@ -33,19 +47,18 @@ export async function onRequestPost(context) {
     return rj({error: "Parse error: " + raw.substring(0,150)}, 422);
   }
 
-  let saved = 0;
+  let saved = 0, skipped = 0;
   for (const r of rows) {
     if (!r.lot_no) continue;
 
-    // Normalize producto to prevent duplicates from case/spacing differences
     const producto = normalizeProducto(r.producto);
 
-    // Check for duplicate lot_no before inserting
+    // Check for duplicate lot_no
     const check = await fetch(SB_BASE+"/rest/v1/consignments?lot_no=eq."+encodeURIComponent(String(r.lot_no))+"&select=id&limit=1", {
       headers: {apikey: SB_KEY, Authorization: "Bearer "+SB_KEY}
     });
     const existing = await check.json();
-    if (Array.isArray(existing) && existing.length > 0) continue; // skip duplicate
+    if (Array.isArray(existing) && existing.length > 0) { skipped++; continue; }
 
     const resp = await fetch(SB_BASE+"/rest/v1/consignments", {
       method: "POST",
@@ -62,24 +75,19 @@ export async function onRequestPost(context) {
     if (resp.ok) saved++;
   }
 
-  return rj({ok:true, total:rows.length, saved, rows});
+  return rj({ok:true, total:rows.length, saved, skipped, rows});
 }
 
-// Normalize product name to consistent format
 function normalizeProducto(raw) {
   if (!raw) return null;
-  // Trim and uppercase for comparison
   const s = String(raw).trim();
-  // Extract leading number (the mm size)
   const m = s.match(/^(\d+\.?\d*)\s+(.*)/);
   if (!m) return s.toUpperCase().trim();
   const size = parseFloat(m[1]);
   const type = m[2].trim().toUpperCase();
-  // Normalize type names
   let normType = type;
   if (type.includes('DUCTILE')) normType = 'DUCTILE ROD';
   else if (type.includes('WIRE')) normType = 'WIRE ROD';
-  else if (type.includes('REIN') || type.includes('COIL')) normType = 'WIRE ROD';
   return size + '.0 ' + normType;
 }
 
