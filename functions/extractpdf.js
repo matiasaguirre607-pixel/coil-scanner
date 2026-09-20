@@ -8,7 +8,6 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  // Try gemini-3.5-flash-lite which reliably handles large tables
   const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -23,7 +22,7 @@ Return ONLY a JSON array, no markdown:
 - referencia: reference number (top of page, format R8XXXXXXX)
 - fecha: date
 - cast_no: Cast No column
-- lot_no: Lot No column (required)
+- lot_no: Lot No column as a STRING (required, never null)
 - producto: Product column, copy exactly
 - peso: Weight as decimal number
 
@@ -46,17 +45,28 @@ Extract ALL rows without skipping any.`}
     return rj({error: "Parse error: " + raw.substring(0,200)}, 422);
   }
 
+  // Load ALL existing lot_nos from Supabase in one call (much faster + reliable)
+  const existingResp = await fetch(SB_BASE+"/rest/v1/consignments?select=lot_no&limit=10000", {
+    headers: {apikey: SB_KEY, Authorization: "Bearer "+SB_KEY}
+  });
+  const existingRows = await existingResp.json();
+  const existingLots = new Set(
+    Array.isArray(existingRows) 
+      ? existingRows.map(r => normalizeLotNo(r.lot_no))
+      : []
+  );
+
   let saved = 0, skipped = 0;
   for (const r of rows) {
     if (!r.lot_no) continue;
-    const producto = normalizeProducto(r.producto);
 
-    // Check duplicate
-    const check = await fetch(SB_BASE+"/rest/v1/consignments?lot_no=eq."+encodeURIComponent(String(r.lot_no))+"&select=id&limit=1", {
-      headers: {apikey: SB_KEY, Authorization: "Bearer "+SB_KEY}
-    });
-    const existing = await check.json();
-    if (Array.isArray(existing) && existing.length > 0) { skipped++; continue; }
+    const lotNo = normalizeLotNo(r.lot_no);
+    if (!lotNo) continue;
+
+    // Skip if already exists
+    if (existingLots.has(lotNo)) { skipped++; continue; }
+
+    const producto = normalizeProducto(r.producto);
 
     const resp = await fetch(SB_BASE+"/rest/v1/consignments", {
       method: "POST",
@@ -64,27 +74,41 @@ Extract ALL rows without skipping any.`}
       body: JSON.stringify({
         referencia: r.referencia||null,
         fecha: r.fecha||null,
-        cast_no: r.cast_no||null,
-        lot_no: String(r.lot_no),
+        cast_no: r.cast_no ? String(r.cast_no).trim() : null,
+        lot_no: lotNo,
         producto: producto,
         peso: parseFloat(r.peso)||null
       })
     });
-    if (resp.ok) saved++;
+    if (resp.ok) {
+      saved++;
+      existingLots.add(lotNo); // prevent same-session duplicates
+    }
   }
 
   return rj({ok:true, total:rows.length, saved, skipped});
 }
 
+// Normalize lot_no: trim spaces, remove decimals, uppercase
+function normalizeLotNo(raw) {
+  if (!raw && raw !== 0) return null;
+  // Convert float like 6261990075.0 to string without decimal
+  let s = String(raw).trim();
+  if (s.includes('.') && !s.includes('-')) {
+    const n = parseFloat(s);
+    if (!isNaN(n) && Number.isInteger(n)) s = String(Math.round(n));
+    else if (!isNaN(n)) s = s.replace(/\.0+$/, '');
+  }
+  return s.trim() || null;
+}
+
 function normalizeProducto(raw) {
   if (!raw) return null;
   const s = String(raw).trim().toUpperCase();
-  // Extract leading number
   const m = s.match(/^(\d+\.?\d*)\s+(.*)/);
   if (!m) return s;
   const size = parseFloat(m[1]).toFixed(1);
   const type = m[2].trim();
-  // Normalize type
   if (type.includes('DUCTILE')) return size + ' DUCTILE ROD';
   if (type.includes('WIRE')) return size + ' WIRE ROD';
   return size + ' ' + type;
