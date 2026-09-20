@@ -2441,12 +2441,13 @@ async function handlePDFUpload(e) {
         for (var pageNum = 1; pageNum <= numPages; pageNum++) {
           txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages;
           var page = await pdf.getPage(pageNum);
-          var viewport = page.getViewport({scale: 2.5});
+          var viewport = page.getViewport({scale: 3.0});
           var canvas = document.createElement('canvas');
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
-          var imgBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+          // Compress to reduce payload size while keeping quality
+          var imgBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
           var resp = await fetch('/extractpdf', {
             method: 'POST',
@@ -2455,7 +2456,10 @@ async function handlePDFUpload(e) {
           });
           var data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
-          if (data.rows) allRows = allRows.concat(data.rows);
+          if (data.rows) {
+            allRows = allRows.concat(data.rows);
+            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+data.rows.length+' filas leidas, '+allRows.length+' total)';
+          }
         }
       // Filter duplicates before saving
       var existingLots = _consignments.map(function(r){ return String(r.lot_no||'').trim(); });
