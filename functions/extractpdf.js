@@ -8,32 +8,33 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="+GEMINI_KEY, {
+  // Try gemini-2.5-flash-lite which reliably handles large tables
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: `This is a Pacific Steel consignment note. Extract EVERY SINGLE ROW from the table.
+        {text: `This is a Pacific Steel consignment note. Extract EVERY ROW from the table.
 
-Return ONLY a JSON array, no markdown, no other text:
+Return ONLY a JSON array, no markdown:
 [{"referencia":"R810242355","fecha":"14/08/26","cast_no":"534735-01","lot_no":"6261990075","producto":"9.0 Ductile Rod","peso":1.435}]
 
-- referencia: Reference number top of page (format R8XXXXXXX)
+- referencia: reference number (top of page, format R8XXXXXXX)
 - fecha: date
 - cast_no: Cast No column
 - lot_no: Lot No column (required)
-- producto: Product column, copy exactly as written
+- producto: Product column, copy exactly
 - peso: Weight as decimal number
 
-Extract ALL rows. If the table has 17 rows return 17 objects. Do not skip any row.`}
+Extract ALL rows without skipping any.`}
       ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 8192}
+      generationConfig: {temperature: 0, maxOutputTokens: 4096}
     })
   });
 
   const gd = await gr.json();
-  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini "+gr.status}, 500);
+  if (!gr.ok) return rj({error: (gd?.error?.message || "Gemini error") + " ["+gr.status+"]"}, 500);
 
   const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
   let rows;
@@ -42,7 +43,7 @@ Extract ALL rows. If the table has 17 rows return 17 objects. Do not skip any ro
     rows = JSON.parse(clean);
     if (!Array.isArray(rows)) rows = [];
   } catch(e) {
-    return rj({error: "Parse error: " + raw.substring(0,150)}, 422);
+    return rj({error: "Parse error: " + raw.substring(0,200)}, 422);
   }
 
   let saved = 0, skipped = 0;
