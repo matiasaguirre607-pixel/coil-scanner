@@ -78,15 +78,16 @@ Extract ALL rows without skipping any.`}
 
 function normalizeProducto(raw) {
   if (!raw) return null;
-  const s = String(raw).trim();
+  const s = String(raw).trim().toUpperCase();
+  // Extract leading number
   const m = s.match(/^(\d+\.?\d*)\s+(.*)/);
-  if (!m) return s.toUpperCase().trim();
-  const size = parseFloat(m[1]);
-  const type = m[2].trim().toUpperCase();
-  let normType = type;
-  if (type.includes('DUCTILE')) normType = 'DUCTILE ROD';
-  else if (type.includes('WIRE')) normType = 'WIRE ROD';
-  return size.toFixed(1) + ' ' + normType;
+  if (!m) return s;
+  const size = parseFloat(m[1]).toFixed(1);
+  const type = m[2].trim();
+  // Normalize type
+  if (type.includes('DUCTILE')) return size + ' DUCTILE ROD';
+  if (type.includes('WIRE')) return size + ' WIRE ROD';
+  return size + ' ' + type;
 }
 
 function rj(obj, status=200) {
