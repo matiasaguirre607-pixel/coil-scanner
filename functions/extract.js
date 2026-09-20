@@ -28,7 +28,7 @@ Rules:
 - Respond with ONLY a JSON object, nothing else, no markdown:
 {"peso": "1.460", "producto": "COIL REIN 6.1mm", "coil": "6260300548", "cast": "530736"}`;
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="+GEMINI_KEY, {
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
