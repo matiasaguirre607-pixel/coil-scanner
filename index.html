@@ -2116,298 +2116,36 @@ var _consFilter = 'all';
 var _consProdFilter = '';
 
 async function loadConsignments() {
-  _consProdFilter = ''; // Reset filter on reload
+  _consProdFilter = '';
   try {
-    var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?order=created_at.desc&limit=500000', {
-      headers: {apikey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ',Authorization:'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ'}
-    });
-    if (resp.ok) _consignments = await resp.json();
-    else _consignments = [];
+    var all = [];
+    var page = 0;
+    var pageSize = 1000;
+    while (true) {
+      var from = page * pageSize;
+      var to = from + pageSize - 1;
+      var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?order=created_at.asc&select=id,referencia,fecha,cast_no,lot_no,producto,peso,wo,usado', {
+        headers: {
+          apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ',
+          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ',
+          'Range': from + '-' + to,
+          'Range-Unit': 'items',
+          'Prefer': 'count=none'
+        }
+      });
+      if (!resp.ok) break;
+      var batch = await resp.json();
+      if (!Array.isArray(batch) || batch.length === 0) break;
+      all = all.concat(batch);
+      if (batch.length < pageSize) break;
+      page++;
+    }
+    _consignments = all;
   } catch(e) { _consignments = []; }
   renderSavedCons();
+  runCrossCheck();
+  renderParaVerificar();
 }
-
-function renderSavedCons() {
-  var el = document.getElementById('saved-cons-list');
-  if (!el) return;
-  if (!_consignments.length) {
-    el.innerHTML = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Sin consignments. Subi un PDF arriba.</div>';
-    return;
-  }
-  // Update global KPIs
-  var totalAll = _consignments.length;
-  var scannedAll = _consignments.filter(function(r){return isCoilScanned(r.lot_no);}).length;
-  var missingAll = totalAll - scannedAll;
-  var tonTotal = _consignments.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-  var tonScanned = _consignments.filter(function(r){return isCoilScanned(r.lot_no);}).reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-  // Update KPI elements
-  var tn = document.getElementById('cons-total-n'); if(tn) tn.textContent = totalAll;
-  var mn = document.getElementById('cons-match-n'); if(mn) mn.textContent = scannedAll;
-  var msn = document.getElementById('cons-miss-n'); if(msn) msn.textContent = missingAll;
-  var tt = document.getElementById('cons-ton-total'); if(tt) tt.textContent = tonTotal.toFixed(3)+'t';
-  var tm = document.getElementById('cons-ton-match'); if(tm) tm.textContent = tonScanned.toFixed(3)+'t';
-  var tmiss = document.getElementById('cons-ton-miss'); if(tmiss) tmiss.textContent = (tonTotal-tonScanned).toFixed(3)+'t';
-  // Show KPI sections
-  var kpis = document.getElementById('cons-kpis'); if(kpis) kpis.style.display='grid';
-  var tonsec = document.getElementById('cons-ton-summary'); if(tonsec) tonsec.style.display='block';
-  var filters = document.getElementById('cons-filters'); if(filters) filters.style.display='flex';
-  // Count consignments per product
-  var byProdCard = document.getElementById('cons-by-prod');
-  var byProdList = document.getElementById('cons-by-prod-list');
-  if (byProdCard && byProdList) {
-    // Group REFERENCES by product - each reference = 1 consignment
-    var prodCount = {};
-    var refsByProd = {};
-    _consignments.forEach(function(r) {
-      var prod = r.producto || 'Sin producto';
-      var ref = r.referencia || 'Sin ref';
-      if (!refsByProd[prod]) refsByProd[prod] = {};
-      refsByProd[prod][ref] = true;
-    });
-    var prods = Object.keys(refsByProd).sort();
-    if (!prods.length) { byProdCard.style.display = 'none'; return; }
-    byProdCard.style.display = 'block';
-    byProdList.innerHTML = prods.map(function(prod) {
-      var refs = Object.keys(refsByProd[prod]);
-      var n = refs.length;
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f2f2f7">' +
-        '<div style="font-size:15px;font-weight:700;color:#1c1c1e">' + esc(prod) + '</div>' +
-        '<div style="font-size:28px;font-weight:800;color:#007aff">' + n + '<span style="font-size:13px;font-weight:500;color:#8e8e93"> consignment' + (n!==1?'s':'') + '</span></div>' +
-      '</div>';
-    }).join('');
-  }
-  // Product filter chips
-  var prodFilter = document.getElementById('cons-prod-filter');
-  var prodChips = document.getElementById('cons-prod-chips');
-  if (prodFilter && prodChips) {
-    var allProds = unique(_consignments.map(function(r){return extractMM(r.producto)||normalizeProductoKey(r.producto)||null;}).filter(Boolean)).sort();
-    if (allProds.length > 1) {
-      prodFilter.style.display = 'flex';
-      prodChips.innerHTML = '';
-      var allBtn = document.createElement('button');
-      allBtn.style.cssText = 'padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:'+(!_consProdFilter?'#007aff':'#f2f2f7')+';color:'+(!_consProdFilter?'#fff':'#8e8e93');
-      allBtn.textContent = 'Todos';
-      allBtn.onclick = function(){ setConsProdFilter(''); };
-      prodChips.appendChild(allBtn);
-      allProds.forEach(function(p) {
-        var btn = document.createElement('button');
-        btn.style.cssText = 'padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:'+(_consProdFilter===p?'#007aff':'#f2f2f7')+';color:'+(_consProdFilter===p?'#fff':'#8e8e93');
-        btn.textContent = p;
-        btn.onclick = function(){ setConsProdFilter(p); };
-        prodChips.appendChild(btn);
-      });
-    }
-  }
-  var refs = {};
-  var filteredCons = _consProdFilter
-    ? _consignments.filter(function(r){ return (extractMM(r.producto)||normalizeProductoKey(r.producto)) === _consProdFilter; })
-    : _consignments;
-  filteredCons.forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
-    if (!refs[k]) refs[k] = {items:[], ref:r.referencia, fecha:r.fecha};
-    refs[k].items.push(r);
-  });
-  el.innerHTML = '';
-  Object.keys(refs).forEach(function(ref) {
-    var g = refs[ref];
-    var ton = g.items.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-    var scanned = g.items.filter(function(r){return isCoilScanned(r.lot_no);}).length;
-    var missing = g.items.length - scanned;
-    var prods = unique(g.items.map(function(r){return r.producto;}).filter(Boolean));
-    var mms = unique(prods.map(function(p){return extractMM(p);}).filter(Boolean));
-    var pct = g.items.length > 0 ? Math.round((scanned/g.items.length)*100) : 0;
-
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'border-bottom:1px solid #f2f2f7;padding-bottom:4px;margin-bottom:4px';
-
-    // Header row (clickable)
-    var hdr = document.createElement('div');
-    hdr.style.cssText = 'padding:14px 0;cursor:pointer;user-select:none';
-    var refCopy = ref;
-    hdr.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
-        '<div style="display:flex;align-items:center;gap:8px">'+
-          '<div style="font-size:14px;font-weight:700;color:#1c1c1e">Ref: '+esc(ref)+'</div>'+
-          '<button class="del-cons-btn" data-ref="'+esc(ref)+'" style="padding:2px 8px;background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'+
-        '</div>'+
-          '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+
-            mms.map(function(mm){return'<span style="background:#f0f5ff;color:#007aff;font-size:12px;font-weight:700;border-radius:5px;padding:2px 8px;margin-right:3px">'+mm+'mm</span>';}).join('')+
-          (mms.length?'':prods.map(function(p){var mm=extractMM(p);return'<span style="background:#f0f5ff;color:#007aff;font-size:12px;font-weight:700;border-radius:5px;padding:2px 8px;margin-right:3px">'+(mm?mm+'mm':esc(p))+'</span>';}).join(''))+
-            (g.fecha?' · '+esc(g.fecha):'')+
-          '</div>'+
-        '</div>'+
-        '<div style="text-align:right">'+
-          '<div style="font-size:15px;font-weight:700;color:#007aff">'+ton.toFixed(3)+'t</div>'+
-          '<div style="font-size:10px;color:#8e8e93">'+g.items.length+' coils</div>'+
-        '</div>'+
-      ''+
-      '<div style="background:#f2f2f7;border-radius:4px;height:6px;overflow:hidden;margin-bottom:5px">'+
-        '<div style="height:100%;border-radius:4px;background:'+(pct===100?'#34c759':'#007aff')+';width:'+pct+'%"></div>'+
-      '</div>'+
-      '<div style="display:flex;gap:12px;font-size:11px;font-weight:600;align-items:center">'+
-        '<span style="color:#34c759">&#10003; '+scanned+' escaneados</span>'+
-        (missing>0?'<span style="color:#ff3b30">&#10007; '+missing+' faltantes</span>':'')+
-        '<span style="color:#8e8e93">'+pct+'% completado</span>'+
-        '<span style="margin-left:auto;font-size:16px;color:#8e8e93" class="cons-chevron">&#8964;</span>'+
-      '</div>';
-
-    // Detail panel (hidden by default, expands DOWN)
-    var detail = document.createElement('div');
-    detail.style.cssText = 'display:none;padding-bottom:8px';
-
-    // Build detail content
-    var sorted = g.items.slice().sort(function(a,b){return String(a.lot_no).localeCompare(String(b.lot_no));});
-    sorted.forEach(function(r) {
-      var ok = isCoilScanned(r.lot_no);
-      var scanRec = ok ? records.find(function(rec){return String(rec.coil||'').trim()===String(r.lot_no||'').trim();}) : null;
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0 8px 12px;border-top:1px solid #f2f2f7';
-      var delBtn = '<button data-id="'+esc(r.id||'')+'" onclick="deleteConsRow(this.dataset.id,this.parentNode)" style="padding:3px 7px;background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0">&#10005;</button>';
-      row.innerHTML =
-        '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:'+(ok?'#34c759':'#ff3b30')+'"></div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:12px;font-weight:700;color:#1c1c1e">'+esc(r.lot_no||'')+'</div>'+
-          '<div style="font-size:10px;color:#8e8e93">Cast: '+esc(r.cast_no||'')+(scanRec&&scanRec.maquina?' · <b style="color:'+(scanRec.maquina==='EVG'?'#007aff':'#af52de')+'">'+esc(scanRec.maquina)+'</b>':'')+(scanRec&&scanRec.wo?' · <span style="background:#fff8e8;color:#7a5c00;border-radius:3px;padding:1px 4px;font-weight:700">'+esc(scanRec.wo)+'</span>':'')+'</div>'+
-        '</div>'+
-        '<div style="text-align:right;flex-shrink:0">'+
-          '<div style="font-size:12px;font-weight:700;color:#1c1c1e">'+parseFloat(r.peso||0).toFixed(3)+'t</div>'+
-          '<div style="font-size:10px;font-weight:700;color:'+(ok?'#34c759':'#ff3b30')+'">'+(ok?'Escaneado':'Faltante')+'</div>'+
-        '</div>'+
-        delBtn;
-      detail.appendChild(row);
-    });
-
-    // Toggle on click
-    var open = false;
-    hdr.addEventListener('click', function(e) {
-      if (e.target.classList.contains('del-cons-btn')) {
-        deleteConsignment(e.target.getAttribute('data-ref'));
-        return;
-      }
-      open = !open;
-      detail.style.display = open ? 'block' : 'none';
-      hdr.querySelector('.cons-chevron').innerHTML = open ? '&#8963;' : '&#8964;';
-    });
-
-    wrap.appendChild(hdr);
-    wrap.appendChild(detail);
-    el.appendChild(wrap);
-  });
-}
-
-
-function isCoilScanned(lotNo) {
-  if (!lotNo) return false;
-  var ln = String(lotNo).trim();
-  return records.some(function(r) {return String(r.coil||'').trim() === ln;});
-}
-
-function showConsMatch(ref) {
-  var items = ref === '__all__' ? _consignments : _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
-  var prods2 = unique(items.map(function(r){return r.producto;}).filter(Boolean));
-  document.getElementById('cons-ref-lbl').textContent = 'Ref: '+ref;
-  var prodEl = document.getElementById('cons-prod-lbl');
-  if (prodEl) prodEl.innerHTML = prods2.map(function(p){return'<span style="background:#f0f5ff;color:#007aff;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:4px">'+esc(p)+'</span>';}).join('');
-  document.getElementById('cons-kpis').style.display = 'grid';
-  document.getElementById('cons-ton-summary').style.display = 'block';
-  document.getElementById('cons-filters').style.display = 'flex';
-  document.getElementById('cons-list-card').style.display = 'block';
-  _consCurrentItems = items;
-  _consFilter = 'all';
-  updateConsFilterBtns();
-  renderConsList(items);
-}
-
-var _consCurrentItems = [];
-
-function setConsProdFilter(p) {
-  _consProdFilter = p;
-  renderSavedCons();
-}
-
-function filterCons(f) {
-  _consFilter = f;
-  updateConsFilterBtns();
-  // If no specific ref selected, show all consignments filtered
-  if (!_consCurrentItems.length) {
-    showConsMatch('__all__');
-  } else {
-    renderConsList(_consCurrentItems);
-  }
-}
-
-function updateConsFilterBtns() {
-  ['all','ok','miss','extra'].forEach(function(f) {
-    var btn = document.getElementById('cf-'+f);
-    if (!btn) return;
-    btn.style.background = _consFilter===f ? '#007aff' : '#f2f2f7';
-    btn.style.color = _consFilter===f ? '#fff' : '#8e8e93';
-  });
-}
-
-function renderConsList(items) {
-  var scanned = items.filter(function(r){return isCoilScanned(r.lot_no);});
-  var missing = items.filter(function(r){return !isCoilScanned(r.lot_no);});
-  // Extra: scanned coils with same cast not in consignment
-  var consLots = items.map(function(r){return String(r.lot_no||'').trim();});
-  var castNos = unique(items.map(function(r){return r.cast_no;}).filter(Boolean));
-  var extra = records.filter(function(r){
-    return castNos.some(function(cn){return String(r.cast||'').replace('-','').replace('-01','') === String(cn||'').replace('-','').replace('-01','');}) && !consLots.includes(String(r.coil||'').trim());
-  });
-
-  // KPIs
-  var tonTotal = items.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-  var tonMatch = scanned.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-  var tonMiss = missing.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-  document.getElementById('cons-total-n').textContent = items.length;
-  document.getElementById('cons-match-n').textContent = scanned.length;
-  document.getElementById('cons-miss-n').textContent = missing.length;
-  document.getElementById('cons-ton-total').textContent = tonTotal.toFixed(3)+'t';
-  document.getElementById('cons-ton-match').textContent = tonMatch.toFixed(3)+'t';
-  document.getElementById('cons-ton-miss').textContent = tonMiss.toFixed(3)+'t';
-
-  // Filter items
-  var toShow;
-  if (_consFilter==='ok') toShow = scanned.map(function(r){return{r:r,st:'ok'};});
-  else if (_consFilter==='miss') toShow = missing.map(function(r){return{r:r,st:'miss'};});
-  else if (_consFilter==='extra') toShow = extra.map(function(r){return{r:{lot_no:r.coil,cast_no:r.cast,peso:r.peso,producto:r.producto},st:'extra'};});
-  else toShow = items.map(function(r){return{r:r,st:isCoilScanned(r.lot_no)?'ok':'miss'};}).concat(extra.map(function(r){return{r:{lot_no:r.coil,cast_no:r.cast,peso:r.peso},st:'extra'};}));
-
-  var list = document.getElementById('cons-list');
-  if (!toShow.length) {
-    list.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:16px;font-size:13px">Sin resultados para este filtro.</div>';
-    return;
-  }
-  list.innerHTML = '';
-  toShow.reverse();
-  toShow.forEach(function(item) {
-    var r = item.r, st = item.st;
-    var dotColor = st==='ok'?'#34c759':st==='miss'?'#ff3b30':'#ff9500';
-    var stLabel = st==='ok'?'Escaneado':st==='miss'?'Faltante':'Extra';
-    var stClass = st==='ok'?'status-ok':st==='miss'?'status-miss':'status-extra';
-    var scanRec = st==='ok' ? records.find(function(rec){return String(rec.coil||'').trim()===String(r.lot_no||'').trim();}) : null;
-    var row = document.createElement('div');
-    row.className = 'match-row';
-    var prodLabel = r.producto ? '<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;margin-left:4px">'+esc(r.producto)+'</span>' : '';
-    row.innerHTML =
-      '<div class="match-dot" style="background:'+dotColor+'"></div>'+
-      '<div class="match-info">'+
-        '<div class="match-coil" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+esc(r.lot_no||'')+prodLabel+'</div>'+
-        '<div class="match-sub">Cast: '+esc(r.cast_no||'')+' · '+parseFloat(r.peso||0).toFixed(3)+'t'+(scanRec&&scanRec.maquina?' · <b style="color:'+(scanRec.maquina==='EVG'?'#007aff':'#af52de')+'">'+esc(scanRec.maquina)+'</b>':'')+(scanRec&&scanRec.wo?' · <span style="background:#fff8e8;color:#7a5c00;border-radius:3px;padding:1px 5px;font-weight:700">'+esc(scanRec.wo)+'</span>':'')+'</div>'+
-      '</div>'+
-      '<div style="text-align:right;flex-shrink:0">'+
-        '<div style="font-size:13px;font-weight:700;color:#1c1c1e">'+parseFloat(r.peso||0).toFixed(3)+'t</div>'+
-        '<span class="match-status '+stClass+'">'+stLabel+'</span>'+
-      '</div>';
-    list.appendChild(row);
-  });
-}
-
-// PDF upload and extraction
-document.addEventListener('DOMContentLoaded', function() {
-  var pdfIn = document.getElementById('pdf-in');
-  if (pdfIn) pdfIn.addEventListener('change', handlePDFUpload);
-});
 
 async function handlePDFUpload(e) {
   var files = Array.from(e.target.files);
