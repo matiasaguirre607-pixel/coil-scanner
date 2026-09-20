@@ -8,34 +8,32 @@ export async function onRequestPost(context) {
   const { imageBase64, mediaType } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  // Use higher token limit and more explicit prompt to get ALL rows
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+GEMINI_KEY, {
+  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key="+GEMINI_KEY, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       contents: [{parts: [
         {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: `This is a Pacific Steel consignment note. Extract EVERY SINGLE ROW from the table - do not skip any rows.
+        {text: `This is a Pacific Steel consignment note. Extract EVERY SINGLE ROW from the table.
 
-Return ONLY a JSON array, no other text, no markdown:
+Return ONLY a JSON array, no markdown, no other text:
 [{"referencia":"R810242355","fecha":"14/08/26","cast_no":"534735-01","lot_no":"6261990075","producto":"9.0 Ductile Rod","peso":1.435}]
 
-Fields:
-- referencia: Pacific Steel Reference number (usually top right, format R8XXXXXXX)
-- fecha: date field
+- referencia: Reference number top of page (format R8XXXXXXX)
+- fecha: date
 - cast_no: Cast No column
-- lot_no: Lot No column (REQUIRED - skip row only if this is completely missing)
-- producto: Product column - copy EXACTLY as written
-- peso: Weight/tns column as decimal number
+- lot_no: Lot No column (required)
+- producto: Product column, copy exactly as written
+- peso: Weight as decimal number
 
-IMPORTANT: Extract ALL rows from the table. Count the rows visually and make sure your array has the same count. If the table has 17 rows, return 17 objects.`}
+Extract ALL rows. If the table has 17 rows return 17 objects. Do not skip any row.`}
       ]}],
       generationConfig: {temperature: 0, maxOutputTokens: 8192}
     })
   });
 
   const gd = await gr.json();
-  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
+  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini "+gr.status}, 500);
 
   const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
   let rows;
@@ -50,10 +48,9 @@ IMPORTANT: Extract ALL rows from the table. Count the rows visually and make sur
   let saved = 0, skipped = 0;
   for (const r of rows) {
     if (!r.lot_no) continue;
-
     const producto = normalizeProducto(r.producto);
 
-    // Check for duplicate lot_no
+    // Check duplicate
     const check = await fetch(SB_BASE+"/rest/v1/consignments?lot_no=eq."+encodeURIComponent(String(r.lot_no))+"&select=id&limit=1", {
       headers: {apikey: SB_KEY, Authorization: "Bearer "+SB_KEY}
     });
@@ -75,7 +72,7 @@ IMPORTANT: Extract ALL rows from the table. Count the rows visually and make sur
     if (resp.ok) saved++;
   }
 
-  return rj({ok:true, total:rows.length, saved, skipped, rows});
+  return rj({ok:true, total:rows.length, saved, skipped});
 }
 
 function normalizeProducto(raw) {
@@ -88,7 +85,7 @@ function normalizeProducto(raw) {
   let normType = type;
   if (type.includes('DUCTILE')) normType = 'DUCTILE ROD';
   else if (type.includes('WIRE')) normType = 'WIRE ROD';
-  return size + '.0 ' + normType;
+  return size.toFixed(1) + ' ' + normType;
 }
 
 function rj(obj, status=200) {
