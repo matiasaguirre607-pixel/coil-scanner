@@ -1181,6 +1181,134 @@ async function analyze() {
     document.getElementById('btn-inner').textContent = 'Analizar etiqueta con IA';
   }
 }
+// ---------- Verificacion contra los consignments cargados (al escanear) ----------
+var PESO_TOL = 0.010;     // 10 kg de tolerancia entre lo escaneado y el consignment
+var FUZZY_MAX_DIST = 2;   // hasta 2 digitos distintos para sugerir un coil
+
+function _levDistCv(a, b, max) {   // igual que levDist, pero con nombre propio para no chocar
+  if (a === b) return 0;
+  var la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= lb; j++) prev[j] = j;
+  for (i = 1; i <= la; i++) {
+    cur[0] = i; var rowMin = i;
+    for (j = 1; j <= lb; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1));
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    var t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+
+function _castKeyCv(v) { return String(v || '').trim().split('-')[0].replace(/\D/g, ''); }
+function _numOrCv(v, d) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : d; }
+function _sizeScannedCv(p) { var m = String(p || '').match(/(\d+(?:[.,]\d+)?)\s*mm/i); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
+function _sizeConsCv(p) { var m = String(p || '').match(/^\s*(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
+
+// state: 'none' (sin consignments cargados) | 'ok' | 'suggest' | 'nomatch'
+function consVerify(coil, cast, peso, producto) {
+  var res = {state: 'none', match: null, warnings: [], suggestions: []};
+  if (!_consignments || !_consignments.length) return res;
+  refreshScannedSet();
+  var c = String(coil || '').trim();
+  var ck = _castKeyCv(cast);
+  var p = _numOrCv(peso, NaN);
+  var exact = null;
+  if (c) for (var i = 0; i < _consignments.length; i++) { if (String(_consignments[i].lot_no || '').trim() === c) { exact = _consignments[i]; break; } }
+
+  if (exact) {
+    res.state = 'ok'; res.match = exact;
+    var cp = _numOrCv(exact.peso, NaN);
+    if (isFinite(p) && isFinite(cp) && Math.abs(p - cp) > PESO_TOL) {
+      res.warnings.push('Peso: etiqueta ' + p.toFixed(3) + 't vs consignment ' + cp.toFixed(3) + 't (dif ' + Math.round((p - cp) * 1000) + ' kg)');
+    }
+    var ek = _castKeyCv(exact.cast_no);
+    if (ck && ek && ck !== ek) res.warnings.push('Cast: etiqueta ' + ck + ' vs consignment ' + exact.cast_no);
+    var s1 = _sizeScannedCv(producto), s2 = _sizeConsCv(exact.producto);
+    if (isFinite(s1) && isFinite(s2) && Math.abs(s1 - s2) > 0.05) res.warnings.push('Producto: etiqueta ' + s1 + 'mm vs consignment ' + exact.producto);
+    return res;
+  }
+
+  var cands = [];
+  _consignments.forEach(function(r) {
+    var l = String(r.lot_no || '').trim();
+    if (!l || isCoilScanned(l)) return;                       // los ya escaneados serian duplicados
+    var castOk = ck && _castKeyCv(r.cast_no) === ck;
+    var rp = _numOrCv(r.peso, NaN);
+    var pesoDiff = isFinite(p) && isFinite(rp) ? Math.abs(p - rp) : 0;
+    if (c) {
+      var d = _levDistCv(c, l, FUZZY_MAX_DIST);
+      if (d <= FUZZY_MAX_DIST) cands.push({c: r, why: 'digitos', dist: d, score: d * 100 + (castOk ? 0 : 10) + Math.min(pesoDiff * 100, 9)});
+    }
+  });
+  if (!cands.length && ck && isFinite(p)) {                   // coil ilegible/inexistente: buscar por cast + peso
+    _consignments.forEach(function(r) {
+      var l = String(r.lot_no || '').trim();
+      if (!l || isCoilScanned(l) || _castKeyCv(r.cast_no) !== ck) return;
+      var rp = _numOrCv(r.peso, NaN);
+      if (isFinite(rp) && Math.abs(p - rp) <= PESO_TOL) cands.push({c: r, why: 'cast y peso', dist: null, score: Math.abs(p - rp) * 1000});
+    });
+  }
+  cands.sort(function(a, b) { return a.score - b.score; });
+  res.suggestions = cands.slice(0, 3);
+  res.state = res.suggestions.length ? 'suggest' : 'nomatch';
+  return res;
+}
+
+function renderConsVerify(boxId, ids, dark) {
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  var g = function(k) { var e = document.getElementById(ids[k]); return e ? e.value : ''; };
+  var v = consVerify(g('coil'), g('cast'), g('peso'), g('producto'));
+  if (v.state === 'none') { box.innerHTML = ''; return; }
+  var okC = dark ? '#5be584' : '#1a7a3c', warnC = dark ? '#ffb340' : '#b25e00', badC = dark ? '#ff6961' : '#cc0000', mut = dark ? 'rgba(255,255,255,.7)' : '#636366';
+  var bg = dark ? 'rgba(255,255,255,.08)' : '#f8fafc';
+  var html = '';
+  if (v.state === 'ok') {
+    html += '<div style="color:' + okC + ';font-weight:700;font-size:13px">✓ En consignment Ref: ' + esc(v.match.referencia || '—') + (v.match.cast_no ? ' · Cast ' + esc(v.match.cast_no) : '') + '</div>';
+    v.warnings.forEach(function(w) { html += '<div style="color:' + warnC + ';font-size:12px;font-weight:600;margin-top:3px">⚠ ' + esc(w) + '</div>'; });
+  } else if (v.state === 'suggest') {
+    html += '<div style="color:' + warnC + ';font-weight:700;font-size:13px;margin-bottom:6px">⚠ Coil no esta en ningun consignment. ¿Quisiste decir…?</div>';
+    v.suggestions.forEach(function(s) {
+      var r = s.c;
+      html += '<button type="button" data-lot="' + _ceAttr(r.lot_no) + '" data-cast="' + _ceAttr(_castKeyCv(r.cast_no)) + '" onclick="applyConsSuggestion(this)" style="display:block;width:100%;text-align:left;margin-bottom:5px;padding:9px 10px;border:1.5px solid ' + warnC + ';border-radius:9px;background:' + (dark ? 'rgba(255,149,0,.15)' : '#fff8e8') + ';color:' + (dark ? '#fff' : '#1c1c1e') + ';font-size:13px;cursor:pointer">' +
+        '<b style="font-family:monospace">' + esc(r.lot_no) + '</b> <span style="color:' + mut + ';font-size:11px">Ref ' + esc(r.referencia || '—') + ' · Cast ' + esc(r.cast_no || '—') + ' · ' + _numOrCv(r.peso, 0).toFixed(3) + 't · ' +
+        (s.dist != null ? (s.dist === 1 ? '1 digito distinto' : s.dist + ' digitos distintos') : 'por cast y peso') + '</span></button>';
+    });
+  } else {
+    html += '<div style="color:' + badC + ';font-weight:700;font-size:13px">✗ Coil no esta en ningun consignment y no hay coils parecidos. Revisa la etiqueta.</div>';
+  }
+  box.innerHTML = '<div style="background:' + bg + ';border-radius:10px;padding:10px 12px">' + html + '</div>';
+}
+
+function applyConsSuggestion(btn) {
+  var box = btn.closest('[data-cv]');
+  if (!box) return;
+  var ids = JSON.parse(box.dataset.cv);
+  var coilEl = document.getElementById(ids.coil);
+  if (coilEl) coilEl.value = btn.dataset.lot;
+  var castEl = document.getElementById(ids.cast);
+  if (castEl && !castEl.value.trim() && btn.dataset.cast) castEl.value = btn.dataset.cast;
+  renderConsVerify(box.id, ids, box.dataset.dark === '1');
+  updateDupBox(box.dataset.dupBox, ids, box.dataset.dark === '1', box.dataset.btn, box.dataset.label);   // el coil cambio: reevalua tambien el duplicado
+}
+
+function attachConsVerify(boxId, ids, dark, dupBoxId, btnId, baseLabel) {
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.dataset.cv = JSON.stringify(ids);
+  box.dataset.dark = dark ? '1' : '0';
+  box.dataset.dupBox = dupBoxId; box.dataset.btn = btnId; box.dataset.label = baseLabel;
+  ['coil', 'cast', 'peso', 'producto'].forEach(function(k) {
+    var el = document.getElementById(ids[k]);
+    if (el) el.addEventListener('input', function() { renderConsVerify(boxId, ids, dark); });
+  });
+  renderConsVerify(boxId, ids, dark);
+}
+
 function showResult(d, wo) {
   resetScanConfirmBtn();
   var peso = parseFloat(d.peso||0);
@@ -1189,28 +1317,10 @@ function showResult(d, wo) {
   if (isOutlier) {
     setStatus('Atencion: peso inusual (' + d.peso + 't) — verificar etiqueta', 'warn');
   }
-  // Check if coil is in a consignment
+  // La verificacion contra el consignment (ok / sugerencia / sin coincidencia) se muestra en el cuadro cv-box, mas abajo.
+  // Se sigue guardando en "Para verificar" para el seguimiento de la pestaña Consignment.
   if (d.coil) {
     checkCoilVsConsignment(d.coil, d.cast, d.producto, d.peso, currentMachine, document.getElementById('wo-input').value.trim());
-  }
-  if (d.coil && _consignments && _consignments.length) {
-    var consMatch = _consignments.find(function(r){return String(r.lot_no||'').trim()===String(d.coil||'').trim();});
-    if (consMatch) {
-      var matchMsg = '✓ Coil en consignment Ref: '+(consMatch.referencia||'')+(consMatch.cast_no?' · Cast: '+consMatch.cast_no:'');
-      setStatus(matchMsg, 'ok');
-    } else {
-      // Not in any consignment - show warning but still scanned
-      var warnBanner = document.getElementById('cons-warn-banner');
-      if (!warnBanner) {
-        warnBanner = document.createElement('div');
-        warnBanner.id = 'cons-warn-banner';
-        warnBanner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#ff9500;color:#fff;padding:14px 24px;border-radius:12px;font-size:15px;font-weight:700;z-index:500;box-shadow:0 4px 20px rgba(255,149,0,.4);text-align:center;max-width:90vw';
-        document.body.appendChild(warnBanner);
-      }
-      warnBanner.textContent = '⚠ Coil ' + d.coil + ' NO esta en ningun consignment cargado';
-      warnBanner.style.display = 'block';
-      setTimeout(function(){warnBanner.style.display='none';}, 5000);
-    }
   }
   var fields = document.getElementById('res-fields');
   var inputStyle = 'width:100%;padding:10px 12px;border:2px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:monospace;font-weight:700;outline:none;box-sizing:border-box;margin-bottom:2px;background:#f8fafc';
@@ -1236,7 +1346,8 @@ function showResult(d, wo) {
         '>' +
     '</div>';
   document.getElementById('result-card').style.display = 'block';
-  fields.insertAdjacentHTML('beforeend', '<div id="dup-box" style="padding:10px 0 0"></div>');
+  fields.insertAdjacentHTML('beforeend', '<div id="cv-box" style="padding:10px 0 0"></div><div id="dup-box" style="padding:8px 0 0"></div>');
+  attachConsVerify('cv-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'dup-box', 'btn-confirm-scan', '&#10003; Confirmar y guardar');
   attachDupCheck('dup-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
   // Attach enter navigation
   setTimeout(function(){
@@ -3917,7 +4028,8 @@ function showCamConfirm(data) {
       '<input id="cc-prod" value="' + esc(normalizeProducto(data.producto)||'') + '" style="' + inputStyle + ';font-size:12px">' +
     '</div>';
 
-  fields.insertAdjacentHTML('afterbegin', '<div id="cc-dup" style="grid-column:1/-1"></div>');
+  fields.insertAdjacentHTML('afterbegin', '<div id="cc-cv" style="grid-column:1/-1"></div><div id="cc-dup" style="grid-column:1/-1"></div>');
+  attachConsVerify('cc-cv', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cc-dup', 'cam-confirm-btn', '&#10003; Confirmar');
   attachDupCheck('cc-dup', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
   overlay.style.display = 'block';
   if (shootBar) shootBar.style.display = 'none';
