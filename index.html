@@ -2422,11 +2422,22 @@ async function saveConsignmentRows(rows) {
     };
   });
   for (var i = 0; i < payload.length; i += 200) {
-    var resp = await fetch(SB_BASE_PROD + '/rest/v1/consignments', {
+    var chunk = payload.slice(i, i + 200);
+    // on_conflict=lot_no + ignore-duplicates: si algun lote de este lote ya estaba guardado, se omite
+    // esa fila sola (no revienta el resto del PDF). Requiere el UNIQUE(lot_no) de la base.
+    var resp = await fetch(SB_BASE_PROD + '/rest/v1/consignments?on_conflict=lot_no', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', apikey: SB_KEY_PROD, Authorization: 'Bearer ' + SB_KEY_PROD, Prefer: 'return=minimal'},
-      body: JSON.stringify(payload.slice(i, i + 200))
+      headers: {'Content-Type': 'application/json', apikey: SB_KEY_PROD, Authorization: 'Bearer ' + SB_KEY_PROD, Prefer: 'resolution=ignore-duplicates,return=minimal'},
+      body: JSON.stringify(chunk)
     });
+    if (resp.status === 400) {
+      // Todavia no se corrio el SQL que agrega el UNIQUE(lot_no): se reintenta como antes (sin on_conflict).
+      resp = await fetch(SB_BASE_PROD + '/rest/v1/consignments', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', apikey: SB_KEY_PROD, Authorization: 'Bearer ' + SB_KEY_PROD, Prefer: 'return=minimal'},
+        body: JSON.stringify(chunk)
+      });
+    }
     if (!resp.ok) {
       var t = '';
       try { t = await resp.text(); } catch(e) {}
