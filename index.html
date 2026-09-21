@@ -2142,9 +2142,9 @@ async function loadConsignments() {
     }
     _consignments = all;
   } catch(e) { _consignments = []; }
-  renderSavedCons();
-  runCrossCheck();
-  renderParaVerificar();
+  if (typeof renderSavedCons === 'function') renderSavedCons();
+  if (typeof runCrossCheck === 'function') runCrossCheck();
+  if (typeof renderParaVerificar === 'function') renderParaVerificar();
 }
 
 async function handlePDFUpload(e) {
