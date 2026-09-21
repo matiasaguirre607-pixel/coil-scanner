@@ -1289,8 +1289,7 @@ function renderScanStatus(boxId, ids, dark, btnId, baseLabel) {
   var html = '';
 
   if (dup && dup.kind === 'exact') {
-    var when = dup.rec.created_at ? new Date(dup.rec.created_at).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
-    html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:12px;font-size:14px;font-weight:800;text-align:center;line-height:1.5">⛔ YA ESCANEADA<br><span style="font-weight:600;font-size:12px">Coil ' + esc(dup.rec.coil) + (when ? ' · ' + when : '') + (dup.rec.wo ? ' · WO ' + esc(dup.rec.wo) : '') + '</span></div>';
+    html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:14px;font-size:17px;font-weight:900;text-align:center;line-height:1.5">⛔ YA ESCANEADA<br>' + dupFlashHTML(dup.rec.coil, dup.rec.cast, dup.rec.producto, dup.rec.created_at, dup.rec.wo).replace('&#9940; YA ESCANEADA<br>', '') + '</div>';
     if (btn) btn.style.display = 'none';           // nada de boton "deshabilitado": directamente no se puede guardar
   } else if (dup && dup.kind === 'similar') {
     var r = dup.rec;
@@ -1342,21 +1341,38 @@ function attachScanStatus(boxId, ids, dark, btnId, baseLabel) {
 }
 
 // ---------- Los 3 avisos claros en el celular: duplicado / guardado / error (cancela solo) ----------
+function _fmtWhen(iso) {
+  return iso ? new Date(iso).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+}
+
+function dupFlashHTML(coil, cast, producto, whenIso, wo) {
+  var rows = [];
+  if (cast) rows.push('Cast ' + esc(cast));
+  if (producto) rows.push(esc(producto));
+  var when = _fmtWhen(whenIso);
+  if (when) rows.push(when);
+  if (wo) rows.push('WO ' + esc(wo));
+  return '&#9940; YA ESCANEADA<br>' +
+    '<span style="font-size:22px;font-weight:800">' + esc(coil || '') + '</span>' +
+    (rows.length ? '<br><span style="font-size:15px;font-weight:600">' + rows.join(' · ') + '</span>' : '');
+}
+
 function camFlash(text, kind) {
   var el = document.getElementById('cam-flash');
   if (!el) {
     el = document.createElement('div');
     el.id = 'cam-flash';
-    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;padding:22px 28px;border-radius:18px;font-size:19px;font-weight:800;text-align:center;line-height:1.4;max-width:85vw;box-shadow:0 8px 30px rgba(0,0,0,.4)';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;padding:24px 28px;border-radius:18px;font-weight:900;text-align:center;line-height:1.4;max-width:88vw;box-shadow:0 8px 30px rgba(0,0,0,.4)';
     document.body.appendChild(el);
   }
   var colors = {dup: ['#ff3b30', '#fff'], ok: ['#34c759', '#fff'], err: ['#ff3b30', '#fff']};
   var c = colors[kind] || colors.err;
   el.style.background = c[0]; el.style.color = c[1];
+  el.style.fontSize = kind === 'dup' ? '30px' : '19px';   // se reaplica en cada llamado (antes solo quedaba del primer cartel mostrado)
   el.innerHTML = text;
   el.style.display = 'block';
   clearTimeout(el._t);
-  el._t = setTimeout(function() { el.style.display = 'none'; }, kind === 'ok' ? 1400 : 2600);
+  el._t = setTimeout(function() { el.style.display = 'none'; }, kind === 'ok' ? 1400 : (kind === 'dup' ? 3400 : 2600));
 }
 
 function showResult(d, wo) {
@@ -2103,8 +2119,7 @@ async function captureAndAnalyze() {
     var peso0 = normalizePeso(data.peso);
     var dchk0 = findDuplicateCandidate(coil0, data.cast, peso0);
     if (dchk0 && dchk0.kind === 'exact') {                     // duplicado clarisimo: ni se abre el panel
-      var when0 = dchk0.rec.created_at ? new Date(dchk0.rec.created_at).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
-      camFlash('⛔ YA ESCANEADA<br><span style="font-size:14px;font-weight:600">Coil ' + esc(coil0) + (when0 ? ' · ' + when0 : '') + '</span>', 'dup');
+      camFlash(dupFlashHTML(coil0, dchk0.rec.cast, dchk0.rec.producto, dchk0.rec.created_at, dchk0.rec.wo), 'dup');
       status.textContent = 'Lista para la siguiente etiqueta';
       status.style.color = 'rgba(255,255,255,.7)';
       resetCamShutter();
@@ -4028,7 +4043,7 @@ async function camConfirm() {
 
   var dchk = findDuplicateCandidate(coil, cast, peso);   // por si lo corrigio a mano y quedo igual a uno ya guardado
   if (dchk && dchk.kind === 'exact') {
-    camFlash('⛔ YA ESCANEADA', 'dup');
+    camFlash(dupFlashHTML(coil, dchk.rec.cast, dchk.rec.producto, dchk.rec.created_at, dchk.rec.wo), 'dup');
     document.getElementById('cam-status').textContent = 'No se guardo — corregi el coil o cancela';
     document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
     renderScanStatus('cc-status', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
@@ -4064,8 +4079,7 @@ async function camConfirm() {
 
     if (saveResp.status === 409 || saveData.duplicate) {
       var exr = saveData.existing || {};
-      var exWhen = exr.created_at ? ' · ' + new Date(exr.created_at).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
-      camFlash('⛔ YA ESCANEADA<br><span style="font-size:14px;font-weight:600">Coil ' + esc(coil) + exWhen + '</span>', 'dup');   // antes este mensaje se pisaba con "Cancelado"
+      camFlash(dupFlashHTML(coil, exr.cast, exr.producto, exr.created_at, exr.wo), 'dup');   // antes este mensaje se pisaba con "Cancelado"
       camReject('No se guardo — lo escaneo otro operario', 'rgba(255,255,255,.7)');
       loadRecords();
       return;
