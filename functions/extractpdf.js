@@ -3,12 +3,17 @@
 //   { imageBase64, mediaType: "image/jpeg" }
 // (tambien acepta { pdfBase64 } por compatibilidad).
 // Devuelve { ok:true, rows:[...] }. NO guarda nada: el front deduplica y guarda en Supabase.
+import { requireAdmin } from "../lib/auth.js";
+
 export async function onRequestPost(context) {
+  const denied = await requireAdmin(context.request, context.env); // consume API de pago: solo administrador
+  if (denied) return denied;
   const ANTHROPIC_KEY = context.env.ANTHROPIC_KEY;
 
   let body;
   try { body = await context.request.json(); } catch (e) { return rj({ error: "Body invalido" }, 400); }
   const { imageBase64, mediaType, pdfBase64 } = body;
+  if (String(imageBase64 || pdfBase64 || "").length > 16 * 1024 * 1024) return rj({ error: "Archivo demasiado grande" }, 413);
 
   let fileBlock;
   if (imageBase64) {
