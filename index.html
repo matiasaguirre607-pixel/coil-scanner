@@ -1143,6 +1143,10 @@ async function analyze() {
     var coil = parsed.coil ? String(parsed.coil).trim() : null;
     var peso = normalizePeso(parsed.peso);
     var producto = normalizeProducto(parsed.producto);
+    if (!parsed._dup) {                                  // el /extract no avisa duplicados: se revisa aqui, antes de guardar
+      var dd = findDuplicateCandidate(coil, parsed.cast, peso);
+      if (dd && dd.kind === 'exact') { parsed._dup = true; parsed.existing = dd.rec; }
+    }
     if (parsed._dup && parsed.existing) {
       var ex = parsed.existing;
       document.getElementById('dup-coil').textContent = ex.coil || '';
@@ -1232,6 +1236,8 @@ function showResult(d, wo) {
         '>' +
     '</div>';
   document.getElementById('result-card').style.display = 'block';
+  fields.insertAdjacentHTML('beforeend', '<div id="dup-box" style="padding:10px 0 0"></div>');
+  attachDupCheck('dup-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
   // Attach enter navigation
   setTimeout(function(){
     var order = ['conf-coil','conf-cast','conf-peso','conf-producto'];
@@ -1877,6 +1883,84 @@ function openCamera() {
   });
 }
 
+// ---------- Deteccion de duplicados en el celular (antes de guardar) ----------
+function levDist(a, b, max) {   // distancia de edicion acotada
+  if (a === b) return 0;
+  var la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= lb; j++) prev[j] = j;
+  for (i = 1; i <= la; i++) {
+    cur[0] = i; var rowMin = i;
+    for (j = 1; j <= lb; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1));
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    var t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+
+// {kind:'exact'|'similar', rec, dist} o null.
+//  exact   = ese numero de coil ya esta guardado.
+//  similar = mismo cast y mismo peso y un coil que difiere en 1-2 digitos (la IA leyo distinto la MISMA etiqueta).
+function findDuplicateCandidate(coil, cast, peso) {
+  var c = String(coil || '').trim();
+  if (!c) return null;
+  var ex = isDup(c);
+  if (ex) return {kind: 'exact', rec: ex, dist: 0};
+  var ck = String(cast || '').trim();
+  var p = parseFloat(String(peso || '').replace(',', '.'));
+  if (!ck || !isFinite(p)) return null;
+  var best = null;
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    if (String(r.cast || '').trim() !== ck) continue;
+    var rp = parseFloat(String(r.peso || '').replace(',', '.'));
+    if (!isFinite(rp) || Math.abs(rp - p) > 0.0005) continue;
+    var rc = String(r.coil || '').trim();
+    if (!rc) continue;
+    var d = levDist(c, rc, 2);
+    if (d <= 2 && (!best || d < best.dist)) best = {kind: 'similar', rec: r, dist: d};
+  }
+  return best;
+}
+
+// Muestra el aviso de duplicado y bloquea / marca el boton de guardar. Se vuelve a evaluar al editar el coil.
+function updateDupBox(boxId, ids, dark, btnId, baseLabel) {
+  var box = document.getElementById(boxId), btn = document.getElementById(btnId);
+  if (!box) return null;
+  var g = function(k) { var e = document.getElementById(ids[k]); return e ? e.value : ''; };
+  var d = findDuplicateCandidate(g('coil'), g('cast'), g('peso'));
+  if (!d) {
+    box.innerHTML = '';
+    if (btn && btn.dataset.dupState) { btn.disabled = false; btn.innerHTML = baseLabel; delete btn.dataset.dupState; }
+    return null;
+  }
+  var r = d.rec;
+  var when = r.created_at ? new Date(r.created_at).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+  var info = 'Coil ' + esc(r.coil) + ' · Cast ' + esc(r.cast || '—') + ' · ' + esc(r.peso || '—') + 't' + (when ? ' · ' + when : '') + (r.wo ? ' · WO ' + esc(r.wo) : '');
+  var col = d.kind === 'exact' ? (dark ? '#ff6961' : '#cc0000') : (dark ? '#ffb340' : '#b25e00');
+  var bg = dark ? 'rgba(255,255,255,.08)' : (d.kind === 'exact' ? '#fff0f0' : '#fff8e8');
+  if (d.kind === 'exact') {
+    box.innerHTML = '<div style="background:' + bg + ';color:' + col + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.4">⛔ DUPLICADO: esta etiqueta ya fue escaneada<br><span style="font-weight:600;font-size:12px">' + info + '</span></div>';
+    if (btn) { btn.disabled = true; btn.dataset.dupState = 'exact'; btn.innerHTML = 'Ya existe'; }
+  } else {
+    box.innerHTML = '<div style="background:' + bg + ';color:' + col + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.4">⚠ Posible duplicado (' + d.dist + (d.dist === 1 ? ' digito distinto' : ' digitos distintos') + ', mismo cast y peso)<br><span style="font-weight:600;font-size:12px">' + info + '</span><br><span style="font-weight:600;font-size:12px">Si es OTRA etiqueta, guarda igual. Si no, corrige el coil o cancela.</span></div>';
+    if (btn) { btn.disabled = false; btn.dataset.dupState = 'similar'; btn.innerHTML = 'Guardar igual'; }
+  }
+  return d;
+}
+
+function attachDupCheck(boxId, ids, dark, btnId, baseLabel) {
+  ['coil', 'cast', 'peso'].forEach(function(k) {
+    var el = document.getElementById(ids[k]);
+    if (el) el.addEventListener('input', function() { updateDupBox(boxId, ids, dark, btnId, baseLabel); });
+  });
+  return updateDupBox(boxId, ids, dark, btnId, baseLabel);
+}
+
 // Deja los botones listos para la SIGUIENTE etiqueta (antes quedaban bloqueados despues del primer escaneo)
 function resetCamShutter() {
   var shut = document.getElementById('cam-capture-btn');
@@ -1884,11 +1968,11 @@ function resetCamShutter() {
 }
 function resetCamConfirmBtn() {
   var cb = document.getElementById('cam-confirm-btn');
-  if (cb) { cb.disabled = false; cb.innerHTML = '&#10003; Confirmar'; }
+  if (cb) { cb.disabled = false; cb.innerHTML = '&#10003; Confirmar'; delete cb.dataset.dupState; }
 }
 function resetScanConfirmBtn() {
   var b = document.getElementById('btn-confirm-scan');
-  if (b) { b.disabled = false; b.innerHTML = '&#10003; Confirmar y guardar'; }
+  if (b) { b.disabled = false; b.innerHTML = '&#10003; Confirmar y guardar'; delete b.dataset.dupState; }
 }
 
 function closeCamera() {
@@ -3761,6 +3845,8 @@ function showCamConfirm(data) {
       '<input id="cc-prod" value="' + esc(normalizeProducto(data.producto)||'') + '" style="' + inputStyle + ';font-size:12px">' +
     '</div>';
 
+  fields.insertAdjacentHTML('afterbegin', '<div id="cc-dup" style="grid-column:1/-1"></div>');
+  attachDupCheck('cc-dup', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
   overlay.style.display = 'block';
   if (shootBar) shootBar.style.display = 'none';
 
@@ -3777,6 +3863,13 @@ async function camConfirm() {
   var peso = (document.getElementById('cc-peso').value||'').trim();
   var producto = (document.getElementById('cc-prod').value||'').trim();
 
+  var dchk = findDuplicateCandidate(coil, cast, peso);
+  if (dchk && dchk.kind === 'exact') {
+    document.getElementById('cam-status').textContent = '⛔ DUPLICADO — ' + coil + ' ya fue escaneado';
+    document.getElementById('cam-status').style.color = '#ff9500';
+    updateDupBox('cc-dup', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
+    return;
+  }
   var camWo = _pendingScan ? _pendingScan.wo : '';
   if (camWo && isWOClosed(camWo) && !_unlocked) {
     document.getElementById('cam-status').textContent = '⚠ WO ' + camWo + ' CERRADA — ingresá contrasena';
@@ -3805,9 +3898,10 @@ async function camConfirm() {
     var saveData = await saveResp.json();
 
     if (saveResp.status === 409 || saveData.duplicate) {
-      document.getElementById('cam-status').textContent = '⚠ DUPLICADO — ' + coil + ' ya fue escaneado';
-      document.getElementById('cam-status').style.color = '#ff9500';
-      camReject();
+      var exr = saveData.existing || {};
+      var exWhen = exr.created_at ? ' el ' + new Date(exr.created_at).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+      camReject('⚠ DUPLICADO — ' + coil + ' ya fue escaneado' + exWhen + '. No se guardo.', '#ff9500');   // antes este mensaje se pisaba con "Cancelado"
+      loadRecords();
       return;
     }
     if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
@@ -3835,13 +3929,13 @@ async function camConfirm() {
   }
 }
 
-function camReject() {
+function camReject(msg, color) {
   _pendingScan = null;
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
   resetCamShutter(); resetCamConfirmBtn();
-  document.getElementById('cam-status').textContent = 'Cancelado — intentá de nuevo';
-  document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
+  document.getElementById('cam-status').textContent = (typeof msg === 'string' && msg) ? msg : 'Cancelado — intentá de nuevo';
+  document.getElementById('cam-status').style.color = (typeof msg === 'string' && msg && color) ? color : 'rgba(255,255,255,.7)';
 }
 
 function confNext(el, nextId) {
@@ -3863,6 +3957,12 @@ async function confirmScan() {
   var notas = _pendingScan.notas;
 
   if (!coil) { setStatus('Ingresa el numero de coil', 'err'); if(btn){btn.disabled=false;btn.textContent='✓ Confirmar y guardar';} return; }
+  var dchk = findDuplicateCandidate(coil, cast, peso);          // tambien cubre la tecla Enter
+  if (dchk && dchk.kind === 'exact') {
+    setStatus('Coil duplicado: ' + coil + ' ya fue escaneado', 'warn');
+    updateDupBox('dup-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
+    return;
+  }
   if (wo && isWOClosed(wo)) {
     if (!_unlocked) {
       setStatus('WO ' + wo + ' está CERRADA. Ingresá contrasena para continuar.', 'err');
@@ -3884,6 +3984,8 @@ async function confirmScan() {
     if (saveResp.status === 409 || saveData.duplicate) {
       setStatus('Coil duplicado: ' + coil + ' ya fue escaneado', 'warn');
       if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
+      await loadRecords();                                          // por si lo guardo otro operario: ahora si lo vemos
+      updateDupBox('dup-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
       return;
     }
     if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
