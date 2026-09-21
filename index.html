@@ -1178,6 +1178,7 @@ async function analyze() {
   }
 }
 function showResult(d, wo) {
+  resetScanConfirmBtn();
   var peso = parseFloat(d.peso||0);
   var isOutlier = peso > 0 && (peso < 1.2 || peso > 1.8);
   document.getElementById('res-title').textContent = d.producto || 'Datos extraidos';
@@ -1855,6 +1856,9 @@ function openCamera() {
     return;
   }
   var modal = document.getElementById('cam-modal');
+  resetCamShutter(); resetCamConfirmBtn();
+  document.getElementById('cam-confirm').style.display = 'none';
+  document.getElementById('cam-shoot-bar').style.display = 'flex';
   modal.style.cssText = 'display:flex;flex-direction:column;position:fixed;inset:0;background:#000;z-index:250';
   navigator.mediaDevices.getUserMedia({
     video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}
@@ -1873,6 +1877,20 @@ function openCamera() {
   });
 }
 
+// Deja los botones listos para la SIGUIENTE etiqueta (antes quedaban bloqueados despues del primer escaneo)
+function resetCamShutter() {
+  var shut = document.getElementById('cam-capture-btn');
+  if (shut) { shut.disabled = false; shut.style.background = '#fff'; }
+}
+function resetCamConfirmBtn() {
+  var cb = document.getElementById('cam-confirm-btn');
+  if (cb) { cb.disabled = false; cb.innerHTML = '&#10003; Confirmar'; }
+}
+function resetScanConfirmBtn() {
+  var b = document.getElementById('btn-confirm-scan');
+  if (b) { b.disabled = false; b.innerHTML = '&#10003; Confirmar y guardar'; }
+}
+
 function closeCamera() {
   if (_camStream) {
     _camStream.getTracks().forEach(function(t){t.stop();});
@@ -1880,6 +1898,9 @@ function closeCamera() {
   }
   document.getElementById('cam-modal').style.display = 'none';
   document.getElementById('cam-video').srcObject = null;
+  document.getElementById('cam-confirm').style.display = 'none';
+  document.getElementById('cam-shoot-bar').style.display = 'flex';
+  resetCamShutter(); resetCamConfirmBtn();
 }
 
 async function captureAndAnalyze() {
@@ -3714,6 +3735,7 @@ function checkCoilVsConsignment(coil, cast, producto, peso, maquina, wo) {
 
 // ============ CONFIRM / REJECT SCAN ============
 function showCamConfirm(data) {
+  resetCamConfirmBtn();
   var overlay = document.getElementById('cam-confirm');
   var shootBar = document.getElementById('cam-shoot-bar');
   var fields = document.getElementById('cam-confirm-fields');
@@ -3798,6 +3820,7 @@ async function camConfirm() {
     // Show success briefly then reset for next scan
     document.getElementById('cam-confirm').style.display = 'none';
     document.getElementById('cam-shoot-bar').style.display = 'flex';
+    resetCamShutter(); resetCamConfirmBtn();   // <- faltaba: dejaba el obturador bloqueado
     document.getElementById('cam-status').textContent = '✓ Guardado: ' + coil + ' · ' + peso + 't';
     document.getElementById('cam-status').style.color = '#34c759';
     setTimeout(function() {
@@ -3816,8 +3839,7 @@ function camReject() {
   _pendingScan = null;
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
-  document.getElementById('cam-capture-btn').disabled = false;
-  document.getElementById('cam-capture-btn').style.background = '#fff';
+  resetCamShutter(); resetCamConfirmBtn();
   document.getElementById('cam-status').textContent = 'Cancelado — intentá de nuevo';
   document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
 }
@@ -3872,6 +3894,7 @@ async function confirmScan() {
     document.getElementById('notas-input').value = '';
     resetImg();
     _pendingScan = null;
+    resetScanConfirmBtn();
     await loadRecords();
   } catch(err) {
     setStatus(err.message, 'err');
