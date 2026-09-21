@@ -22,6 +22,15 @@ export async function onRequestPost(context) {
   });
 
   if (!sr.ok) {
+    if (sr.status === 409) {
+      // Dos operarios guardaron el mismo coil al mismo tiempo: el chequeo de arriba no lo vio,
+      // pero la base lo bloqueo (UNIQUE). Se busca el que quedo guardado para avisar igual que un duplicado normal.
+      const dr2 = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,producto,wo,created_at&limit=1", {
+        headers: { apikey: SB_KEY, Authorization: "Bearer "+SB_KEY }
+      });
+      const found = await dr2.json();
+      return rj({ duplicate:true, existing: (Array.isArray(found) && found[0]) || { coil } }, 409);
+    }
     const err = await sr.text();
     return rj({error: "Error guardando: " + err.substring(0,100)}, 500);
   }
