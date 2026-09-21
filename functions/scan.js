@@ -1,77 +1,73 @@
 export async function onRequestPost(context) {
-  const GEMINI_KEY = context.env.GEMINI_KEY;
+  const ANTHROPIC_KEY = context.env.ANTHROPIC_KEY;
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
   const SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
 
   let body;
   try { body = await context.request.json(); } catch(e) { return rj({error:"Body invalido"},400); }
-  const { imageBase64, mediaType, wo, operario, notas, maquina } = body;
+  const { imageBase64, mediaType, wo, operario, notas } = body;
   if (!imageBase64) return rj({error:"Sin imagen"},400);
 
-  const prompt = `You are a data extractor for steel coil labels. There are TWO types of labels:
-
-TYPE 1 (Pacific Steel / standard):
-- peso: weight in tonnes (e.g. "1.460")
-- producto: product type with MM size (e.g. "COIL REIN 6.1mm", "COIL REIN 8mm", "COIL REIN 9mm")
-- coil: Coil number (numeric, e.g. "6260300548")
-- cast: Cast number (numeric, e.g. "530736", may have suffix like "530736-01")
-
-TYPE 2 (alternative label - may show date, machine name, etc):
-- peso: weight in tonnes (e.g. "1.536")
-- producto: product type with MM size (e.g. "COIL REIN 6mm")
-- coil: Coil number (numeric, e.g. "40260214349")
-- cast: Cast number in format GRADE-HEATCODE (e.g. "SAE1012-3D18470/4", "SAE1008-2B15230/1")
-
-Rules:
-- Extract EXACTLY these 4 fields only
-- For cast: capture the FULL string including letters, numbers, hyphens and slashes
-- For peso: extract only the number (e.g. "1.536" not "1.536 t")
-- For producto: always include the MM size
-- Respond with ONLY a JSON object, nothing else, no markdown:
-{"peso": "1.460", "producto": "COIL REIN 6.1mm", "coil": "6260300548", "cast": "530736"}`;
-
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
+  const ar = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV",
+      "anthropic-beta": "interleaved-thinking-2025-05-14",
+      "anthropic-workspace-id": "wrkspc_01PxXGS3vqSidRzMcaVxkQwV"
+    },
     body: JSON.stringify({
-      contents: [{parts: [
-        {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: prompt}
-      ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 256}
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 256,
+      messages: [{role: "user", content: [
+        {type: "image", source: {type: "base64", media_type: mediaType||"image/jpeg", data: imageBase64}},
+        {type: "text", text: "Analiza esta etiqueta de acero. Responde SOLO con JSON: {\"peso\":\"1.475\",\"producto\":\"COIL REIN 7 MM\",\"coil\":\"6260170028\",\"cast\":\"530069\"}. Peso en toneladas. null si no aparece."}
+      ]}]
     })
   });
-  const gd = await gr.json();
-  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
+  const ad = await ar.json();
+  if (!ar.ok) return rj({error: ad?.error?.message || "Error API"}, 500);
 
-  const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  let parsed = null;
-  try { parsed = JSON.parse(raw.trim()); } catch(e) {}
-  if (!parsed) { const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) try { parsed = JSON.parse(m[1].trim()); } catch(e) {} }
-  if (!parsed) { const m = raw.match(/\{[\s\S]*?\}/); if (m) try { parsed = JSON.parse(m[0]); } catch(e) {} }
-  if (!parsed) return rj({error: "No se leyeron los datos. Raw: " + raw.substring(0,100)}, 422);
+  const raw = ad.content[0].text;
+  let parsed;
+  try { parsed = JSON.parse(raw.replace(/```json/gi,"").replace(/```/g,"").trim()); }
+  catch(e) { return rj({error:"No se leyeron los datos. Foto mas clara."}, 422); }
 
   const coil = parsed.coil ? String(parsed.coil).trim() : null;
   const peso = normalizePeso(parsed.peso);
   const producto = normalizeProducto(parsed.producto);
-  const cast = parsed.cast ? String(parsed.cast).trim() : null;
 
-  // Check duplicate
   if (coil) {
-    const dr = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,producto,wo,created_at&limit=1", {
+    const dr = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,created_at&limit=1", {
       headers: { apikey: SB_KEY, Authorization: "Bearer "+SB_KEY }
     });
     const dups = await dr.json();
     if (Array.isArray(dups) && dups.length > 0) return rj({ duplicate:true, existing:dups[0] }, 409);
   }
 
-  await fetch(SB_BASE+"/rest/v1/etiquetas", {
+  const sr = await fetch(SB_BASE+"/rest/v1/etiquetas", {
     method: "POST",
     headers: {"Content-Type":"application/json", apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, Prefer:"return=minimal"},
-    body: JSON.stringify({ wo:wo||null, producto, coil, cast, peso, operario:operario||null, notas:notas||null, maquina:maquina||null })
+    body: JSON.stringify({ wo:wo||null, producto, coil, cast:parsed.cast||null, peso, operario:operario||null, notas:notas||null })
   });
 
-  return rj({ ok:true, peso, producto, coil, cast });
+  if (!sr.ok) {
+    if (sr.status === 409) {
+      // Guardado desde la cola offline: si mientras tanto ya se guardo el mismo coil (otro operario,
+      // u otro reintento de la cola), la base lo bloquea. Se avisa como duplicado, no como error.
+      const dr2 = await fetch(SB_BASE+"/rest/v1/etiquetas?coil=eq."+encodeURIComponent(coil)+"&select=id,coil,cast,peso,producto,wo,created_at&limit=1", {
+        headers: { apikey: SB_KEY, Authorization: "Bearer "+SB_KEY }
+      });
+      const found = await dr2.json();
+      return rj({ duplicate:true, existing: (Array.isArray(found) && found[0]) || { coil } }, 409);
+    }
+    const err = await sr.text();
+    return rj({error: "Error guardando: " + err.substring(0,100)}, 500);
+  }
+
+  return rj({ ok:true, peso, producto, coil, cast:parsed.cast });
 }
 
 function normalizePeso(raw) {
@@ -87,7 +83,7 @@ function normalizePeso(raw) {
 function normalizeProducto(raw) {
   if (!raw) return null;
   const m = String(raw).match(/(\d+\.?\d*)\s*[Mm][Mm]/);
-  if (m) return "COIL REIN " + parseFloat(m[1]) + "mm";
+  if (m) return "COIL REIN "+m[1]+"mm";
   return String(raw).toUpperCase().trim();
 }
 
