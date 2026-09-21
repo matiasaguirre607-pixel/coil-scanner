@@ -761,7 +761,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
   <!-- Por producto -->
   <div id="cons-by-prod" style="display:none;background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.09)">
-    <div class="cons-hdr">Por producto</div>
+    <div class="cons-hdr">Por producto <span id="cons-by-prod-sub" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
     <div id="cons-by-prod-list"></div>
   </div>
 
@@ -807,7 +807,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 
   <div class="cons-card">
-    <div class="cons-hdr">Consignments guardados <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
+    <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
     <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
   </div>
 
@@ -1635,13 +1635,25 @@ function renderCountTimeline(data) {
   });
 }
 
+function castConsHTML(refs) {
+  var ks = Object.keys(refs || {});
+  if (!ks.length) return (_consignments && _consignments.length) ? ' <span style="font-size:10px;color:#8e9aab">sin consignment</span>' : '';
+  ks.sort(function(a,b){ return refs[b]-refs[a]; });
+  var txt = ks.slice(0,3).map(function(k){ return esc(k) + (ks.length>1 ? ' ('+refs[k]+')' : ''); }).join(', ') + (ks.length>3 ? ' +'+(ks.length-3) : '');
+  return ' <span style="font-size:10px;font-weight:700;color:#ff9500">Consignment: ' + txt + '</span>';
+}
+
 function renderCastProgressDB(data) {
   var el = document.getElementById('db-cast-prog');
   if (!el) return;
   var byCast = {};
+  var lotRef = {};
+  (_consignments || []).forEach(function(c){ var l = String(c.lot_no||'').trim(); if (l) lotRef[l] = c.referencia || 'Sin ref'; });
   data.forEach(function(r){
     if(!r.cast) return;
-    if(!byCast[r.cast]) byCast[r.cast]={coils:0,ton:0,prod:r.producto,maqE:0,maqP:0};
+    if(!byCast[r.cast]) byCast[r.cast]={coils:0,ton:0,prod:r.producto,maqE:0,maqP:0,refs:{}};
+    var rf = lotRef[String(r.coil||'').trim()];
+    if (rf) byCast[r.cast].refs[rf] = (byCast[r.cast].refs[rf]||0) + 1;
     byCast[r.cast].coils++;
     byCast[r.cast].ton+=parseTon(r.peso);
     if(r.maquina==='EVG') byCast[r.cast].maqE++;
@@ -1661,6 +1673,7 @@ function renderCastProgressDB(data) {
           (d.prod?' <span style="font-size:10px;color:#5c6b7a">'+esc(normalizeProductoKey(d.prod))+'</span>':'')+
           (d.maqE?' <span style="font-size:10px;font-weight:700;color:#007aff">EVG:'+d.maqE+'</span>':'')+
           (d.maqP?' <span style="font-size:10px;font-weight:700;color:#af52de">PIT:'+d.maqP+'</span>':'')+
+          castConsHTML(d.refs)+
         '</div>'+
         '<div style="text-align:right">'+
           '<span style="font-size:13px;font-weight:700;color:'+color+'">'+d.coils+'/'+TARGET+'</span>'+
@@ -2182,6 +2195,8 @@ async function loadConsignments() {
   runCrossCheck();
   renderParaVerificar();
   try { renderConsSummaryDash(); } catch(e) { console.error('[renderConsSummaryDash]', e); }
+  var dp = document.getElementById('p-dash');
+  if (dp && dp.classList.contains('on')) { try { renderDash(); } catch(e) { console.error('[renderDash]', e); } }
 }
 
 async function saveConsignmentRows(rows) {
@@ -2207,6 +2222,74 @@ async function saveConsignmentRows(rows) {
       throw new Error('No se pudo guardar (HTTP ' + resp.status + ') ' + t.substring(0, 150));
     }
   }
+}
+
+
+// ============ ESTADO DE CONSIGNMENTS (compartido Dashboard + tab Consignment) ============
+var _consStatusShown = {dash: 10, tab: 10};
+var _xcMissShown = 10, _xcExtraShown = 10;
+
+function consStatusHTML(where) {
+  refreshScannedSet();
+  var refs = {}, order = [];
+  (_consignments || []).forEach(function(r) {
+    var k = r.referencia || 'Sin ref';
+    if (!refs[k]) { refs[k] = {items: [], fecha: ''}; order.push(k); }
+    refs[k].items.push(r);
+    if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
+  });
+  var keys = order.slice().reverse();               // mas nuevos primero
+  var shown = _consStatusShown[where] || 10;
+  var html = '<div style="font-size:11px;color:#8e9aab;margin-bottom:8px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' · ' + (_consignments || []).length + ' coils</div>';
+  html += keys.slice(0, shown).map(function(ref) {
+    var g = refs[ref];
+    var ton = g.items.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
+    var scanned = g.items.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
+    var missing = g.items.length - scanned;
+    var pct = Math.round(scanned / g.items.length * 100);
+    var color = pct === 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
+    var del = where === 'tab'
+      ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
+      : '';
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div><span style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(ref) + '</span>' +
+          (g.fecha ? ' <span style="font-size:11px;color:#8e9aab">' + esc(g.fecha) + '</span>' : '') + '</div>' +
+        '<div style="text-align:right;display:flex;align-items:center"><span style="font-size:13px;font-weight:700;color:' + color + '">' + scanned + '/' + g.items.length + '</span>' +
+          '<span style="font-size:11px;color:#8e9aab;margin-left:4px">' + ton.toFixed(3) + 't</span>' + del + '</div>' +
+      '</div>' +
+      '<div style="background:#f0f2f5;border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + color + ';width:' + pct + '%;transition:width .4s"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:3px">' +
+        '<span style="font-size:11px;color:#34c759;font-weight:600">✓ ' + scanned + ' escaneados</span>' +
+        (missing > 0 ? '<span style="font-size:11px;color:#ff3b30;font-weight:600">✗ ' + missing + ' faltantes</span>' : '<span style="font-size:11px;color:#34c759;font-weight:600">✓ Completo</span>') +
+        '<span style="font-size:11px;color:#8e9aab;font-weight:600">' + pct + '%</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  if (keys.length > shown) {
+    html += '<div style="display:flex;gap:8px;margin-top:4px">' +
+      '<button onclick="consStatusMore(\'' + where + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (keys.length - shown) + ' restantes)</button>' +
+      '<button onclick="consStatusMore(\'' + where + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
+  }
+  return html;
+}
+
+function consStatusMore(where, all) {
+  _consStatusShown[where] = all ? 1e9 : (_consStatusShown[where] || 10) + 10;
+  if (where === 'dash') renderConsSummaryDash(); else renderSavedCons();
+}
+
+function xcMoreBtn(kind, total, shown) {
+  if (total <= shown) return '';
+  return '<div style="display:flex;gap:8px;margin:6px 0 4px">' +
+    '<button onclick="xcMore(\'' + kind + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (total - shown) + ' restantes)</button>' +
+    '<button onclick="xcMore(\'' + kind + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
+}
+
+function xcMore(kind, all) {
+  if (kind === 'miss') _xcMissShown = all ? 1e9 : _xcMissShown + 10;
+  else _xcExtraShown = all ? 1e9 : _xcExtraShown + 10;
+  runCrossCheck();
 }
 
 // ============ CONSIGNMENTS: TAB RENDER ============
@@ -2277,16 +2360,9 @@ function renderSavedCons() {
   prodOrder.sort();
   setDisp('cons-by-prod', true);
   var bp = byId('cons-by-prod-list');
-  var tile = function(num, lbl, color) {
-    return '<div style="background:#f0f5ff;border-radius:10px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:800;color:' + color + ';line-height:1.1">' + num + '</div><div style="font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;margin-top:3px">' + lbl + '</div></div>';
-  };
-  if (bp) bp.innerHTML =
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px">' +
-      tile(all.length, 'coils', '#007aff') +
-      tile(Object.keys(allRefs).length, 'consignments', '#007aff') +
-      tile(allTon.toFixed(1) + 't', 'toneladas', '#007aff') +
-    '</div>' +
-    prodOrder.map(function(k) {
+  var sub = byId('cons-by-prod-sub');
+  if (sub) sub.textContent = Object.keys(allRefs).length + ' consignments · ' + all.length + ' coils';
+  if (bp) bp.innerHTML = prodOrder.map(function(k) {
       var g = prods[k], nRefs = Object.keys(g.refs).length, sel = _consProdFilter === k;
       return '<div data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid #f0f2f5;background:' + (sel ? '#f0f5ff' : 'transparent') + '">' +
         '<div style="min-width:0">' +
@@ -2356,29 +2432,8 @@ function renderSavedCons() {
   else if (total > _consShown) html += '<button onclick="consShowMore()" style="width:100%;margin-top:8px;padding:10px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Mostrar mas (' + (total - _consShown) + ' restantes)</button>';
   if (listBox) listBox.innerHTML = html;
 
-  // ---- consignments guardados (agrupados por referencia) ----
-  var refs = {}, refOrder = [];
-  all.forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
-    if (!refs[k]) { refs[k] = {n: 0, sc: 0, ton: 0, fecha: r.fecha || ''}; refOrder.push(k); }
-    refs[k].n++;
-    refs[k].ton += parseFloat(r.peso) || 0;
-    if (isCoilScanned(r.lot_no)) refs[k].sc++;
-    if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
-  });
-  listEl.innerHTML = refOrder.slice().reverse().map(function(k) {
-    var g = refs[k], pct = Math.round(g.sc / g.n * 100);
-    var color = pct === 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
-    return '<div style="padding:10px 0;border-bottom:1px solid #f2f2f7">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-        '<div style="min-width:0"><div style="font-size:14px;font-weight:700">Ref: ' + esc(k) + '</div>' +
-        '<div style="font-size:11px;color:#8e8e93;margin-top:2px">' + (g.fecha ? esc(g.fecha) + ' · ' : '') + g.n + ' coils · ' + g.ton.toFixed(3) + 't</div></div>' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:13px;font-weight:700;color:' + color + '">' + g.sc + '/' + g.n + '</span>' +
-        '<button data-ref="' + _ceAttr(k) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button></div>' +
-      '</div>' +
-      '<div style="background:#f0f2f5;border-radius:4px;height:6px;overflow:hidden;margin-top:6px"><div style="height:100%;width:' + pct + '%;background:' + color + '"></div></div>' +
-    '</div>';
-  }).join('');
+  // ---- Estado de Consignments (misma tarjeta que el Dashboard, con boton eliminar) ----
+  listEl.innerHTML = consStatusHTML('tab');
 }
 
 // ============ RESUMEN DEL DIA (boton 📈) — reconstruido ============
@@ -2479,6 +2534,17 @@ async function handlePDFUpload(e) {
             txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+data.rows.length+' filas leidas, '+allRows.length+' total)';
           }
         }
+      // Una referencia y una fecha por PDF (la mas frecuente): las paginas sin encabezado o mal leidas heredan la del PDF
+      ['referencia', 'fecha'].forEach(function(field) {
+        var cnt = {}, top = '', topN = 0;
+        allRows.forEach(function(row) {
+          var v = String(row[field] || '').trim();
+          if (!v) return;
+          cnt[v] = (cnt[v] || 0) + 1;
+          if (cnt[v] > topN) { topN = cnt[v]; top = v; }
+        });
+        if (top) allRows.forEach(function(row) { row[field] = top; });
+      });
       // Filter duplicates before saving
       var existingLots = {};
       _consignments.forEach(function(r){ var l=String(r.lot_no||'').trim(); if(l) existingLots[l]=1; });
@@ -2611,43 +2677,7 @@ function renderConsSummaryDash() {
     el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin consignments cargados</div>';
     return;
   }
-  refreshScannedSet();
-  var refs = {};
-  _consignments.forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
-    if (!refs[k]) refs[k] = {items:[], fecha:r.fecha};
-    refs[k].items.push(r);
-  });
-  el.innerHTML = Object.keys(refs).map(function(ref) {
-    var g = refs[ref];
-    var ton = g.items.reduce(function(s,r){return s+(parseFloat(r.peso)||0);},0);
-    var scanned = g.items.filter(function(r){return isCoilScanned(r.lot_no);}).length;
-    var missing = g.items.length - scanned;
-    var pct = Math.round((scanned/g.items.length)*100);
-    var prods = unique(g.items.map(function(r){return r.producto;}).filter(Boolean));
-    var mms = unique(prods.map(function(p){return extractMM(p);}).filter(Boolean));
-    var color = pct===100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
-    return '<div style="margin-bottom:12px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div>' +
-          '<span style="font-size:13px;font-weight:700;color:#1a2332">Ref: '+esc(ref)+'</span>' +
-          (g.fecha?' <span style="font-size:11px;color:#8e9aab">'+esc(g.fecha)+'</span>':'') +
-        '</div>' +
-        '<div style="text-align:right">' +
-          '<span style="font-size:13px;font-weight:700;color:'+color+'">'+scanned+'/'+g.items.length+'</span>' +
-          '<span style="font-size:11px;color:#8e9aab;margin-left:4px">'+ton.toFixed(3)+'t</span>' +
-        '</div>' +
-      '</div>' +
-      '<div style="background:#f0f2f5;border-radius:4px;height:8px;overflow:hidden">' +
-        '<div style="height:100%;border-radius:4px;background:'+color+';width:'+pct+'%;transition:width .4s"></div>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-top:3px">' +
-        '<span style="font-size:11px;color:#34c759;font-weight:600">✓ '+scanned+' escaneados</span>' +
-        (missing>0?'<span style="font-size:11px;color:#ff3b30;font-weight:600">✗ '+missing+' faltantes</span>':'<span style="font-size:11px;color:#34c759;font-weight:600">✓ Completo</span>') +
-        '<span style="font-size:11px;color:#8e9aab;font-weight:600">'+pct+'%</span>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  el.innerHTML = consStatusHTML('dash');
 }
 
 // ============ STOCK ALERT ============
@@ -2935,8 +2965,8 @@ function renderPivot2(data) {
     return;
   }
   var html='<thead><tr><th style="text-align:left">Producto</th>';
-  wos.forEach(function(w){html+='<th>'+esc(w)+'</th>';});
-  html+='<th style="color:#007aff">Total</th></tr></thead><tbody>';
+  wos.forEach(function(w){html+='<th style="text-align:center">'+esc(w)+'</th>';});
+  html+='<th style="text-align:center;color:#007aff">Total</th></tr></thead><tbody>';
   prods.forEach(function(p){
     var row=data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
     var rowTot=sumTon(row);
@@ -3623,7 +3653,7 @@ function runCrossCheck() {
 
   if (notInCons > 0) {
     html += '<div style="font-size:11px;font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Escaneados SIN consignment (' + notInCons + ')</div>';
-    html += extraScans.map(function(r) {
+    html += extraScans.slice(0, _xcExtraShown).map(function(r) {
       var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
       var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
       return '<div style="padding:8px 10px;background:#fff8f0;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff9500;display:flex;align-items:center;gap:8px">' +
@@ -3634,11 +3664,12 @@ function runCrossCheck() {
         '<div style="font-size:10px;color:#8e8e93;flex-shrink:0">' + d + '</div>' +
       '</div>';
     }).join('');
+    html += xcMoreBtn('extra', notInCons, _xcExtraShown);
   }
 
   if (consNotScanned > 0) {
     html += '<div style="font-size:11px;font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments SIN escanear (' + consNotScanned + ')</div>';
-    html += missingFromScan.slice(0,50).map(function(con) {
+    html += missingFromScan.slice(0, _xcMissShown).map(function(con) {
       return '<div style="padding:8px 10px;background:#fff8f8;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff3b30;display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
@@ -3647,7 +3678,7 @@ function runCrossCheck() {
         '<div style="font-size:10px;color:#8e8e93;flex-shrink:0">' + esc(con.cast_no||'') + '</div>' +
       '</div>';
     }).join('');
-    if (missingFromScan.length > 50) html += '<div style="font-size:12px;color:#8e8e93;text-align:center;padding:8px">... y ' + (missingFromScan.length-50) + ' mas</div>';
+    html += xcMoreBtn('miss', consNotScanned, _xcMissShown);
   }
 
   if (!notInCons && !consNotScanned) {
