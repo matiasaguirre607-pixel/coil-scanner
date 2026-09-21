@@ -2575,6 +2575,68 @@ function shareDailySummary() {
   else { alert(text); }
 }
 
+// ---------- Lectura del PDF por TEXTO (sin IA). Si no es confiable, cae a la IA ----------
+function _pdfLines(items) {
+  var its = items.filter(function(it) { return it && it.s && String(it.s).trim(); })
+                 .sort(function(a, b) { return (b.y - a.y) || (a.x - b.x); });
+  var lines = [], cur = null;
+  its.forEach(function(it) {
+    if (!cur || Math.abs(cur.y - it.y) > 2.5) { cur = {y: it.y, parts: []}; lines.push(cur); }
+    cur.parts.push(it);
+  });
+  return lines.map(function(l) {
+    l.parts.sort(function(a, b) { return a.x - b.x; });
+    return l.parts.map(function(p) { return String(p.s).trim(); }).join(' ').replace(/\s+/g, ' ').trim();
+  });
+}
+
+function _fmtProdPdf(num, words) {
+  var n = parseFloat(String(num).replace(',', '.'));
+  var w = String(words).trim().toLowerCase().split(/\s+/).map(function(x) { return x.charAt(0).toUpperCase() + x.slice(1); }).join(' ');
+  return (isFinite(n) ? n.toFixed(1) : String(num)) + ' ' + w;
+}
+
+// items: [{s, x, y}]  ->  {rows, ref, fecha} o null si no es confiable (entonces se usa la IA)
+function parseConsPageItems(items) {
+  if (!items || items.length < 8) return null;               // sin capa de texto (PDF escaneado)
+  var lines = _pdfLines(items);
+  var full = lines.join('\n');
+  var refM = full.match(/\bR\d{9}\b/);
+  var dateRe = /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/;
+  var fecha = '';
+  lines.forEach(function(l) { if (!fecha && /date|fecha/i.test(l)) { var m = l.match(dateRe); if (m) fecha = m[0]; } });
+  if (!fecha) { var dm = full.match(dateRe); if (dm) fecha = dm[0]; }
+
+  var rows = [];
+  lines.forEach(function(l, idx) {
+    var lot = l.match(/(?:^|\s)(\d{10})(?=\s|$)/);
+    var peso = l.match(/(?:^|\s)(\d{1,2}[.,]\d{3})(?=\s|$)/);
+    var prod = l.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s+([A-Za-z][A-Za-z ]*?\bROD)\b/i);
+    if (!lot || !peso || !prod) return;
+    var cast = l.match(/(?:^|\s)(\d{6}(?:-\d{1,3})?)(?=\s|$)/);
+    rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast ? cast[1] : null,
+      lot_no: lot[1], producto: _fmtProdPdf(prod[1], prod[2]), peso: parseFloat(peso[1].replace(',', '.'))}});
+  });
+  if (!rows.length) return null;
+  // control 1: pesos razonables para un coil (t)
+  for (var i = 0; i < rows.length; i++) if (rows[i].row.peso < 0.3 || rows[i].row.peso > 5) return null;
+  // control 2: desde el encabezado de la tabla no puede haber mas lotes (10 digitos) que filas leidas
+  //            (si una fila no se pudo leer, se descarta toda la pagina y la lee la IA)
+  var tableStart = 0;
+  for (var h = 0; h < lines.length; h++) { if (/\blot\b/i.test(lines[h]) && /cast|product|weight/i.test(lines[h])) { tableStart = h; break; } }
+  var lotLines = 0;
+  for (var k = tableStart; k < lines.length; k++) if (/(?:^|\s)\d{10}(?=\s|$)/.test(lines[k])) lotLines++;
+  if (lotLines > rows.length) return null;
+  return {rows: rows.map(function(r) { return r.row; }), ref: refM ? refM[0] : null, fecha: fecha};
+}
+
+async function tryParseConsPageText(page) {
+  var tc = await page.getTextContent();
+  var items = tc.items.filter(function(it) { return it.str && it.str.trim(); })
+                      .map(function(it) { return {s: it.str, x: it.transform[4], y: it.transform[5]}; });
+  return parseConsPageItems(items);
+}
+
 async function handlePDFUpload(e) {
   var files = Array.from(e.target.files);
   e.target.value = '';
@@ -2604,6 +2666,7 @@ async function handlePDFUpload(e) {
 
     var totalRows = 0;
     var errors = [];
+    var pagesText = 0, pagesAI = 0;
 
     for (var fi = 0; fi < files.length; fi++) {
       var file = files[fi];
@@ -2619,6 +2682,15 @@ async function handlePDFUpload(e) {
         for (var pageNum = 1; pageNum <= numPages; pageNum++) {
           txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages;
           var page = await pdf.getPage(pageNum);
+          var textPage = null;
+          try { textPage = await tryParseConsPageText(page); } catch(te) { console.warn('[pdf texto]', te); }
+          if (textPage && textPage.rows.length) {           // 1) texto del PDF: exacto, gratis e instantaneo
+            allRows = allRows.concat(textPage.rows);
+            pagesText++;
+            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+textPage.rows.length+' filas por texto, '+allRows.length+' total)';
+            continue;
+          }
+          pagesAI++;                                        // 2) sin texto confiable: se lee con IA (como antes)
           var viewport = page.getViewport({scale: 3.0});
           var canvas = document.createElement('canvas');
           canvas.width = viewport.width;
@@ -2675,10 +2747,10 @@ async function handlePDFUpload(e) {
 
     fill.style.width = '100%';
     if (errors.length) {
-      status.textContent = '✓ '+totalRows+' coils importados. Errores: '+errors.join(', ');
+      status.textContent = '✓ '+totalRows+' coils importados (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.). Errores: '+errors.join(', ');
       status.style.color = '#ff9500';
     } else {
-      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'');
+      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)';
       status.style.color = '#34c759';
     }
     _consProdFilter = ''; // Reset filter after upload
