@@ -2274,15 +2274,11 @@ function renderSavedCons() {
   setDisp('cons-by-prod', true);
   var bp = byId('cons-by-prod-list');
   if (bp) bp.innerHTML = prodOrder.map(function(k) {
-    var g = prods[k], pct = Math.round(g.sc / g.n * 100);
-    var color = pct === 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
-    var sel = _consProdFilter === k;
-    return '<div data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="cursor:pointer;padding:8px;margin-bottom:6px;border-radius:8px;background:' + (sel ? '#f0f5ff' : 'transparent') + ';border:1.5px solid ' + (sel ? '#007aff' : 'transparent') + '">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<span style="font-size:13px;font-weight:700;color:#1c1c1e">' + esc(k) + '</span>' +
-        '<span style="font-size:12px;font-weight:700;color:' + color + '">' + g.sc + '/' + g.n + ' · ' + g.ton.toFixed(3) + 't</span>' +
-      '</div>' +
-      '<div style="background:#f0f2f5;border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + color + '"></div></div>' +
+    var n = prods[k].n, sel = _consProdFilter === k;
+    return '<div data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid #f0f2f5;background:' + (sel ? '#f0f5ff' : 'transparent') + '">' +
+      '<span style="font-size:12px;font-weight:800;color:#1c1c1e;text-transform:uppercase">' + esc(k) + '</span>' +
+      '<span><span style="font-size:26px;font-weight:800;color:#007aff;line-height:1">' + n + '</span>' +
+      '<span style="font-size:10px;color:#8e8e93;margin-left:4px">consignment' + (n === 1 ? '' : 's') + '</span></span>' +
     '</div>';
   }).join('');
 
