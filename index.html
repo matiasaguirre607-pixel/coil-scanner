@@ -626,7 +626,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- CAST PROGRESS -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Progreso por Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">meta: 48 coils</span></div>
+  <div class="pbi-card-title">Progreso por Cast <span id="cast-target-lbl" onclick="editCastTarget()" title="Tocar para cambiar la meta" style="font-size:10px;color:#007aff;font-weight:600;text-transform:none;cursor:pointer">meta: 48 coils &#9998;</span></div>
   <div id="db-cast-prog"></div>
 </div>
 
@@ -807,6 +807,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   </div>
 
   <div class="cons-card">
+    <div class="cons-hdr">Reporte para el proveedor</div>
+    <div style="font-size:12px;color:#636366;margin-bottom:10px;line-height:1.5">Excel con: faltantes por consignment, diferencias de peso (tolerancia <b id="rep-tol">10 kg</b>), cast distinto y coils escaneados sin consignment.</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="exportConsReport()" style="flex:2;padding:12px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">&#128229; Descargar Excel</button>
+      <button onclick="editPesoTol()" style="flex:1;padding:12px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">&#9881; Tolerancia</button>
+    </div>
+  </div>
+
+  <div class="cons-card">
     <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
     <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
   </div>
@@ -918,10 +927,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="load-title" id="load-title">Analizando...</div>
 </div>
 
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 
 
 var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
+// Configuracion editable (se guarda en este dispositivo: toca la meta del Dashboard o "Tolerancia" en Consignment)
+var CFG = (function() {
+  var d = {castTarget: 48, pesoTol: 0.010, fuzzyMaxDist: 2};
+  try {
+    var saved = JSON.parse(localStorage.getItem('coil_cfg') || '{}');
+    Object.keys(d).forEach(function(k) { if (typeof saved[k] === 'number' && isFinite(saved[k]) && saved[k] > 0) d[k] = saved[k]; });
+  } catch(e) {}
+  return d;
+})();
 var records = [], activeRec = null, pendingImg = null, busy = false, currentMachine = null;
 
 function normalizeProductoKey(raw) {
@@ -1231,6 +1250,8 @@ function showResult(d, wo) {
         '>' +
     '</div>';
   document.getElementById('result-card').style.display = 'block';
+  fields.insertAdjacentHTML('beforeend', '<div id="cv-box" style="padding:10px 18px 0"></div>');
+  attachConsVerify('cv-box', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false);
   // Attach enter navigation
   setTimeout(function(){
     var order = ['conf-coil','conf-cast','conf-peso','conf-producto'];
@@ -1259,9 +1280,9 @@ async function loadRecords() {
       var oldCasts = {};
       records.forEach(function(r){if(r.cast)oldCasts[r.cast]=(oldCasts[r.cast]||0)+1;});
       newRecords.forEach(function(r){
-        if(r.cast && (oldCasts[r.cast]||0) < 48) {
+        if(r.cast && (oldCasts[r.cast]||0) < CFG.castTarget) {
           var newCount = newRecords.filter(function(x){return x.cast===r.cast;}).length;
-          if (newCount >= 48) checkCastCompletion(r.cast);
+          if (newCount >= CFG.castTarget) checkCastCompletion(r.cast);
         }
       });
     }
@@ -1389,7 +1410,8 @@ async function delRecord() {
   if (!activeRec) return;
   if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar registro', function(){ delRecord(); }); return; }
   if (!confirm('Eliminar?')) return;
-  await fetch('/delete?id=' + activeRec.id, {method:'DELETE'});
+  var dr = await authFetch('/delete?id=' + encodeURIComponent(activeRec.id), {method:'DELETE'});
+  if (!dr.ok) { alert('No se pudo eliminar' + (dr.status === 401 ? ' (sesion vencida: ingresa la contrasena)' : '')); return; }
   records = records.filter(function(r){return r.id!==activeRec.id;});
   document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
   filterRecords(); renderDash(); closeModal();
@@ -1646,6 +1668,8 @@ function castConsHTML(refs) {
 function renderCastProgressDB(data) {
   var el = document.getElementById('db-cast-prog');
   if (!el) return;
+  var tl = document.getElementById('cast-target-lbl');
+  if (tl) tl.innerHTML = 'meta: ' + CFG.castTarget + ' coils &#9998;';
   var byCast = {};
   var lotRef = {};
   (_consignments || []).forEach(function(c){ var l = String(c.lot_no||'').trim(); if (l) lotRef[l] = c.referencia || 'Sin ref'; });
@@ -1659,7 +1683,7 @@ function renderCastProgressDB(data) {
     if(r.maquina==='EVG') byCast[r.cast].maqE++;
     else if(r.maquina==='PITTINI') byCast[r.cast].maqP++;
   });
-  var TARGET=48;
+  var TARGET=CFG.castTarget;
   var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
   if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:13px">Sin datos</div>';return;}
   el.innerHTML=sorted.map(function(cast){
@@ -1686,7 +1710,7 @@ function renderCastProgressDB(data) {
       '<div style="display:flex;justify-content:space-between;margin-top:2px">'+
         '<span style="font-size:9px;color:#8e9aab">0</span>'+
         '<span style="font-size:9px;font-weight:700;color:'+color+'">'+pct+'%</span>'+
-        '<span style="font-size:9px;color:#8e9aab">48</span>'+
+        '<span style="font-size:9px;color:#8e9aab">'+TARGET+'</span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1782,7 +1806,7 @@ async function assignWO(gi) {
   var ok = 0;
   // Send all in parallel
   var promises = ids.map(function(id) {
-    return fetch('/updatewo', {
+    return authFetch('/updatewo', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({id: id, wo: wo})
@@ -1812,7 +1836,7 @@ async function assignWOToSelected(wo) {
   if (!ids.length || !wo) return;
   if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para asignar WO masivo', function(){ assignWOToSelected(wo); }); return; }
   var promises = ids.map(function(id) {
-    return fetch('/updatewo', {
+    return authFetch('/updatewo', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({id: id, wo: wo})
@@ -1972,14 +1996,15 @@ async function saveProduccion() {
   btn.textContent = 'Guardando...'; btn.disabled = true;
 
   try {
-    var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion', {
+    var resp = await authFetch('/produccion', {
       method: 'POST',
-      headers: {'Content-Type':'application/json', apikey:SB_KEY_PROD, Authorization:'Bearer '+SB_KEY_PROD, Prefer:'return=minimal'},
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({wo:wo, toneladas_producidas:ton, notas:notas||null})
     });
     if (!resp.ok) {
-      var errText = await resp.text();
-      throw new Error('Error ' + resp.status + ': ' + errText.substring(0,100));
+      var errData = {};
+      try { errData = await resp.json(); } catch(e) {}
+      throw new Error(errData.error || ('Error ' + resp.status));
     }
     status.textContent = '✓ Guardado: ' + ton.toFixed(3) + 't para WO ' + wo;
     status.style.color = '#34c759';
@@ -2211,19 +2236,18 @@ async function saveConsignmentRows(rows) {
     };
   });
   for (var i = 0; i < payload.length; i += 200) {
-    var resp = await fetch(SB_BASE_PROD + '/rest/v1/consignments', {
+    var resp = await authFetch('/consignments', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', apikey: SB_KEY_PROD, Authorization: 'Bearer ' + SB_KEY_PROD, Prefer: 'return=minimal'},
-      body: JSON.stringify(payload.slice(i, i + 200))
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({rows: payload.slice(i, i + 200)})
     });
     if (!resp.ok) {
-      var t = '';
-      try { t = await resp.text(); } catch(e) {}
-      throw new Error('No se pudo guardar (HTTP ' + resp.status + ') ' + t.substring(0, 150));
+      var d = {};
+      try { d = await resp.json(); } catch(e) {}
+      throw new Error(d.error || ('No se pudo guardar (HTTP ' + resp.status + ')'));
     }
   }
 }
-
 
 // ============ ESTADO DE CONSIGNMENTS (compartido Dashboard + tab Consignment) ============
 var _consStatusShown = {dash: 10, tab: 10};
@@ -2249,7 +2273,8 @@ function consStatusHTML(where) {
     var pct = Math.round(scanned / g.items.length * 100);
     var color = pct === 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
     var del = where === 'tab'
-      ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
+      ? '<button data-ref="' + _ceAttr(ref) + '" onclick="exportConsReport(this.dataset.ref)" title="Reporte Excel de este consignment" style="margin-left:8px;background:#f0f5ff;border:1px solid #c5d8ff;color:#007aff;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128229;</button>' +
+        '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
       : '';
     return '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
@@ -2434,6 +2459,7 @@ function renderSavedCons() {
 
   // ---- Estado de Consignments (misma tarjeta que el Dashboard, con boton eliminar) ----
   listEl.innerHTML = consStatusHTML('tab');
+  var tl = byId('rep-tol'); if (tl) tl.textContent = Math.round(CFG.pesoTol * 1000) + ' kg';
 }
 
 // ============ RESUMEN DEL DIA (boton 📈) — reconstruido ============
@@ -2499,6 +2525,7 @@ async function handlePDFUpload(e) {
 
     var totalRows = 0;
     var errors = [];
+    var pagesText = 0, pagesAI = 0;
 
     for (var fi = 0; fi < files.length; fi++) {
       var file = files[fi];
@@ -2514,6 +2541,15 @@ async function handlePDFUpload(e) {
         for (var pageNum = 1; pageNum <= numPages; pageNum++) {
           txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages;
           var page = await pdf.getPage(pageNum);
+          var textPage = null;
+          try { textPage = await tryParseConsPageText(page); } catch(te) { console.warn('[pdf texto]', te); }
+          if (textPage && textPage.rows.length) {           // 1) texto del PDF: exacto, gratis e instantaneo
+            allRows = allRows.concat(textPage.rows);
+            pagesText++;
+            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+textPage.rows.length+' filas por texto, '+allRows.length+' total)';
+            continue;
+          }
+          pagesAI++;                                        // 2) sin texto confiable: se lee con IA
           var viewport = page.getViewport({scale: 3.0});
           var canvas = document.createElement('canvas');
           canvas.width = viewport.width;
@@ -2522,7 +2558,7 @@ async function handlePDFUpload(e) {
           // Compress to reduce payload size while keeping quality
           var imgBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-          var resp = await fetch('/extractpdf', {
+          var resp = await authFetch('/extractpdf', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
@@ -2570,10 +2606,10 @@ async function handlePDFUpload(e) {
 
     fill.style.width = '100%';
     if (errors.length) {
-      status.textContent = '✓ '+totalRows+' coils importados. Errores: '+errors.join(', ');
+      status.textContent = '✓ '+totalRows+' coils importados (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.). Errores: '+errors.join(', ');
       status.style.color = '#ff9500';
     } else {
-      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'');
+      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)';
       status.style.color = '#34c759';
     }
     _consProdFilter = ''; // Reset filter after upload
@@ -2641,7 +2677,7 @@ async function saveEdit() {
   statusEl.textContent = 'Guardando...';
   statusEl.style.color = '#007aff';
   try {
-    var resp = await fetch('/updatewo', {
+    var resp = await authFetch('/updatewo', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({id: _editRec.id, wo: _editRec.wo, peso: peso, cast: cast||_editRec.cast, coil: coil||_editRec.coil, maquina: _editMaq||_editRec.maquina||null})
@@ -3030,33 +3066,22 @@ async function deleteConsRow(id, rowEl) {
   if (!id) return;
   if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsRow(id, rowEl); }); return; }
   if (!confirm('Eliminar este coil del consignment?')) return;
-  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
-  var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
-    method: 'DELETE',
-    headers: {apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY}
-  });
+  var resp = await authFetch('/consignments?id=' + encodeURIComponent(id), {method: 'DELETE'});
   if (resp.ok) {
     _consignments = _consignments.filter(function(r){ return String(r.id) !== String(id); });
     if (rowEl) rowEl.remove();
     renderSavedCons();
     runCrossCheck();
+  } else {
+    alert('No se pudo eliminar' + (resp.status === 401 ? ' (sesion vencida: ingresa la contrasena)' : ''));
   }
 }
 
 async function deleteConsignment(ref) {
   if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsignment(ref); }); return; }
   if (!confirm('Eliminar todos los registros de Ref: '+ref+'?')) return;
-  var toDelete = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
-  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
-  var SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
-  var deleted = 0;
-  for (var i = 0; i < toDelete.length; i++) {
-    var r = await fetch(SB_BASE+'/rest/v1/consignments?id=eq.'+toDelete[i].id, {
-      method: 'DELETE',
-      headers: {apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY}
-    });
-    if (r.ok) deleted++;
-  }
+  var resp = await authFetch('/consignments?ref=' + encodeURIComponent(ref), {method: 'DELETE'});
+  if (!resp.ok) { alert('No se pudo eliminar' + (resp.status === 401 ? ' (sesion vencida: ingresa la contrasena)' : '')); return; }
   await loadConsignments();
   renderDash();
 }
@@ -3118,7 +3143,7 @@ async function saveModalWO() {
   var orig = btn.textContent;
   btn.textContent = 'Guardando...'; btn.disabled = true;
   try {
-    var resp = await fetch('/updatewo', {
+    var resp = await authFetch('/updatewo', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({id: activeRec.id, wo: wo})
@@ -3149,7 +3174,7 @@ function checkCastCompletion(castNo) {
   if (!castNo) return;
   var castRecs = records.filter(function(r){return r.cast===castNo;});
   var n = castRecs.length;
-  if (n < 48) return;
+  if (n < CFG.castTarget) return;
   var ton = sumTon(castRecs);
   var msg = 'Cast ' + castNo + ' COMPLETO: ' + n + ' coils / ' + ton.toFixed(3) + 't';
   setStatus(msg, 'ok');
@@ -3251,8 +3276,6 @@ window.addEventListener('online', function() {
 });
 
 // ============ BACKUP TO SUPABASE ============
-var SB_KEY_BAK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
-var SB_BASE_BAK = 'https://xqzqrlxjzfxpqigjuzor.supabase.co';
 
 // ============ GLOBAL SEARCH ============
 function toggleGlobalSearch() {
@@ -3739,6 +3762,8 @@ function showCamConfirm(data) {
       '<input id="cc-prod" value="' + esc(normalizeProducto(data.producto)||'') + '" style="' + inputStyle + ';font-size:12px">' +
     '</div>';
 
+  fields.insertAdjacentHTML('beforeend', '<div id="cc-cv" style="grid-column:1/-1"></div>');
+  attachConsVerify('cc-cv', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true);
   overlay.style.display = 'block';
   if (shootBar) shootBar.style.display = 'none';
 
@@ -3890,7 +3915,6 @@ function rejectScan() {
 // ============ PASSWORD SYSTEM ============
 var _unlocked = false;
 var _pwdCallback = null;
-var PASSWORD = 'Machine';
 
 function requirePassword(reason, callback) {
   if (_unlocked) { callback(); return; }
@@ -3903,12 +3927,22 @@ function requirePassword(reason, callback) {
   setTimeout(function(){ document.getElementById('pwd-inp').focus(); }, 100);
 }
 
-function checkPassword() {
-  var val = document.getElementById('pwd-inp').value;
-  if (val === PASSWORD) {
+async function checkPassword() {
+  var inp = document.getElementById('pwd-inp');
+  var errEl = document.getElementById('pwd-err');
+  var val = inp.value;
+  if (!val) { errEl.textContent = 'Ingresá la contrasena'; return; }
+  errEl.textContent = 'Verificando...';
+  var resp, data = {};
+  try {
+    resp = await fetch('/auth', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: val})});
+    try { data = await resp.json(); } catch(e) {}
+  } catch(e) { errEl.textContent = 'Sin conexion con el servidor'; return; }
+  if (resp.ok && data.token) {
+    _authToken = data.token;
     _unlocked = true;
+    var cb = _pwdCallback;            // closePwdModal() borra el callback: se guarda antes
     closePwdModal();
-    // Show unlocked status in nav
     var pill = document.getElementById('nav-pill');
     if (pill) {
       var lockEl = document.getElementById('lock-status');
@@ -3922,11 +3956,11 @@ function checkPassword() {
       }
       lockEl.textContent = '🔓 Admin';
     }
-    if (_pwdCallback) { _pwdCallback(); _pwdCallback = null; }
+    if (cb) cb();
   } else {
-    document.getElementById('pwd-err').textContent = 'Contrasena incorrecta';
-    document.getElementById('pwd-inp').value = '';
-    document.getElementById('pwd-inp').focus();
+    errEl.textContent = resp.status === 401 ? 'Contrasena incorrecta' : (data.error || 'Error del servidor (' + resp.status + ')');
+    inp.value = '';
+    inp.focus();
   }
 }
 
@@ -3937,6 +3971,7 @@ function closePwdModal() {
 
 function lockApp() {
   _unlocked = false;
+  _authToken = '';
   var lockEl = document.getElementById('lock-status');
   if (lockEl) lockEl.remove();
   showLockBanner();
@@ -3990,6 +4025,385 @@ function toggleCloseWO(wo) {
   }
 }
 
+// ==========================================================================
+//  MEJORAS: auth en servidor, verificacion vs consignment, tiempo real,
+//           lectura de PDF por texto, reporte Excel, configuracion
+// ==========================================================================
+
+// ---------- Autenticacion (el token lo entrega /auth; la contrasena ya no esta en el navegador) ----------
+var _authToken = '';
+
+function authHeaders(extra) {
+  var h = {};
+  if (extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
+  if (_authToken) h['Authorization'] = 'Bearer ' + _authToken;
+  return h;
+}
+
+async function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = authHeaders(opts.headers);
+  var resp = await fetch(url, opts);
+  if (resp.status === 401) { // token vencido o invalido: vuelve a pedir contrasena
+    _unlocked = false; _authToken = '';
+    var lk = document.getElementById('lock-status'); if (lk) lk.remove();
+    showLockBanner();
+  }
+  return resp;
+}
+
+// ---------- Configuracion editable (se guarda en este dispositivo) ----------
+function saveCfg() { try { localStorage.setItem('coil_cfg', JSON.stringify(CFG)); } catch(e) {} }
+
+function editCastTarget() {
+  var v = parseInt(prompt('Meta de coils por cast:', CFG.castTarget), 10);
+  if (v > 0) { CFG.castTarget = v; saveCfg(); renderDash(); }
+}
+
+function editPesoTol() {
+  var v = parseFloat(String(prompt('Tolerancia de peso en KILOS (diferencia aceptada entre etiqueta y consignment):', Math.round(CFG.pesoTol * 1000))).replace(',', '.'));
+  if (v > 0) { CFG.pesoTol = v / 1000; saveCfg(); var l = document.getElementById('rep-tol'); if (l) l.textContent = Math.round(CFG.pesoTol * 1000) + ' kg'; }
+}
+
+// ---------- Verificacion contra consignments al escanear ----------
+function _lev(a, b, max) { // Levenshtein acotado: corta apenas supera "max"
+  if (a === b) return 0;
+  var la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= lb; j++) prev[j] = j;
+  for (i = 1; i <= la; i++) {
+    cur[0] = i;
+    var rowMin = cur[0];
+    for (j = 1; j <= lb; j++) {
+      var c = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + c);
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    var t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+
+function _castKey(v) { return String(v || '').trim().split('-')[0].replace(/\D/g, ''); }
+function _numOr(v, d) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : d; }
+function _sizeScanned(p) { var m = String(p || '').match(/(\d+(?:[.,]\d+)?)\s*mm/i); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
+function _sizeCons(p) { var m = String(p || '').match(/^\s*(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
+
+// state: none (sin consignments) | ok | suggest | nomatch
+function consVerify(coil, cast, peso, producto) {
+  var res = {state: 'none', match: null, warnings: [], suggestions: []};
+  if (!_consignments || !_consignments.length) return res;
+  refreshScannedSet();
+  var c = String(coil || '').trim();
+  var ck = _castKey(cast);
+  var p = _numOr(peso, NaN);
+  var exact = null;
+  if (c) for (var i = 0; i < _consignments.length; i++) { if (String(_consignments[i].lot_no || '').trim() === c) { exact = _consignments[i]; break; } }
+
+  if (exact) {
+    res.state = 'ok'; res.match = exact;
+    var cp = _numOr(exact.peso, NaN);
+    if (isFinite(p) && isFinite(cp) && Math.abs(p - cp) > CFG.pesoTol) {
+      res.warnings.push('Peso: etiqueta ' + p.toFixed(3) + 't vs consignment ' + cp.toFixed(3) + 't (dif ' + Math.round((p - cp) * 1000) + ' kg)');
+    }
+    var ek = _castKey(exact.cast_no);
+    if (ck && ek && ck !== ek) res.warnings.push('Cast: etiqueta ' + ck + ' vs consignment ' + exact.cast_no);
+    var s1 = _sizeScanned(producto), s2 = _sizeCons(exact.producto);
+    if (isFinite(s1) && isFinite(s2) && Math.abs(s1 - s2) > 0.05) res.warnings.push('Producto: etiqueta ' + s1 + 'mm vs consignment ' + exact.producto);
+    return res;
+  }
+
+  var cands = [];
+  _consignments.forEach(function(r) {
+    var l = String(r.lot_no || '').trim();
+    if (!l || isCoilScanned(l)) return;                       // los ya escaneados serian duplicados
+    var castOk = ck && _castKey(r.cast_no) === ck;
+    var rp = _numOr(r.peso, NaN);
+    var pesoDiff = isFinite(p) && isFinite(rp) ? Math.abs(p - rp) : 0;
+    if (c) {
+      var d = _lev(c, l, CFG.fuzzyMaxDist);
+      if (d <= CFG.fuzzyMaxDist) cands.push({c: r, why: 'digitos', dist: d, score: d * 100 + (castOk ? 0 : 10) + Math.min(pesoDiff * 100, 9)});
+    }
+  });
+  if (!cands.length && ck && isFinite(p)) {                   // coil ilegible/inexistente: buscar por cast + peso
+    _consignments.forEach(function(r) {
+      var l = String(r.lot_no || '').trim();
+      if (!l || isCoilScanned(l) || _castKey(r.cast_no) !== ck) return;
+      var rp = _numOr(r.peso, NaN);
+      if (isFinite(rp) && Math.abs(p - rp) <= CFG.pesoTol) cands.push({c: r, why: 'cast y peso', dist: null, score: Math.abs(p - rp) * 1000});
+    });
+  }
+  cands.sort(function(a, b) { return a.score - b.score; });
+  res.suggestions = cands.slice(0, 3);
+  res.state = res.suggestions.length ? 'suggest' : 'nomatch';
+  return res;
+}
+
+function renderConsVerify(boxId, ids, dark) {
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  var g = function(k) { var e = document.getElementById(ids[k]); return e ? e.value : ''; };
+  var v = consVerify(g('coil'), g('cast'), g('peso'), g('producto'));
+  if (v.state === 'none') { box.innerHTML = ''; return; }
+  var okC = dark ? '#5be584' : '#1a7a3c', warnC = dark ? '#ffb340' : '#b25e00', badC = dark ? '#ff6961' : '#cc0000', mut = dark ? 'rgba(255,255,255,.7)' : '#636366';
+  var bg = dark ? 'rgba(255,255,255,.08)' : '#f8fafc';
+  var html = '';
+  if (v.state === 'ok') {
+    html += '<div style="color:' + okC + ';font-weight:700;font-size:13px">✓ En consignment Ref: ' + esc(v.match.referencia || '—') + (v.match.cast_no ? ' · Cast ' + esc(v.match.cast_no) : '') + '</div>';
+    v.warnings.forEach(function(w) { html += '<div style="color:' + warnC + ';font-size:12px;font-weight:600;margin-top:3px">⚠ ' + esc(w) + '</div>'; });
+  } else if (v.state === 'suggest') {
+    html += '<div style="color:' + warnC + ';font-weight:700;font-size:13px;margin-bottom:6px">⚠ Coil no esta en ningun consignment. ¿Quisiste decir…?</div>';
+    v.suggestions.forEach(function(s) {
+      var r = s.c;
+      html += '<button type="button" data-lot="' + _ceAttr(r.lot_no) + '" data-cast="' + _ceAttr(_castKey(r.cast_no)) + '" onclick="applyConsSuggestion(this)" style="display:block;width:100%;text-align:left;margin-bottom:5px;padding:9px 10px;border:1.5px solid ' + warnC + ';border-radius:9px;background:' + (dark ? 'rgba(255,149,0,.15)' : '#fff8e8') + ';color:' + (dark ? '#fff' : '#1c1c1e') + ';font-size:13px;cursor:pointer">' +
+        '<b style="font-family:monospace">' + esc(r.lot_no) + '</b> <span style="color:' + mut + ';font-size:11px">Ref ' + esc(r.referencia || '—') + ' · Cast ' + esc(r.cast_no || '—') + ' · ' + _numOr(r.peso, 0).toFixed(3) + 't · ' +
+        (s.dist != null ? (s.dist === 1 ? '1 digito distinto' : s.dist + ' digitos distintos') : 'por cast y peso') + '</span></button>';
+    });
+  } else {
+    html += '<div style="color:' + badC + ';font-weight:700;font-size:13px">✗ Coil no esta en ningun consignment y no hay coils parecidos. Revisa la etiqueta.</div>';
+  }
+  box.innerHTML = '<div style="background:' + bg + ';border-radius:10px;padding:10px 12px">' + html + '</div>';
+}
+
+function applyConsSuggestion(btn) {
+  var box = btn.closest('[data-cv]');
+  if (!box) return;
+  var ids = JSON.parse(box.dataset.cv);
+  var coilEl = document.getElementById(ids.coil);
+  if (coilEl) coilEl.value = btn.dataset.lot;
+  var castEl = document.getElementById(ids.cast);
+  if (castEl && !castEl.value.trim() && btn.dataset.cast) castEl.value = btn.dataset.cast;
+  renderConsVerify(box.id, ids, box.dataset.dark === '1');
+}
+
+function attachConsVerify(boxId, ids, dark) {
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.dataset.cv = JSON.stringify(ids);
+  box.dataset.dark = dark ? '1' : '0';
+  ['coil', 'cast', 'peso', 'producto'].forEach(function(k) {
+    var el = document.getElementById(ids[k]);
+    if (el) el.addEventListener('input', function() { renderConsVerify(boxId, ids, dark); });
+  });
+  renderConsVerify(boxId, ids, dark);
+}
+
+// ---------- Tiempo real (Supabase Realtime) con respaldo por refresco periodico ----------
+var _rtOk = false, _rtEverOk = false, _rtClient = null, _rtTimer = null, _rtPend = {rec: false, cons: false}, _rtTick = 0;
+
+function updateLiveBadge() {
+  var pill = document.getElementById('nav-pill');
+  if (!pill || !pill.parentNode) return;
+  var d = document.getElementById('live-dot');
+  if (!d) {
+    d = document.createElement('span');
+    d.id = 'live-dot';
+    d.style.cssText = 'display:inline-block;width:9px;height:9px;border-radius:50%;flex-shrink:0';
+    pill.parentNode.insertBefore(d, pill);
+  }
+  d.style.background = _rtOk ? '#34c759' : '#c7c7cc';
+  d.title = _rtOk ? 'Tiempo real activo' : 'Sin tiempo real: se actualiza cada 30 s';
+}
+
+function refreshActiveTab() {
+  var t = document.querySelector('.tab.on');
+  var id = t ? t.id : '';
+  if (id === 't-dash') renderDash();
+  else if (id === 't-hist' && !Object.keys(_selectedIds || {}).length) renderHistorial();
+  else if (id === 't-cons') { renderSavedCons(); runCrossCheck(); renderParaVerificar(); }
+}
+
+function rtSchedule(kind) {
+  _rtPend[kind] = true;
+  clearTimeout(_rtTimer);
+  _rtTimer = setTimeout(rtFlush, 1200); // junta rafagas (ej. subir un PDF genera decenas de eventos)
+}
+
+async function rtFlush() {
+  var p = _rtPend;
+  _rtPend = {rec: false, cons: false};
+  try {
+    if (p.rec) await loadRecords();
+    if (p.cons) await loadConsignments();
+    refreshActiveTab();
+  } catch(e) { console.error('[realtime]', e); }
+}
+
+function startRealtime() {
+  if (_rtClient) return;
+  if (!window.supabase || !window.supabase.createClient) {
+    console.warn('[realtime] supabase-js no cargo; se usa el refresco cada 30 s');
+    updateLiveBadge();
+    return;
+  }
+  try {
+    _rtClient = window.supabase.createClient(SB_BASE_PROD, SB_KEY_PROD, {auth: {persistSession: false, autoRefreshToken: false}});
+    _rtClient.channel('coil-live')
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'etiquetas'}, function() { rtSchedule('rec'); })
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'consignments'}, function() { rtSchedule('cons'); })
+      .subscribe(function(status) {
+        var wasDown = !_rtOk && _rtEverOk;
+        _rtOk = (status === 'SUBSCRIBED');
+        if (_rtOk) { _rtEverOk = true; if (wasDown) { rtSchedule('rec'); rtSchedule('cons'); } } // al reconectar, se pone al dia
+        updateLiveBadge();
+      });
+  } catch(e) {
+    console.error('[realtime]', e);
+    _rtOk = false;
+    updateLiveBadge();
+  }
+}
+
+// ---------- PDF: leer el texto del PDF (sin IA). Si no se puede, la pagina cae a la IA ----------
+function _pdfLines(items) {
+  var its = items.filter(function(it) { return it && it.s && String(it.s).trim(); })
+                 .sort(function(a, b) { return (b.y - a.y) || (a.x - b.x); });
+  var lines = [], cur = null;
+  its.forEach(function(it) {
+    if (!cur || Math.abs(cur.y - it.y) > 2.5) { cur = {y: it.y, parts: []}; lines.push(cur); }
+    cur.parts.push(it);
+  });
+  return lines.map(function(l) {
+    l.parts.sort(function(a, b) { return a.x - b.x; });
+    return l.parts.map(function(p) { return String(p.s).trim(); }).join(' ').replace(/\s+/g, ' ').trim();
+  });
+}
+
+function _fmtProd(num, words) {
+  var n = parseFloat(String(num).replace(',', '.'));
+  var w = String(words).trim().toLowerCase().split(/\s+/).map(function(x) { return x.charAt(0).toUpperCase() + x.slice(1); }).join(' ');
+  return (isFinite(n) ? n.toFixed(1) : String(num)) + ' ' + w;
+}
+
+// items: [{s, x, y}]  ->  {rows, ref, fecha} o null si no es confiable (entonces se usa la IA)
+function parseConsPageItems(items) {
+  if (!items || items.length < 8) return null;               // sin capa de texto (PDF escaneado)
+  var lines = _pdfLines(items);
+  var full = lines.join('\n');
+  var refM = full.match(/\bR\d{9}\b/);
+  var dateRe = /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/;
+  var fecha = '';
+  lines.forEach(function(l) { if (!fecha && /date|fecha/i.test(l)) { var m = l.match(dateRe); if (m) fecha = m[0]; } });
+  if (!fecha) { var dm = full.match(dateRe); if (dm) fecha = dm[0]; }
+
+  var rows = [];
+  lines.forEach(function(l, idx) {
+    var lot = l.match(/(?:^|\s)(\d{10})(?=\s|$)/);
+    var peso = l.match(/(?:^|\s)(\d{1,2}[.,]\d{3})(?=\s|$)/);
+    var prod = l.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s+([A-Za-z][A-Za-z ]*?\bROD)\b/i);
+    if (!lot || !peso || !prod) return;
+    var cast = l.match(/(?:^|\s)(\d{6}(?:-\d{1,3})?)(?=\s|$)/);
+    rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast ? cast[1] : null,
+      lot_no: lot[1], producto: _fmtProd(prod[1], prod[2]), peso: parseFloat(peso[1].replace(',', '.'))}});
+  });
+  if (!rows.length) return null;
+  // control 1: pesos razonables para un coil (t)
+  for (var i = 0; i < rows.length; i++) if (rows[i].row.peso < 0.3 || rows[i].row.peso > 5) return null;
+  // control 2: desde el encabezado de la tabla no puede haber mas lotes (10 digitos) que filas leidas
+  //            (si una fila no se pudo leer, se descarta toda la pagina y la lee la IA)
+  var tableStart = 0;
+  for (var h = 0; h < lines.length; h++) { if (/\blot\b/i.test(lines[h]) && /cast|product|weight/i.test(lines[h])) { tableStart = h; break; } }
+  var lotLines = 0;
+  for (var k = tableStart; k < lines.length; k++) if (/(?:^|\s)\d{10}(?=\s|$)/.test(lines[k])) lotLines++;
+  if (lotLines > rows.length) return null;
+  return {rows: rows.map(function(r) { return r.row; }), ref: refM ? refM[0] : null, fecha: fecha};
+}
+
+async function tryParseConsPageText(page) {
+  var tc = await page.getTextContent();
+  var items = tc.items.filter(function(it) { return it.str && it.str.trim(); })
+                      .map(function(it) { return {s: it.str, x: it.transform[4], y: it.transform[5]}; });
+  return parseConsPageItems(items);
+}
+
+// ---------- Reporte para el proveedor (Excel) ----------
+function buildConsReport(refFilter) {
+  refreshScannedSet();
+  var cons = (_consignments || []).filter(function(r) { return !refFilter || (r.referencia || 'Sin ref') === refFilter; });
+  var recByCoil = Object.create(null);
+  (records || []).forEach(function(r) { if (r && r.coil) recByCoil[String(r.coil).trim()] = r; });
+  var tol = CFG.pesoTol;
+  var faltantes = [], difPeso = [], difCast = [], resumen = {}, order = [];
+
+  cons.forEach(function(c) {
+    var ref = c.referencia || 'Sin ref';
+    if (!resumen[ref]) { resumen[ref] = {ref: ref, fecha: c.fecha || '', coils: 0, esc: 0, ton: 0, tonFalt: 0, dPeso: 0}; order.push(ref); }
+    var g = resumen[ref], p = _numOr(c.peso, 0);
+    g.coils++; g.ton += p;
+    var rec = recByCoil[String(c.lot_no || '').trim()];
+    if (!rec) { g.tonFalt += p; faltantes.push([ref, c.fecha || '', c.lot_no || '', c.cast_no || '', c.producto || '', p]); return; }
+    g.esc++;
+    var rp = _numOr(rec.peso, NaN);
+    if (isFinite(rp) && Math.abs(rp - p) > tol) { g.dPeso++; difPeso.push([ref, c.lot_no || '', c.cast_no || '', c.producto || '', p, rp, +(rp - p).toFixed(3), Math.round((rp - p) * 1000)]); }
+    var ck = _castKey(c.cast_no), rk = _castKey(rec.cast);
+    if (ck && rk && ck !== rk) difCast.push([ref, c.lot_no || '', c.cast_no || '', rec.cast || '']);
+  });
+
+  var sinCons = [];
+  if (!refFilter) {
+    var lots = Object.create(null);
+    (_consignments || []).forEach(function(r) { var l = String(r.lot_no || '').trim(); if (l) lots[l] = 1; });
+    (records || []).forEach(function(r) {
+      if (r.coil && !lots[String(r.coil).trim()]) sinCons.push([r.coil, r.cast || '', r.producto || '', _numOr(r.peso, ''), r.wo || '', r.maquina || '', r.created_at ? new Date(r.created_at).toLocaleString('es') : '']);
+    });
+  }
+
+  var sheets = [
+    {name: 'Resumen', rows: [['Referencia', 'Fecha', 'Coils', 'Escaneados', 'Faltantes', 'Ton. consignment', 'Ton. faltantes', 'Coils con dif. de peso']].concat(
+      order.map(function(k) { var g = resumen[k]; return [g.ref, g.fecha, g.coils, g.esc, g.coils - g.esc, +g.ton.toFixed(3), +g.tonFalt.toFixed(3), g.dPeso]; }))},
+    {name: 'Faltantes', rows: [['Referencia', 'Fecha', 'Lote (coil)', 'Cast', 'Producto', 'Peso (t)']].concat(faltantes)},
+    {name: 'Diferencias de peso', rows: [['Referencia', 'Lote (coil)', 'Cast', 'Producto', 'Peso consignment (t)', 'Peso escaneado (t)', 'Diferencia (t)', 'Diferencia (kg)']].concat(difPeso)},
+    {name: 'Cast distinto', rows: [['Referencia', 'Lote (coil)', 'Cast consignment', 'Cast escaneado']].concat(difCast)}
+  ];
+  if (!refFilter) sheets.push({name: 'Escaneados sin consignment', rows: [['Coil', 'Cast', 'Producto', 'Peso (t)', 'WO', 'Maquina', 'Fecha escaneo']].concat(sinCons)});
+  return {sheets: sheets, counts: {faltantes: faltantes.length, difPeso: difPeso.length, difCast: difCast.length, sinCons: sinCons.length}};
+}
+
+function _downloadBlob(name, blob) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+async function exportConsReport(ref) {
+  if (!_consignments || !_consignments.length) { alert('No hay consignments cargados'); return; }
+  var rep = buildConsReport(ref || '');
+  var base = 'Reporte_consignments_' + (ref ? String(ref).replace(/[^A-Za-z0-9_-]/g, '') + '_' : '') + new Date().toISOString().slice(0, 10);
+  try {
+    if (!window.XLSX) {
+      await new Promise(function(res, rej) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    var X = window.XLSX;
+    var wb = X.utils.book_new();
+    rep.sheets.forEach(function(sh) {
+      var ws = X.utils.aoa_to_sheet(sh.rows);
+      ws['!cols'] = sh.rows[0].map(function(_, i) {
+        var w = 10;
+        sh.rows.forEach(function(r) { var l = String(r[i] == null ? '' : r[i]).length; if (l > w) w = l; });
+        return {wch: Math.min(w + 2, 40)};
+      });
+      X.utils.book_append_sheet(wb, ws, sh.name);
+    });
+    X.writeFile(wb, base + '.xlsx');
+  } catch(e) { // sin acceso a la libreria: CSV con los faltantes
+    console.warn('[reporte] XLSX no disponible, se descarga CSV:', e);
+    var csv = '\ufeff' + rep.sheets[1].rows.map(function(r) {
+      return r.map(function(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    _downloadBlob(base + '_faltantes.csv', new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+  }
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -4018,20 +4432,23 @@ window.addEventListener('load', function() {
   loadRecords().then(loadScheduleWOs);
   loadConsignments();
   goTab('scan');
+  startRealtime();
+  updateLiveBadge();
   // Show notification banner if not yet decided
   if (window.Notification && Notification.permission === 'default') {
     var nb = document.getElementById('notif-banner');
     if (nb) nb.style.display = 'flex';
   }
-  // Real-time sync: poll every 30 seconds
+  // Sincronizacion: Supabase Realtime + respaldo cada 30 s si no hay conexion en vivo
   setInterval(function() {
-    if (!document.hidden) {
-      loadRecords().then(function() {
-        var activeTab = document.querySelector('.tab.on');
-        if (activeTab && activeTab.id === 't-dash') renderDash();
-        if (activeTab && activeTab.id === 't-hist') renderHistorial();
-      });
-    }
+    if (document.hidden) return;
+    _rtTick++;
+    if (_rtOk && _rtTick % 4 !== 0) return;   // con tiempo real activo solo queda un chequeo de respaldo cada ~2 min
+    loadRecords().then(function() {
+      var activeTab = document.querySelector('.tab.on');
+      if (activeTab && activeTab.id === 't-dash') renderDash();
+      if (activeTab && activeTab.id === 't-hist') renderHistorial();
+    });
   }, 30000);
   // Also sync when tab becomes visible
   document.addEventListener('visibilitychange', function() {

@@ -1,0 +1,14 @@
+{
+  "name": "coil-scanner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tools/check.js",
+    "test": "node tools/functions.test.js && node tools/smoke.js",
+    "verify": "npm run check && npm test"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jsdom": "^24.1.0"
+  }
+}
