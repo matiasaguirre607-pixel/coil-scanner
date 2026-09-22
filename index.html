@@ -455,8 +455,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <input type="date" id="hist-date" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);outline:none;flex:1;min-width:130px">
     <button onclick="document.getElementById('hist-date').value='';renderHistorial()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--muted)">&#10006; Fecha</button>
     <div style="display:flex;border:1.5px solid var(--border);border-radius:9px;overflow:hidden">
-      <button id="view-grouped" onclick="setHistView('grouped')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--blue);color:#fff">Agrupado</button>
-      <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Por escaneo</button>
+      <button id="view-grouped" onclick="setHistView('grouped')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Agrupado</button>
+      <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--blue);color:#fff">Por escaneo</button>
     </div>
   </div>
   <div id="rec-list" class="hist-grid-wrap"></div>
@@ -808,6 +808,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
   <div class="cons-card">
     <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
+    <div id="cons-status-chips" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
   </div>
 
@@ -2329,7 +2330,7 @@ var _consProdFilter = '';
 
 // ============ CONSIGNMENTS: LOAD (paginado limit/offset) ============
 var _consSeq = 0;
-var _consShown = 200;
+var _consShown = 10;
 var _scannedSet = null;
 
 function refreshScannedSet() {
@@ -2347,6 +2348,13 @@ function isCoilScanned(lot) {
 
 function _ceAttr(s) {
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function prodChipsHTML(prodOrder, selected) {
+  return [''].concat(prodOrder).map(function(k) {
+    var on = (k === '' && !selected) || k === selected;
+    return '<button data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid #007aff;background:' + (on ? '#007aff' : '#fff') + ';color:' + (on ? '#fff' : '#007aff') + '">' + (k === '' ? 'Todos' : esc(k)) + '</button>';
+  }).join('');
 }
 
 function _consProdKey(r) {
@@ -2401,7 +2409,7 @@ async function loadConsignments() {
     return;
   }
   _consignments = rows;
-  _consShown = 200;
+  _consShown = 10;
   renderSavedCons();
   runCrossCheck();
   renderParaVerificar();
@@ -2461,8 +2469,9 @@ function _fechaOrdenable(f) {
 
 function consStatusHTML(where) {
   refreshScannedSet();
+  var srcRows = (where === 'tab' && _consProdFilter) ? (_consignments || []).filter(function(r) { return _consProdKey(r) === _consProdFilter; }) : (_consignments || []);
   var refs = {}, order = [];
-  (_consignments || []).forEach(function(r) {
+  srcRows.forEach(function(r) {
     var k = r.referencia || 'Sin ref';
     if (!refs[k]) { refs[k] = {items: [], fecha: '', prodCount: {}}; order.push(k); }
     refs[k].items.push(r);
@@ -2485,7 +2494,7 @@ function consStatusHTML(where) {
     return 0;
   });
   var shown = _consStatusShown[where] || 10;
-  var html = '<div style="font-size:11px;color:#8e9aab;margin-bottom:8px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' · ' + (_consignments || []).length + ' coils</div>';
+  var html = '<div style="font-size:11px;color:#8e9aab;margin-bottom:8px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' · ' + srcRows.length + ' coils' + (where === 'tab' && _consProdFilter ? ' · ' + esc(_consProdFilter) : '') + '</div>';
   var lastProd = null;
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
@@ -2543,18 +2552,19 @@ function xcMore(kind, all) {
 // ============ CONSIGNMENTS: TAB RENDER ============
 function filterCons(f) {
   _consFilter = f;
-  _consShown = 200;
+  _consShown = 10;
   renderSavedCons();
 }
 
 function setConsProd(p) {
   _consProdFilter = (p && _consProdFilter === p) ? '' : (p || '');
-  _consShown = 200;
+  _consShown = 10;
+  _consStatusShown.tab = 10;
   renderSavedCons();
 }
 
-function consShowMore() {
-  _consShown += 200;
+function consShowMore(all) {
+  _consShown = all ? 1e9 : _consShown + 10;
   renderSavedCons();
 }
 
@@ -2629,6 +2639,9 @@ function renderSavedCons() {
     var on = (k === '' && !_consProdFilter) || k === _consProdFilter;
     return '<button data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:' + (on ? '#007aff' : '#f2f2f7') + ';color:' + (on ? '#fff' : '#8e8e93') + '">' + (k === '' ? 'Todos' : esc(k)) + '</button>';
   }).join('');
+  // mismos productos, con el estilo con borde de la imagen de referencia, arriba de "Estado de Consignments"
+  var statusChips = byId('cons-status-chips');
+  if (statusChips) { statusChips.style.display = 'flex'; statusChips.innerHTML = prodChipsHTML(prodOrder, _consProdFilter); }
 
   // ---- botones de estado ----
   ['all', 'ok', 'miss', 'extra'].forEach(function(f) {
@@ -2677,7 +2690,7 @@ function renderSavedCons() {
     if (lblEl) lblEl.textContent = total + ' coil' + (total === 1 ? '' : 's') + (_consProdFilter ? ' · ' + _consProdFilter : '');
   }
   if (!total) html = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:16px">Sin resultados</div>';
-  else if (total > _consShown) html += '<button onclick="consShowMore()" style="width:100%;margin-top:8px;padding:10px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Mostrar mas (' + (total - _consShown) + ' restantes)</button>';
+  else if (total > _consShown) html += '<div style="display:flex;gap:8px;margin-top:8px"><button onclick="consShowMore()" style="flex:1;padding:10px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (total - _consShown) + ' restantes)</button><button onclick="consShowMore(true)" style="padding:10px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
   if (listBox) listBox.innerHTML = html;
 
   // ---- Estado de Consignments (misma tarjeta que el Dashboard, con boton eliminar) ----
@@ -3083,7 +3096,7 @@ function renderChangeLog() {
   }).join('');
 }
 
-var _histView = 'grouped';   // antes decia 'flat', pero el boton que se veia activo era "Agrupado"
+var _histView = 'flat';   // por defecto: primero "Por escaneo", despues "Agrupado" si el usuario cambia
 
 function setHistView(v) {
   _histView = v;
