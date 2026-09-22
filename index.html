@@ -294,6 +294,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .pbi-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:12px;font-weight:700;color:#fff;transition:width .35s}
 .pbi-bar-val{font-size:14px;color:#5c6b7a;width:50px;text-align:right;flex-shrink:0;font-weight:600}
 .pbi-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+/* version chica: las tarjetas Por producto / Por WO comparten fila con Por maquina */
+.pbi-bars-compact .pbi-bar-row{gap:4px;margin-bottom:4px}
+.pbi-bars-compact .pbi-bar-lbl{font-size:10px;width:34px}
+.pbi-bars-compact .pbi-bar-track{height:18px;border-radius:4px}
+.pbi-bars-compact .pbi-bar-fill{font-size:9px;padding:0 5px;border-radius:2px}
+.pbi-bars-compact .pbi-bar-val{font-size:10px;width:28px}
 .pbi-tbl th{font-size:12px;font-weight:800;color:#5c6b7a;text-transform:uppercase;letter-spacing:.06em;padding:7px 10px;border-bottom:2px solid #e8ecf0;text-align:left;background:#f8fafc;white-space:nowrap}
 .pbi-tbl td{padding:10px 12px;border-bottom:1px solid #f0f2f5;font-size:14px;color:#374151;vertical-align:middle}
 .pbi-tbl tr:hover td{background:#f8fafc}
@@ -480,7 +486,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pbi-card" id="dash-hero" style="margin-bottom:10px;background:linear-gradient(135deg,#f0f5ff,#ffffff);border:2px solid #dbe6ff">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
     <div class="pbi-card-title" style="margin-bottom:0">Resumen del dia</div>
-    <button id="tv-mode-btn" onclick="toggleTvMode()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #007aff;background:#fff;color:#007aff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#9974; Modo pantalla grande</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="export-dash-btn" onclick="exportDashboardImage()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #34c759;background:#fff;color:#1a7a3c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#128228; Exportar</button>
+      <button id="tv-mode-btn" onclick="toggleTvMode()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #007aff;background:#fff;color:#007aff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#9974; Modo pantalla grande</button>
+    </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px">
     <div style="text-align:center">
@@ -508,7 +517,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div id="dash-more">
 <!-- FILTER BAR (segmentador estilo Excel) -->
-<div class="pbi-hdr">
+<div class="pbi-hdr" style="flex-wrap:wrap">
   <!-- Fecha -->
   <div class="pbi-seg">
     <span class="pbi-seg-lbl">Periodo</span>
@@ -516,6 +525,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <button class="pbi-date-chip" id="pd-week" onclick="setPeriod('week')">7 dias</button>
     <button class="pbi-date-chip" id="pd-month" onclick="setPeriod('month')">30 dias</button>
     <button class="pbi-date-chip on" id="pd-all" onclick="setPeriod('all')">Todo</button>
+    <button class="pbi-date-chip" id="pd-custom" onclick="toggleCustomRange()">&#128197; Rango</button>
+  </div>
+  <div id="custom-range-panel" style="display:none;width:100%;margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:700;color:#5c6b7a">Del</span>
+    <input type="date" id="range-from" style="padding:6px 8px;border:1.5px solid #d0d8e0;border-radius:7px;font-size:12px;font-family:inherit">
+    <span style="font-size:11px;font-weight:700;color:#5c6b7a">al</span>
+    <input type="date" id="range-to" style="padding:6px 8px;border:1.5px solid #d0d8e0;border-radius:7px;font-size:12px;font-family:inherit">
+    <button onclick="applyCustomRange()" style="padding:6px 14px;border-radius:7px;border:none;background:#007aff;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Aplicar</button>
+    <span id="range-err" style="font-size:11px;color:#ff3b30;font-weight:600"></span>
   </div>
   <!-- Maquina -->
   <div class="pbi-seg" style="margin-left:6px">
@@ -577,15 +595,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- TN POR DIA (main chart) -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">
-    Toneladas por dia
-    <div style="display:flex;gap:10px;font-size:11px;font-weight:600">
-      <span style="color:#007aff">■ EVG</span>
-      <span style="color:#af52de">■ PITTINI</span>
-      <span style="color:#c7c7cc">■ Sin maq</span>
+  <div class="pbi-card-title" style="flex-wrap:wrap;gap:6px">
+    <span id="db-timeline-title">Toneladas por dia</span>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div id="db-timeline-legend" style="display:flex;gap:10px;font-size:11px;font-weight:600">
+        <span style="color:#007aff">■ EVG</span>
+        <span style="color:#af52de">■ PITTINI</span>
+        <span style="color:#c7c7cc">■ Sin maq</span>
+      </div>
+      <div style="display:flex;border-radius:7px;overflow:hidden;border:1.5px solid #d0d8e0">
+        <button id="tl-mode-daily" onclick="setTimelineMode('daily')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#007aff;color:#fff">Por dia</button>
+        <button id="tl-mode-cumulative" onclick="setTimelineMode('cumulative')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#5c6b7a">Acumulado</button>
+      </div>
     </div>
   </div>
-  <canvas id="db-timeline" style="width:100%;height:130px;display:block"></canvas>
+  <canvas id="db-timeline" style="width:100%;height:150px;display:block"></canvas>
 </div>
 
 <!-- SEMANA ACTUAL VS ANTERIOR -->
@@ -609,7 +633,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- ESCANEOS POR DIA -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Coils escaneados por dia</div>
-  <canvas id="db-count-timeline" style="width:100%;height:80px;display:block"></canvas>
+  <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
 </div>
 
 <!-- CALENDARIO -->
@@ -651,16 +675,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="cmp-result"></div>
 </div>
 
-<!-- MAQUINA DISTRIBUCION + PRODUCTO -->
-<div class="pbi-row" style="grid-template-columns:1fr 1fr">
-  <div class="pbi-card">
-    <div class="pbi-card-title">Distribucion por maquina</div>
-    <canvas id="db-maq-donut" style="display:block;width:100%;height:120px"></canvas>
-    <div id="db-maq-leg" style="margin-top:8px"></div>
+<!-- MAQUINA / PRODUCTO / WO -- 3 tarjetas chicas en linea -->
+<div class="pbi-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+  <div class="pbi-card" style="padding:12px">
+    <div class="pbi-card-title" style="font-size:11px">Por maquina</div>
+    <canvas id="db-maq-donut" style="display:block;width:100%;height:84px"></canvas>
+    <div id="db-maq-leg" style="margin-top:6px;font-size:11px"></div>
   </div>
-  <div class="pbi-card">
-    <div class="pbi-card-title">Por Producto</div>
-    <div id="db-prod-bars"></div>
+  <div class="pbi-card" style="padding:12px">
+    <div class="pbi-card-title" style="font-size:11px">Por producto</div>
+    <div id="db-prod-bars" class="pbi-bars-compact"></div>
+  </div>
+  <div class="pbi-card" style="padding:12px">
+    <div class="pbi-card-title" style="font-size:11px">Por WO</div>
+    <div id="db-wo-bars" class="pbi-bars-compact"></div>
   </div>
 </div>
 
@@ -1637,6 +1665,43 @@ function setPeriod(p) {
     var b = document.getElementById('pd-'+x);
     if (b) b.className = 'pbi-date-chip'+(p===x?' on':'');
   });
+  var customBtn = document.getElementById('pd-custom');
+  if (customBtn) customBtn.className = 'pbi-date-chip';   // un periodo fijo desactiva el rango
+  var panel = document.getElementById('custom-range-panel');
+  if (panel) panel.style.display = 'none';
+  renderDash();
+}
+
+// ---------- Rango de fechas personalizado ----------
+var _dbFrom = null, _dbTo = null;   // Date | null
+
+function toggleCustomRange() {
+  var panel = document.getElementById('custom-range-panel');
+  if (!panel) return;
+  var show = panel.style.display !== 'flex';
+  panel.style.display = show ? 'flex' : 'none';
+  if (show) {
+    var fromInp = document.getElementById('range-from'), toInp = document.getElementById('range-to');
+    var fmt = function(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+    if (fromInp && !fromInp.value) fromInp.value = fmt(_dbFrom || (function(){var d=new Date();d.setDate(d.getDate()-7);return d;})());
+    if (toInp && !toInp.value) toInp.value = fmt(_dbTo || new Date());
+  }
+}
+
+function applyCustomRange() {
+  var fromInp = document.getElementById('range-from'), toInp = document.getElementById('range-to');
+  var errEl = document.getElementById('range-err');
+  var fromV = fromInp ? fromInp.value : '', toV = toInp ? toInp.value : '';
+  if (!fromV || !toV) { if (errEl) errEl.textContent = 'Elegi las dos fechas'; return; }
+  var from = new Date(fromV + 'T00:00:00'), to = new Date(toV + 'T23:59:59');
+  if (from > to) { if (errEl) errEl.textContent = '"Del" no puede ser despues de "al"'; return; }
+  if (errEl) errEl.textContent = '';
+  _dbFrom = from; _dbTo = to; _dbPeriod = 'custom';
+  ['today','week','month','all'].forEach(function(x){ var b = document.getElementById('pd-'+x); if (b) b.className = 'pbi-date-chip'; });
+  var customBtn = document.getElementById('pd-custom');
+  var fmtShort = function(d) { return d.getDate() + '/' + (d.getMonth()+1); };
+  if (customBtn) customBtn.innerHTML = '&#128197; ' + fmtShort(from) + ' - ' + fmtShort(to);
+  if (customBtn) customBtn.className = 'pbi-date-chip on';
   renderDash();
 }
 
@@ -1671,7 +1736,11 @@ function setWOFilter(w) {
 }
 
 function clearDashFilters() {
-  _dbPeriod = 'all'; _dbMaq = ''; _dbProd = ''; _dbWO = '';
+  _dbPeriod = 'all'; _dbMaq = ''; _dbProd = ''; _dbWO = ''; _dbFrom = null; _dbTo = null;
+  var customBtn = document.getElementById('pd-custom');
+  if (customBtn) customBtn.innerHTML = '&#128197; Rango';
+  var fromInp = document.getElementById('range-from'), toInp = document.getElementById('range-to');
+  if (fromInp) fromInp.value = ''; if (toInp) toInp.value = '';
   setPeriod('all');
   setMaq('');
   renderDash();
@@ -1684,7 +1753,12 @@ function getFilteredData() {
     if (_dbProd && normalizeProductoKey(r.producto) !== _dbProd) return false;
     if (_dbWO && r.wo !== _dbWO) return false;
     if (_dbNoWO && r.wo) return false;
-    if (_dbPeriod !== 'all' && r.created_at) {
+    if (_dbPeriod === 'custom') {
+      if (!r.created_at) return false;
+      var dc = new Date(r.created_at);
+      if (_dbFrom && dc < _dbFrom) return false;
+      if (_dbTo && dc > _dbTo) return false;
+    } else if (_dbPeriod !== 'all' && r.created_at) {
       var d = new Date(r.created_at);
       var diff = (now - d) / 86400000;
       if (_dbPeriod === 'today' && new Date(r.created_at).toDateString() !== now.toDateString()) return false;
@@ -1756,22 +1830,27 @@ function renderResumenDia() {
 function renderWoSemaforo() {
   var el = document.getElementById('wo-semaforo-list');
   if (!el) return;
-  var wos = unique((records || []).map(function(r) { return r.wo; }).filter(Boolean)).filter(function(w) { return !isWOClosed(w); });
-  if (!wos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs activas</div>'; return; }
-  var rows = wos.map(function(wo) {
+  var allWos = unique((records || []).map(function(r) { return r.wo; }).filter(Boolean));
+  if (!allWos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs</div>'; return; }
+  var rows = allWos.map(function(wo) {
     var woRecs = records.filter(function(r) { return r.wo === wo; });
     var entrada = sumTon(woRecs);
     var producido = (_produccion || []).filter(function(p) { return p.wo === wo; }).reduce(function(s, p) { return s + (parseFloat(p.toneladas_producidas) || 0); }, 0);
     var pct = entrada > 0 ? Math.round(producido / entrada * 100) : 0;
     var prods = unique(woRecs.map(function(r) { return normalizeProductoKey(r.producto); }).filter(Boolean));
-    return {wo: wo, entrada: entrada, producido: producido, pct: pct, coils: woRecs.length, prods: prods};
-  }).sort(function(a, b) { return a.pct - b.pct; });
-  var shown = rows.slice(0, 6);
+    return {wo: wo, entrada: entrada, producido: producido, pct: pct, coils: woRecs.length, prods: prods, closed: isWOClosed(wo)};
+  });
+  // Activas primero (las que menos avanzaron, arriba, para llamar la atencion), las cerradas al final y bien marcadas.
+  var activas = rows.filter(function(r) { return !r.closed; }).sort(function(a, b) { return a.pct - b.pct; });
+  var cerradas = rows.filter(function(r) { return r.closed; }).sort(function(a, b) { return a.wo < b.wo ? -1 : 1; });
+  var ordered = activas.concat(cerradas);
+  var shown = ordered.slice(0, 6);
   el.innerHTML = shown.map(function(r) {
-    var color = r.pct >= 100 ? '#34c759' : r.pct >= 75 ? '#007aff' : r.pct >= 50 ? '#ff9500' : '#ff3b30';
-    return '<div onclick="goTab(\'prod\')" style="cursor:pointer;padding:9px 0;border-bottom:1px solid #f0f2f5">' +
+    var color = r.closed ? '#8e9aab' : r.pct >= 100 ? '#34c759' : r.pct >= 75 ? '#007aff' : r.pct >= 50 ? '#ff9500' : '#ff3b30';
+    var closedTag = r.closed ? '<span style="font-size:10px;font-weight:700;color:#8e9aab;background:#f0f2f5;border-radius:4px;padding:1px 6px;margin-left:6px">&#128274; CERRADA</span>' : '';
+    return '<div onclick="goTab(\'prod\')" style="cursor:pointer;padding:9px 0;border-bottom:1px solid #f0f2f5;' + (r.closed ? 'opacity:.6' : '') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div style="min-width:0"><span style="font-size:13px;font-weight:700;color:#1a2332">WO: ' + esc(r.wo) + '</span> ' +
+        '<div style="min-width:0"><span style="font-size:13px;font-weight:700;color:#1a2332">WO: ' + esc(r.wo) + '</span>' + closedTag + ' ' +
           r.prods.slice(0, 2).map(function(p) { return '<span style="font-size:10px;background:#f0f5ff;color:#007aff;border-radius:4px;padding:1px 5px;margin-left:3px">' + esc(p) + '</span>'; }).join('') + '</div>' +
         '<span style="font-size:13px;font-weight:800;color:' + color + ';flex-shrink:0">' + r.pct + '%</span>' +
       '</div>' +
@@ -1779,7 +1858,7 @@ function renderWoSemaforo() {
       '<div style="font-size:11px;color:#8e9aab;margin-top:3px">' + r.entrada.toFixed(3) + 't escaneadas &middot; ' + r.producido.toFixed(3) + 't producidas &middot; ' + r.coils + ' coils</div>' +
     '</div>';
   }).join('');
-  if (rows.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">Ver las ' + rows.length + ' WOs en Produccion &rarr;</div>';
+  if (ordered.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">Ver las ' + ordered.length + ' WOs en Produccion &rarr;</div>';
 }
 
 var _tvMode = false;
@@ -1794,6 +1873,52 @@ function applyTvMode() {
     var e = document.getElementById(id);
     if (e) e.style.fontSize = _tvMode ? '64px' : '40px';
   });
+}
+
+// ---------- Exportar el Dashboard como imagen (para compartir por WhatsApp/email tal cual se ve) ----------
+function _loadHtml2Canvas() {
+  if (window.html2canvas) return Promise.resolve();
+  return new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function _downloadBlob(name, blob) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+async function exportDashboardImage() {
+  var btn = document.getElementById('export-dash-btn');
+  var target = document.getElementById('p-dash');
+  if (!target) return;
+  var origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '&#8987; Generando...'; }
+  try {
+    await _loadHtml2Canvas();
+    var canvas = await window.html2canvas(target, {backgroundColor: '#f2f2f7', scale: 2, useCORS: true});
+    var blob = await new Promise(function(res) { canvas.toBlob(res, 'image/png'); });
+    if (!blob) throw new Error('No se pudo generar la imagen');
+    var fname = 'dashboard-coil-scanner-' + new Date().toISOString().slice(0, 10) + '.png';
+    var file = new File([blob], fname, {type: 'image/png'});
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], title: 'Dashboard Coil Scanner'});
+    } else {
+      _downloadBlob(fname, blob);
+    }
+  } catch (e) {
+    console.error('[exportDashboardImage]', e);
+    if (String(e && e.name) !== 'AbortError') alert('No se pudo exportar: ' + (e && e.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
 }
 
 function toggleTvMode() {
@@ -1814,7 +1939,7 @@ function renderDash() {
 
   // KPIs
   document.getElementById('db-ton').textContent = tot.toFixed(3);
-  document.getElementById('db-ton-sub').textContent = data.length + ' coils' + (_dbPeriod==='today'?' hoy':_dbPeriod==='week'?' ultimos 7 dias':_dbPeriod==='month'?' ultimos 30 dias':' en total');
+  document.getElementById('db-ton-sub').textContent = data.length + ' coils' + (_dbPeriod==='today'?' hoy':_dbPeriod==='week'?' ultimos 7 dias':_dbPeriod==='month'?' ultimos 30 dias':_dbPeriod==='custom'&&_dbFrom&&_dbTo?' del '+_dbFrom.getDate()+'/'+(_dbFrom.getMonth()+1)+' al '+_dbTo.getDate()+'/'+(_dbTo.getMonth()+1):' en total');
 
   document.getElementById('db-cnt').textContent = data.length;
   document.getElementById('db-cnt-sub').textContent = 'de ' + records.length + ' total';
@@ -1865,7 +1990,10 @@ function renderDash() {
 
   // Producto bars
   var byProd = groupSum(data,function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
-  renderBars2('db-prod-bars',byProd,tot,function(k){setProdFilter(k);});
+  renderBars2('db-prod-bars',byProd,tot,function(k){setProdFilter(k);},5,_shortProdLabel);
+  // WO bars (nuevo -- misma idea que Por producto, para ver de un vistazo como se reparte entre WOs)
+  var byWO = groupSum(data,function(r){return r.wo||'Sin WO';});
+  renderBars2('db-wo-bars',byWO,tot,function(k){if(k!=='Sin WO')setWOFilter(k);},5);
 
   // Week comparison
   var curWeek = getWeekData(0);
@@ -1905,9 +2033,7 @@ function renderCountTimeline(data) {
   var W = canvas.parentElement ? canvas.parentElement.offsetWidth - 32 : 300;
   if (W < 50) W = 300;
   var H = 100;
-  canvas.width = W; canvas.height = H;
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
   var byDay = {};
   data.forEach(function(r){
     if(!r.created_at) return;
@@ -1916,29 +2042,49 @@ function renderCountTimeline(data) {
     byDay[k] = (byDay[k]||0) + 1;
   });
   var days = Object.keys(byDay).sort();
-  if(!days.length){canvas.height=0;return;}
-  canvas.height=H;
+  if(!days.length){canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);return;}
+  canvas.width=W; canvas.height=H; ctx.clearRect(0,0,W,H);
   var vals = days.map(function(d){return byDay[d];});
   var mx = Math.max.apply(null,vals)||1;
-  var pL=30,pB=20,pT=12,pR=8;
+  var pL=28,pB=20,pT=16,pR=10;
   var cW=W-pL-pR,cH=H-pB-pT;
-  var bw=cW/Math.max(days.length,1);
-  canvas._days=days;canvas._byDay=byDay;canvas._pL=pL;canvas._bw=bw;
+  var labelEvery = days.length > 20 ? Math.ceil(days.length/10) : days.length > 10 ? 2 : 1;
+  // los puntos van centrados en cada dia (a diferencia de las barras, una linea no tiene "ancho de columna")
+  var stepX = days.length > 1 ? cW/(days.length-1) : 0;
+  var pts = days.map(function(d,i){ return {x: pL+(days.length>1?i*stepX:cW/2), y: pT+cH-(byDay[d]/mx)*cH, v: byDay[d]}; });
+  canvas._days=days;canvas._byDay=byDay;canvas._pL=pL;canvas._stepX=stepX||cW;
+
   ctx.fillStyle='#f8fafc';ctx.fillRect(pL,pT,cW,cH);
   [0,0.5,1].forEach(function(f){
     var y=pT+cH*(1-f);
     ctx.strokeStyle='#e8ecf0';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
-    if(f>0){ctx.fillStyle='#8e9aab';ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(mx*f),pL-3,y+3);}
+    if(f>0){ctx.fillStyle='#5c6b7a';ctx.font='600 9px sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(mx*f),pL-4,y+3);}
   });
-  days.forEach(function(day,i){
-    var x=pL+i*bw+bw*.1,bW=bw*.8;
-    var bh=(vals[i]/mx)*cH;
-    ctx.fillStyle='#34c759';ctx.fillRect(x,pT+cH-bh,bW,bh);
-    var d=new Date(day);
-    ctx.fillStyle='#8e9aab';ctx.font='9px sans-serif';ctx.textAlign='center';
-    ctx.fillText(d.getDate()+'/'+(d.getMonth()+1),x+bW/2,H-4);
-    if(vals[i]>0){ctx.fillStyle='#1a2332';ctx.font='bold 9px sans-serif';ctx.fillText(vals[i],x+bW/2,pT+cH-bh-3);}
+
+  // area debajo de la linea (degrade sutil) para que se note la tendencia de un vistazo
+  var grad = ctx.createLinearGradient(0,pT,0,pT+cH);
+  grad.addColorStop(0,'rgba(52,199,89,.28)'); grad.addColorStop(1,'rgba(52,199,89,.02)');
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pT+cH);
+  pts.forEach(function(p){ ctx.lineTo(p.x,p.y); });
+  ctx.lineTo(pts[pts.length-1].x,pT+cH); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+
+  // la linea de tendencia
+  ctx.beginPath();
+  pts.forEach(function(p,i){ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+  ctx.strokeStyle='#34c759'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+
+  // un punto por dia, con el numero arriba (salteando etiquetas si hay muchos dias)
+  pts.forEach(function(p,i){
+    ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='#34c759'; ctx.stroke();
+    if(p.v>0 && days.length<=15){ ctx.fillStyle='#1a2332';ctx.font='700 9px sans-serif';ctx.textAlign='center'; ctx.fillText(p.v, p.x, Math.max(p.y-7,pT+8)); }
+    var d=new Date(days[i]);
+    if((days.length-1-i) % labelEvery === 0){   // cuenta desde el final, asi el ultimo dia siempre sale y nunca queda pegado al anterior
+      ctx.fillStyle='#5c6b7a';ctx.font='600 9px sans-serif';ctx.textAlign='center';
+      ctx.fillText(d.getDate()+'/'+(d.getMonth()+1), p.x, H-4);
+    }
   });
 }
 
@@ -3305,15 +3451,28 @@ function renderFlatList(list) {
   });
 }
 
+var _timelineMode = 'daily';
+var _lastTimelineData = [];
+
+function setTimelineMode(m) {
+  _timelineMode = m;
+  var dBtn = document.getElementById('tl-mode-daily'), cBtn = document.getElementById('tl-mode-cumulative');
+  if (dBtn) { dBtn.style.background = m === 'daily' ? '#007aff' : '#fff'; dBtn.style.color = m === 'daily' ? '#fff' : '#5c6b7a'; }
+  if (cBtn) { cBtn.style.background = m === 'cumulative' ? '#007aff' : '#fff'; cBtn.style.color = m === 'cumulative' ? '#fff' : '#5c6b7a'; }
+  var leg = document.getElementById('db-timeline-legend'), title = document.getElementById('db-timeline-title');
+  if (leg) leg.style.display = m === 'cumulative' ? 'none' : 'flex';   // en acumulado no hay split EVG/PIT, no aplica la leyenda
+  if (title) title.textContent = m === 'cumulative' ? 'Toneladas acumuladas' : 'Toneladas por dia';
+  renderTimeline(_lastTimelineData);
+}
+
 function renderTimeline(data) {
+  _lastTimelineData = data;
   var canvas = document.getElementById('db-timeline');
   if (!canvas) return;
   var W = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 300;
   if (W < 50) { setTimeout(function(){renderTimeline(data);}, 100); return; }
-  var H = 120;
-  canvas.width = W; canvas.height = H;
+  var H = 150;
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
   var byDay={}, byDayE={}, byDayP={};
   data.forEach(function(r){
     if(!r.created_at) return;
@@ -3324,58 +3483,155 @@ function renderTimeline(data) {
     else if(r.maquina==='PITTINI')byDayP[k]=(byDayP[k]||0)+parseTon(r.peso);
   });
   var days=Object.keys(byDay).sort();
-  var pL=36,pB=24,pT=14,pR=8;
-  var cW2=W-pL-pR,cH=160-pB-pT;
-  var bw=days.length>0?cW2/days.length:1;
-  if(!days.length){canvas.height=40;ctx.fillStyle='#8e9aab';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Sin datos para el periodo',W/2,25);return;}
-  canvas.height=H;
+  if (_timelineMode === 'cumulative') { renderTimelineCumulative(canvas, days, byDay); return; }
+  if(!days.length){
+    canvas.width=W; canvas.height=H; ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#8e9aab';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Sin datos para el periodo',W/2,H/2);
+    return;
+  }
+  canvas.width=W; canvas.height=H;
+  ctx.clearRect(0,0,W,H);
+  // Con muchos dias (30 dias, "Todo") no entran todas las etiquetas: se muestra 1 de cada N.
+  var labelEvery = days.length > 20 ? Math.ceil(days.length/12) : days.length > 10 ? 2 : 1;
+  var pL=40,pB=26,pT=20,pR=10;
+  var cW=W-pL-pR, cH=H-pB-pT;
+  var bw=cW/days.length;
   var vals=days.map(function(d){return byDay[d];});
   var mx=Math.max.apply(null,vals)||1;
-  var cW=W-pL-pR;
+  // fondo del area del grafico
   ctx.fillStyle='#f8fafc';ctx.fillRect(pL,pT,cW,cH);
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;ctx.strokeRect(pL,pT,cW,cH);
+  // lineas de referencia horizontales, con el numero bien legible
   [0,0.25,0.5,0.75,1].forEach(function(f){
     var y=pT+cH*(1-f);
-    ctx.strokeStyle=f===0?'#c7d0d8':'#eef0f3';ctx.lineWidth=f===0?1.5:1;
+    ctx.strokeStyle=f===0?'#cbd5e0':'#e8edf2';ctx.lineWidth=f===0?1.3:1;
     ctx.setLineDash(f===0?[]:[3,3]);
     ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
     ctx.setLineDash([]);
-    if(f>0){ctx.fillStyle='#8e9aab';ctx.font='bold 10px sans-serif';ctx.textAlign='right';ctx.fillText((mx*f).toFixed(1),pL-3,y+3);}
+    if(f>0){ctx.fillStyle='#5c6b7a';ctx.font='600 10px sans-serif';ctx.textAlign='right';ctx.fillText((mx*f).toFixed(1),pL-6,y+3);}
   });
+  // barras: EVG (azul) + PITTINI (violeta) apiladas, con separacion y bordes redondeados
   days.forEach(function(day,i){
-    var x=pL+i*bw+bw*.08,bW=bw*.84;
-    var evgV=byDayE[day]||0,pitV=byDayP[day]||0,totV=byDay[day]||0,remV=Math.max(0,totV-evgV-pitV);
+    var x=pL+i*bw+bw*.12, bW=Math.max(bw*.76,3);
+    var evgV=byDayE[day]||0, pitV=byDayP[day]||0, totV=byDay[day]||0, remV=Math.max(0,totV-evgV-pitV);
     var y=pT+cH;
-    if(pitV>0){var h=(pitV/mx)*cH;ctx.fillStyle='#af52de';ctx.fillRect(x,y-h,bW,h);y-=h;}
-    if(evgV>0){var h2=(evgV/mx)*cH;ctx.fillStyle='#007aff';ctx.fillRect(x,y-h2,bW,h2);y-=h2;}
-    if(remV>0){var h3=(remV/mx)*cH;ctx.fillStyle='#c7c7cc';ctx.fillRect(x,y-h3,bW,h3);}
+    var r=Math.min(3,bW/2);
+    function seg(h,color){ if(h<=0)return; ctx.fillStyle=color; ctx.fillRect(x,y-h,bW,h); y-=h; }
+    seg((pitV/mx)*cH,'#af52de');
+    seg((evgV/mx)*cH,'#007aff');
+    seg((remV/mx)*cH,'#c7c7cc');
+    // remate redondeado arriba de la barra (prolijo, sin dejar bordes filosos)
+    var totalH=(totV/mx)*cH;
+    if(totalH>2){ ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fillRect(x,pT+cH-totalH,bW,1.5); }
     var d=new Date(day);
-    ctx.fillStyle='#8e9aab';ctx.font='9px sans-serif';ctx.textAlign='center';
-    ctx.fillText(d.getDate()+'/'+(d.getMonth()+1),x+bW/2,H-6);
-    if(totV>0){ctx.fillStyle='#1a2332';ctx.font='bold 9px sans-serif';ctx.fillText(totV.toFixed(1),x+bW/2,pT+cH-(totV/mx)*cH-4);}
+    if((days.length-1-i) % labelEvery === 0){   // cuenta desde el final, asi el ultimo dia siempre sale y nunca queda pegado al anterior
+      ctx.fillStyle='#5c6b7a';ctx.font='600 10px sans-serif';ctx.textAlign='center';
+      ctx.fillText(d.getDate()+'/'+(d.getMonth()+1),x+bW/2,H-8);
+    }
+    if(totV>0 && days.length<=15){   // con pocos dias entra el numero arriba de cada barra; con muchos, se satura y se saca
+      var lblY=pT+cH-totalH-6;
+      ctx.fillStyle='#1a2332';ctx.font='700 10px sans-serif';ctx.textAlign='center';
+      if(lblY < pT+10) lblY = pT+cH-totalH+12, ctx.fillStyle='#fff';  // si no entra arriba, el numero se mete adentro de la barra en blanco
+      ctx.fillText(totV.toFixed(1),x+bW/2,lblY);
+    }
   });
 
   // Store for tooltip
-  if (days && days.length) {
-    canvas._days = days; canvas._byDay = byDay; canvas._byDayE = byDayE; canvas._byDayP = byDayP; canvas._pL = pL; canvas._bw = bw;
-    canvas.onclick = function(e) {
-      var rect = canvas.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var idx2 = Math.floor((x - canvas._pL) / canvas._bw);
-      if (idx2 >= 0 && canvas._days && idx2 < canvas._days.length) {
-        var day = canvas._days[idx2];
-        var d2 = new Date(day);
-        var lbl = d2.getDate() + '/' + (d2.getMonth()+1) + '/' + d2.getFullYear();
-        var evgV = (canvas._byDayE && canvas._byDayE[day]) || 0;
-        var pitV = (canvas._byDayP && canvas._byDayP[day]) || 0;
-        var totV = (canvas._byDay && canvas._byDay[day]) || 0;
-        var content = '<b>' + lbl + '</b><br>' + totV.toFixed(3) + 't';
-        if (evgV > 0) content += '<br>EVG: ' + evgV.toFixed(3) + 't';
-        if (pitV > 0) content += '<br>PIT: ' + pitV.toFixed(3) + 't';
-        showChartTooltip(canvas, x, 10, content);
-        setTimeout(hideChartTooltip, 3000);
-      }
-    };
-  }}
+  canvas._days = days; canvas._byDay = byDay; canvas._byDayE = byDayE; canvas._byDayP = byDayP; canvas._pL = pL; canvas._bw = bw;
+  canvas.onclick = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var idx2 = Math.floor((x - canvas._pL) / canvas._bw);
+    if (idx2 >= 0 && canvas._days && idx2 < canvas._days.length) {
+      var day = canvas._days[idx2];
+      var d2 = new Date(day);
+      var lbl = d2.getDate() + '/' + (d2.getMonth()+1) + '/' + d2.getFullYear();
+      var evgV = (canvas._byDayE && canvas._byDayE[day]) || 0;
+      var pitV = (canvas._byDayP && canvas._byDayP[day]) || 0;
+      var totV = (canvas._byDay && canvas._byDay[day]) || 0;
+      var content = '<b>' + lbl + '</b><br>' + totV.toFixed(3) + 't';
+      if (evgV > 0) content += '<br>EVG: ' + evgV.toFixed(3) + 't';
+      if (pitV > 0) content += '<br>PIT: ' + pitV.toFixed(3) + 't';
+      showChartTooltip(canvas, x, 10, content);
+      setTimeout(hideChartTooltip, 3000);
+    }
+  };
+}
+
+
+function renderTimelineCumulative(canvas, days, byDay) {
+  var W = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 300;
+  var H = 150;
+  var ctx = canvas.getContext('2d');
+  canvas.onclick = null;
+  if (!days.length) {
+    canvas.width = W; canvas.height = H; ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#8e9aab'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Sin datos para el periodo', W / 2, H / 2);
+    return;
+  }
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  var run = 0;
+  var cum = days.map(function(d) { run += byDay[d]; return run; });
+  var mx = Math.max.apply(null, cum) || 1;
+  var labelEvery = days.length > 20 ? Math.ceil(days.length / 12) : days.length > 10 ? 2 : 1;
+  var pL = 44, pB = 26, pT = 20, pR = 10;
+  var cW = W - pL - pR, cH = H - pB - pT;
+  var stepX = days.length > 1 ? cW / (days.length - 1) : 0;
+  var pts = days.map(function(d, i) { return {x: pL + (days.length > 1 ? i * stepX : cW / 2), y: pT + cH - (cum[i] / mx) * cH, v: cum[i]}; });
+
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(pL, pT, cW, cH);
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.strokeRect(pL, pT, cW, cH);
+  [0, 0.25, 0.5, 0.75, 1].forEach(function(f) {
+    var y = pT + cH * (1 - f);
+    ctx.strokeStyle = f === 0 ? '#cbd5e0' : '#e8edf2'; ctx.lineWidth = f === 0 ? 1.3 : 1;
+    ctx.setLineDash(f === 0 ? [] : [3, 3]);
+    ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(W - pR, y); ctx.stroke();
+    ctx.setLineDash([]);
+    if (f > 0) { ctx.fillStyle = '#5c6b7a'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'right'; ctx.fillText((mx * f).toFixed(1), pL - 6, y + 3); }
+  });
+
+  // area debajo de la curva acumulada
+  var grad = ctx.createLinearGradient(0, pT, 0, pT + cH);
+  grad.addColorStop(0, 'rgba(0,122,255,.25)'); grad.addColorStop(1, 'rgba(0,122,255,.02)');
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pT + cH);
+  pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+  ctx.lineTo(pts[pts.length - 1].x, pT + cH); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  pts.forEach(function(p, i) { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+  ctx.strokeStyle = '#007aff'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+
+  pts.forEach(function(p, i) {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#007aff'; ctx.stroke();
+    var d = new Date(days[i]);
+    if ((days.length - 1 - i) % labelEvery === 0) {
+      ctx.fillStyle = '#5c6b7a'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(d.getDate() + '/' + (d.getMonth() + 1), p.x, H - 8);
+    }
+  });
+  // el total final, bien visible al lado del ultimo punto (para ver de un vistazo cuanto se lleva acumulado)
+  var last = pts[pts.length - 1];
+  ctx.fillStyle = '#007aff'; ctx.font = '700 12px sans-serif'; ctx.textAlign = last.x > W - 50 ? 'right' : 'left';
+  ctx.fillText(last.v.toFixed(1) + 't', last.x > W - 50 ? last.x - 6 : last.x + 6, Math.max(last.y - 8, pT + 10));
+
+  canvas._days = days; canvas._cum = cum; canvas._pL = pL; canvas._stepX = stepX || cW;
+  canvas.onclick = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var idx2 = Math.round((x - canvas._pL) / (canvas._stepX || 1));
+    if (idx2 >= 0 && canvas._days && idx2 < canvas._days.length) {
+      var day = canvas._days[idx2];
+      var d2 = new Date(day);
+      var lbl = d2.getDate() + '/' + (d2.getMonth() + 1) + '/' + d2.getFullYear();
+      showChartTooltip(canvas, x, 10, '<b>' + lbl + '</b><br>Acumulado: ' + canvas._cum[idx2].toFixed(3) + 't');
+      setTimeout(hideChartTooltip, 3000);
+    }
+  };
+}
 
 function renderDonut2(canvasId, legId, byKey, onClick) {
   var canvas = document.getElementById(canvasId);
@@ -3390,9 +3646,9 @@ function renderDonut2(canvasId, legId, byKey, onClick) {
     return;
   }
   canvas.style.display='block';
-  var size = 100;
+  var size = 72;   // mas chico: esta tarjeta ahora comparte fila con otras dos
   canvas.width=size; canvas.height=size;
-  canvas.style.cssText='width:'+size+'px;height:'+size+'px;float:left;margin-right:10px;flex-shrink:0';
+  canvas.style.cssText='width:'+size+'px;height:'+size+'px;float:left;margin-right:8px;flex-shrink:0';
   var ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,size,size);
   var cx=size/2, cy=size/2, r=size/2-3, start=-Math.PI/2;
@@ -3403,16 +3659,15 @@ function renderDonut2(canvasId, legId, byKey, onClick) {
     start+=a;
   });
   ctx.beginPath();ctx.arc(cx,cy,r*.56,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-  ctx.fillStyle='#1a2332';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#1a2332';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(total.toFixed(1)+'t',cx,cy);
   leg.style.cssText='overflow:hidden;min-height:'+size+'px;flex:1';
-  ents.forEach(function(e,i){
+  ents.slice(0,4).forEach(function(e,i){
     var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:4px;margin-bottom:5px;cursor:pointer;border-radius:4px;padding:2px 4px';
-    row.innerHTML='<div style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:'+COLORS[i%COLORS.length]+'"></div>'+
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#374151">'+esc(e.k)+'</span>'+
-      '<span style="font-size:11px;font-weight:700;color:#007aff;flex-shrink:0">'+e.v.toFixed(2)+'t</span>'+
-      '<span style="font-size:10px;color:#8e9aab;flex-shrink:0;margin-left:2px">'+Math.round((e.v/total)*100)+'%</span>';
+    row.style.cssText='display:flex;align-items:center;gap:3px;margin-bottom:3px;cursor:pointer;border-radius:4px;padding:1px 3px';
+    row.innerHTML='<div style="width:7px;height:7px;border-radius:2px;flex-shrink:0;background:'+COLORS[i%COLORS.length]+'"></div>'+
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#374151">'+esc(e.k)+'</span>'+
+      '<span style="font-size:10px;font-weight:700;color:#007aff;flex-shrink:0">'+Math.round((e.v/total)*100)+'%</span>';
     row.addEventListener('click',function(){if(onClick)onClick(e.k);});
     row.addEventListener('mouseover',function(){this.style.background='#f0f2f5';});
     row.addEventListener('mouseout',function(){this.style.background='';});
@@ -3425,8 +3680,8 @@ function _shortProdLabel(k) {
   return m ? (parseFloat(m[1].replace(',', '.')) + 'mm') : (k || '');
 }
 
-function renderBars2(containerId, byKey, total, onClick) {
-  var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+function renderBars2(containerId, byKey, total, onClick, limit, labelFn) {
+  var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,limit||15);
   var mx=ents.length?ents[0][1]:1;
   var container=document.getElementById(containerId);
   if(!container)return;
@@ -3437,7 +3692,7 @@ function renderBars2(containerId, byKey, total, onClick) {
     var row=document.createElement('div');
     row.className='pbi-bar-row';
     row.style.cursor='pointer';
-    row.innerHTML='<span class="pbi-bar-lbl" title="'+esc(e[0])+'">'+esc(_shortProdLabel(e[0]))+'</span>'+
+    row.innerHTML='<span class="pbi-bar-lbl" title="'+esc(e[0])+'">'+esc(labelFn?labelFn(e[0]):e[0])+'</span>'+
       '<div class="pbi-bar-track"><div class="pbi-bar-fill" style="width:'+(Math.round((e[1]/mx)*84)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(2)+'t</div></div>'+
       '<span class="pbi-bar-val">'+pct+'%</span>';
     row.addEventListener('click',function(){if(onClick)onClick(e[0]);});
