@@ -334,10 +334,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
 .upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 
-/* "Detalle de coils" y "Estado de Consignments": lado a lado en pantallas anchas (comparten el mismo filtro de producto).
+/* "Detalle de coils" y "Estado de Consignments": lado a lado en pantallas anchas, mismo alto
+   (comparten el mismo filtro de producto de arriba, asi que no hace falta un set de botones en cada una).
    En un celular angosto se apilan, porque no entran comodos uno al lado del otro. */
 #cons-side-by-side{display:grid;grid-template-columns:1fr;gap:10px}
-@media (min-width:640px){#cons-side-by-side{grid-template-columns:1fr 1fr;align-items:start}}
+#cons-side-by-side .cons-card{display:flex;flex-direction:column}
+#cons-list,#saved-cons-list{max-height:560px;overflow-y:auto}
+@media (min-width:640px){#cons-side-by-side{grid-template-columns:1fr 1fr;align-items:stretch}}
 
 </style>
 </head>
@@ -483,7 +486,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div style="text-align:center">
       <div id="hero-ton-num" class="hero-num" style="font-size:40px;font-weight:900;color:#007aff;line-height:1.1">0.000</div>
       <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">TONELADAS HOY</div>
-      <div id="hero-ton-goal" onclick="editDailyGoal()" style="font-size:11px;color:#007aff;margin-top:3px;cursor:pointer;font-weight:600">Meta: — &#9998;</div>
     </div>
     <div style="text-align:center;border-left:1.5px solid #e5eaf0;border-right:1.5px solid #e5eaf0">
       <div id="hero-cnt-num" class="hero-num" style="font-size:40px;font-weight:900;color:#34c759;line-height:1.1">0</div>
@@ -494,14 +496,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div id="hero-cons-num" class="hero-num" style="font-size:40px;font-weight:900;color:#af52de;line-height:1.1">0/0</div>
       <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">CONSIGNMENTS COMPLETOS</div>
       <div id="hero-cons-sub" style="font-size:11px;color:#8e9aab;margin-top:3px">&mdash;</div>
-    </div>
-  </div>
-  <div id="hero-goal-wrap" style="margin-top:14px;display:none">
-    <div style="background:#eef2f7;border-radius:7px;height:16px;overflow:hidden"><div id="hero-goal-bar" style="height:100%;border-radius:7px;transition:width .4s;width:0%"></div></div>
-    <div style="display:flex;justify-content:space-between;margin-top:5px;flex-wrap:wrap;gap:4px">
-      <span id="hero-goal-pct" style="font-size:14px;font-weight:800"></span>
-      <span id="hero-goal-remain" style="font-size:12px;color:#5c6b7a;font-weight:600"></span>
-      <span id="hero-goal-eta" style="font-size:12px;color:#5c6b7a;font-weight:600"></span>
     </div>
   </div>
 </div>
@@ -850,7 +844,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
     <div class="cons-card" style="margin-bottom:0">
       <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
-      <div id="cons-status-chips" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
       <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
     </div>
   </div>
@@ -1731,17 +1724,6 @@ function renderWOChipsDash() {
 }
 
 // ============ RESUMEN DEL DIA (hero) + SEMAFORO POR WO + QUE FALTA + MODO PANTALLA GRANDE ============
-var _dailyGoal = 0;
-try { _dailyGoal = parseFloat(localStorage.getItem('coil_daily_goal') || '0') || 0; } catch(e) {}
-
-function saveDailyGoal() { try { localStorage.setItem('coil_daily_goal', String(_dailyGoal)); } catch(e) {} }
-
-function editDailyGoal() {
-  var v = parseFloat(String(prompt('Meta de toneladas para hoy:', _dailyGoal || '')).replace(',', '.'));
-  if (isFinite(v) && v > 0) { _dailyGoal = v; saveDailyGoal(); renderResumenDia(); }
-  else if (v === 0 || String(v) === 'NaN') { /* cancelado o vacio: no toca nada */ }
-}
-
 function renderResumenDia() {
   var heroTon = document.getElementById('hero-ton-num');
   if (!heroTon) return; // el hero no esta en esta pagina
@@ -1769,31 +1751,6 @@ function renderResumenDia() {
   document.getElementById('hero-cons-num').textContent = completos + '/' + refKeys.length;
   document.getElementById('hero-cons-sub').textContent = refKeys.length ? Math.round(completos / refKeys.length * 100) + '% del total' : 'sin consignments cargados';
 
-  // Meta del dia
-  var goalEl = document.getElementById('hero-ton-goal');
-  var wrap = document.getElementById('hero-goal-wrap');
-  if (_dailyGoal > 0) {
-    goalEl.innerHTML = 'Meta: ' + _dailyGoal.toFixed(1) + 't &#9998;';
-    wrap.style.display = 'block';
-    var pct = Math.min(Math.round(todayTon / _dailyGoal * 100), 150);
-    var color = pct >= 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
-    document.getElementById('hero-goal-bar').style.width = Math.min(pct, 100) + '%';
-    document.getElementById('hero-goal-bar').style.background = color;
-    document.getElementById('hero-goal-pct').textContent = pct + '%';
-    document.getElementById('hero-goal-pct').style.color = color;
-    var remain = Math.max(0, _dailyGoal - todayTon);
-    document.getElementById('hero-goal-remain').textContent = remain > 0 ? remain.toFixed(3) + 't restantes' : '&#10003; Meta alcanzada';
-    var etaEl = document.getElementById('hero-goal-eta');
-    var now = new Date(), hoursElapsed = now.getHours() + now.getMinutes() / 60;
-    if (remain > 0 && hoursElapsed > 0 && todayTon > 0) {
-      var rate = todayTon / hoursElapsed;
-      var finish = new Date(now.getTime() + (remain / rate) * 3600000);
-      etaEl.textContent = 'Fin estimado: ' + finish.getHours() + ':' + String(finish.getMinutes()).padStart(2, '0');
-    } else { etaEl.textContent = ''; }
-  } else {
-    goalEl.innerHTML = 'Meta: — &#9998; (tocar para poner una)';
-    wrap.style.display = 'none';
-  }
 }
 
 function renderWoSemaforo() {
@@ -2645,37 +2602,31 @@ function consStatusHTML(where) {
   var refs = {}, order = [];
   srcRows.forEach(function(r) {
     var k = r.referencia || 'Sin ref';
-    if (!refs[k]) { refs[k] = {items: [], fecha: '', prodCount: {}, rawProdCount: {}}; order.push(k); }
+    if (!refs[k]) { refs[k] = {items: [], fecha: '', rawProdCount: {}}; order.push(k); }
     refs[k].items.push(r);
     if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
-    var pk = _consProdKey(r);
-    refs[k].prodCount[pk] = (refs[k].prodCount[pk] || 0) + 1;
     var raw = String(r.producto || '').trim() || 'Sin producto';
     refs[k].rawProdCount[raw] = (refs[k].rawProdCount[raw] || 0) + 1;
   });
-  // Se ordena y se agrupa por el numero+mm (el que mas se repite en ese consignment) y, dentro del
-  // mismo grupo, por la fecha que trae el PDF -- asi se puede seguir la trazabilidad en el orden que llegaron.
+  // Ordenado por la fecha que trae el PDF, del mas reciente al mas antiguo.
   // El nombre completo (ej. "9.0 Ductile Rod") se guarda aparte, solo para mostrarlo en cada tarjeta.
   order.forEach(function(k) {
-    var pc = refs[k].prodCount, best = '', bestN = -1;
-    Object.keys(pc).forEach(function(p) { if (pc[p] > bestN) { bestN = pc[p]; best = p; } });
-    refs[k].producto = best;
     var rc = refs[k].rawProdCount, rbest = '', rbestN = -1;
     Object.keys(rc).forEach(function(p) { if (rc[p] > rbestN) { rbestN = rc[p]; rbest = p; } });
     refs[k].productoCompleto = rbest;
     refs[k].fechaOrden = _fechaOrdenable(refs[k].fecha);
   });
   var keys = order.slice().sort(function(a, b) {
-    var A = refs[a], B = refs[b];
-    if (A.producto !== B.producto) return A.producto < B.producto ? -1 : 1;
-    if (A.fechaOrden !== B.fechaOrden) return A.fechaOrden - B.fechaOrden;
-    return 0;
+    var A = refs[a].fechaOrden, B = refs[b].fechaOrden;
+    if (A === Infinity && B === Infinity) return 0;
+    if (A === Infinity) return 1;   // sin fecha valida: siempre al final
+    if (B === Infinity) return -1;
+    return B - A;                   // mas reciente primero
   });
   var shown = _consStatusShown[where] || 10;
   var totalTon = srcRows.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
   var totalScanned = srcRows.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
   var html = '<div style="font-size:22px;font-weight:800;color:#1a2332;line-height:1.35;margin-bottom:10px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' &middot; ' + totalTon.toFixed(3) + ' t &middot; ' + totalScanned + '/' + srcRows.length + ' escaneados' + (where === 'tab' && _consProdFilter ? '<br><span style="font-size:14px;font-weight:700;color:#007aff">' + esc(_consProdFilter) + '</span>' : '') + '</div>';
-  var lastProd = null;
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
     var ton = g.items.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
@@ -2688,9 +2639,7 @@ function consStatusHTML(where) {
       : '';
     var castLbl = _refCastLabel(g.items);
     var detailLine = [castLbl, g.productoCompleto].filter(Boolean).join(' &middot; ');
-    var groupHdr = '';
-    if (g.producto !== lastProd) { groupHdr = '<div style="font-size:11px;font-weight:800;color:#007aff;text-transform:uppercase;margin:' + (lastProd === null ? '0' : '14px') + ' 0 6px">' + esc(g.producto) + '</div>'; lastProd = g.producto; }
-    return groupHdr + '<div style="margin-bottom:12px">' +
+    return '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div><span style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(ref) + '</span>' +
           (g.fecha ? ' <span style="font-size:11px;color:#8e9aab">' + esc(g.fecha) + '</span>' : '') +
@@ -2818,13 +2767,7 @@ function renderSavedCons() {
   // ---- chips de producto ----
   var pf = byId('cons-prod-filter'); if (pf) pf.style.display = 'flex';
   var chips = byId('cons-prod-chips');
-  if (chips) chips.innerHTML = [''].concat(prodOrder).map(function(k) {
-    var on = (k === '' && !_consProdFilter) || k === _consProdFilter;
-    return '<button data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:' + (on ? '#007aff' : '#f2f2f7') + ';color:' + (on ? '#fff' : '#8e8e93') + '">' + (k === '' ? 'Todos' : esc(k)) + '</button>';
-  }).join('');
-  // mismos productos, con el estilo con borde de la imagen de referencia, arriba de "Estado de Consignments"
-  var statusChips = byId('cons-status-chips');
-  if (statusChips) { statusChips.style.display = 'flex'; statusChips.innerHTML = prodChipsHTML(prodOrder, _consProdFilter); }
+  if (chips) chips.innerHTML = prodChipsHTML(prodOrder, _consProdFilter);
 
   // ---- botones de estado ----
   ['all', 'ok', 'miss', 'extra'].forEach(function(f) {
@@ -2858,7 +2801,13 @@ function renderSavedCons() {
       if (_consFilter === 'ok') return isCoilScanned(r.lot_no);
       if (_consFilter === 'miss') return !isCoilScanned(r.lot_no);
       return true;
-    }).slice().reverse();
+    }).slice().sort(function(a, b) {
+      var A = _fechaOrdenable(a.fecha), B = _fechaOrdenable(b.fecha);
+      if (A === Infinity && B === Infinity) return 0;
+      if (A === Infinity) return 1;
+      if (B === Infinity) return -1;
+      return B - A;   // mas reciente primero, igual que "Estado de Consignments"
+    });
     total = rows.length;
     html = rows.slice(0, _consShown).map(function(r) {
       var ok = isCoilScanned(r.lot_no);
@@ -3471,6 +3420,11 @@ function renderDonut2(canvasId, legId, byKey, onClick) {
   });
 }
 
+function _shortProdLabel(k) {
+  var m = String(k || '').match(/(\d+(?:[.,]\d+)?)/);
+  return m ? (parseFloat(m[1].replace(',', '.')) + 'mm') : (k || '');
+}
+
 function renderBars2(containerId, byKey, total, onClick) {
   var ents=Object.keys(byKey).map(function(k){return[k,byKey[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
   var mx=ents.length?ents[0][1]:1;
@@ -3483,7 +3437,7 @@ function renderBars2(containerId, byKey, total, onClick) {
     var row=document.createElement('div');
     row.className='pbi-bar-row';
     row.style.cursor='pointer';
-    row.innerHTML='<span class="pbi-bar-lbl" title="'+esc(e[0])+'">'+esc(e[0])+'</span>'+
+    row.innerHTML='<span class="pbi-bar-lbl" title="'+esc(e[0])+'">'+esc(_shortProdLabel(e[0]))+'</span>'+
       '<div class="pbi-bar-track"><div class="pbi-bar-fill" style="width:'+(Math.round((e[1]/mx)*84)+10)+'%;background:'+COLORS[i%COLORS.length]+'">'+e[1].toFixed(2)+'t</div></div>'+
       '<span class="pbi-bar-val">'+pct+'%</span>';
     row.addEventListener('click',function(){if(onClick)onClick(e[0]);});
