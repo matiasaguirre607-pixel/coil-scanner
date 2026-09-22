@@ -334,6 +334,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
 .upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 
+/* "Detalle de coils" y "Estado de Consignments": lado a lado en pantallas anchas (comparten el mismo filtro de producto).
+   En un celular angosto se apilan, porque no entran comodos uno al lado del otro. */
+#cons-side-by-side{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){#cons-side-by-side{grid-template-columns:1fr 1fr;align-items:start}}
+
 </style>
 </head>
 <body>
@@ -505,12 +510,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pbi-card" id="dash-wo-semaforo" style="margin-bottom:10px">
   <div class="pbi-card-title">Progreso por WO</div>
   <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs activas</div></div>
-</div>
-
-<!-- QUE FALTA (consignments casi completos, siempre visible) -->
-<div class="pbi-card" id="dash-que-falta" style="margin-bottom:10px">
-  <div class="pbi-card-title">Que falta</div>
-  <div id="que-falta-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Cargando...</div></div>
 </div>
 
 <div id="dash-more">
@@ -839,19 +838,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div id="cons-prod-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
 
-  <!-- Match list -->
-  <div class="cons-card" id="cons-list-card" style="display:none">
-    <div class="cons-hdr">
-      Detalle de coils
-      <span id="cons-ref-lbl" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none"></span>
+  <!-- Detalle de coils + Estado de Consignments: lado a lado, comparten el filtro de producto de arriba -->
+  <div id="cons-side-by-side">
+    <div class="cons-card" id="cons-list-card" style="display:none;margin-bottom:0">
+      <div class="cons-hdr">
+        Detalle de coils
+        <span id="cons-ref-lbl" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none"></span>
+      </div>
+      <div id="cons-list"></div>
     </div>
-    <div id="cons-list"></div>
-  </div>
 
-  <div class="cons-card">
-    <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
-    <div id="cons-status-chips" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-    <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
+    <div class="cons-card" style="margin-bottom:0">
+      <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
+      <div id="cons-status-chips" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
+    </div>
   </div>
 
 
@@ -1824,49 +1825,6 @@ function renderWoSemaforo() {
   if (rows.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">Ver las ' + rows.length + ' WOs en Produccion &rarr;</div>';
 }
 
-function queFaltaJump(ref, prod) {
-  goTab('cons');
-  _consProdFilter = prod || '';
-  _consFilter = 'miss';
-  _consShown = 10;
-  renderSavedCons();
-  runCrossCheck();
-}
-
-function renderQueFalta() {
-  var el = document.getElementById('que-falta-list');
-  if (!el) return;
-  refreshScannedSet();
-  var refs = {}, order = [];
-  (_consignments || []).forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
-    if (!refs[k]) { refs[k] = {items: [], prodCount: {}}; order.push(k); }
-    refs[k].items.push(r);
-    var pk = _consProdKey(r);
-    refs[k].prodCount[pk] = (refs[k].prodCount[pk] || 0) + 1;
-  });
-  var candidatos = order.map(function(k) {
-    var g = refs[k], n = g.items.length;
-    var sc = g.items.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
-    var pc = g.prodCount, best = '', bestN = -1;
-    Object.keys(pc).forEach(function(p) { if (pc[p] > bestN) { bestN = pc[p]; best = p; } });
-    return {ref: k, n: n, sc: sc, pct: n > 0 ? sc / n * 100 : 0, producto: best};
-  }).filter(function(c) { return c.n > 0 && c.pct >= 90 && c.pct < 100; })
-    .sort(function(a, b) { return b.pct - a.pct; });
-  if (!candidatos.length) {
-    el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin consignments a punto de terminar (90%+)</div>';
-    return;
-  }
-  el.innerHTML = candidatos.slice(0, 5).map(function(c) {
-    var falta = c.n - c.sc;
-    return '<div onclick="queFaltaJump(\'' + _ceAttr(c.ref) + '\', \'' + _ceAttr(c.producto) + '\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0f2f5">' +
-      '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(c.ref) + '</div>' +
-      '<div style="font-size:11px;color:#8e9aab;margin-top:1px">' + esc(c.producto) + ' &middot; faltan ' + falta + ' de ' + c.n + '</div></div>' +
-      '<span style="font-size:14px;font-weight:800;color:#ff9500;flex-shrink:0">' + Math.round(c.pct) + '%</span>' +
-    '</div>';
-  }).join('');
-}
-
 var _tvMode = false;
 try { _tvMode = localStorage.getItem('coil_tv_mode') === '1'; } catch(e) {}
 
@@ -1938,7 +1896,6 @@ function renderDash() {
   // Resumen del dia (hero), semaforo de WOs y que falta -- siempre sobre TODOS los registros/consignments, no sobre el filtro de abajo
   renderResumenDia();
   renderWoSemaforo();
-  renderQueFalta();
   applyTvMode();
   // Timelines
   renderTimeline(data);
@@ -2566,8 +2523,14 @@ function prodChipsHTML(prodOrder, selected) {
   }).join('');
 }
 
+// Antes esto era el texto completo ("COIL REIN 9mm" / "9.0 DUCTILE ROD"): dos formas de nombrar
+// EL MISMO diametro no se agrupaban juntas. Ahora la clave es solo el numero + mm ("9MM"),
+// asi el filtro de producto agrupa igual sin importar si el nombre viene de una etiqueta o de un PDF.
 function _consProdKey(r) {
-  return String(r.producto || '').trim().toUpperCase() || 'SIN PRODUCTO';
+  var m = String(r.producto || '').match(/(\d+(?:[.,]\d+)?)/);
+  if (!m) return 'SIN PRODUCTO';
+  var n = parseFloat(m[1].replace(',', '.'));
+  return isFinite(n) ? (n + 'MM') : 'SIN PRODUCTO';
 }
 
 // Trae TODAS las filas en paginas de 1000 usando limit/offset (sin headers custom -> sin problemas de CORS).
@@ -2682,18 +2645,24 @@ function consStatusHTML(where) {
   var refs = {}, order = [];
   srcRows.forEach(function(r) {
     var k = r.referencia || 'Sin ref';
-    if (!refs[k]) { refs[k] = {items: [], fecha: '', prodCount: {}}; order.push(k); }
+    if (!refs[k]) { refs[k] = {items: [], fecha: '', prodCount: {}, rawProdCount: {}}; order.push(k); }
     refs[k].items.push(r);
     if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
     var pk = _consProdKey(r);
     refs[k].prodCount[pk] = (refs[k].prodCount[pk] || 0) + 1;
+    var raw = String(r.producto || '').trim() || 'Sin producto';
+    refs[k].rawProdCount[raw] = (refs[k].rawProdCount[raw] || 0) + 1;
   });
-  // Se ordena por producto (el que mas se repite en ese consignment) y, dentro del mismo producto,
-  // por la fecha que trae el PDF -- asi se puede seguir la trazabilidad en el orden que llegaron.
+  // Se ordena y se agrupa por el numero+mm (el que mas se repite en ese consignment) y, dentro del
+  // mismo grupo, por la fecha que trae el PDF -- asi se puede seguir la trazabilidad en el orden que llegaron.
+  // El nombre completo (ej. "9.0 Ductile Rod") se guarda aparte, solo para mostrarlo en cada tarjeta.
   order.forEach(function(k) {
     var pc = refs[k].prodCount, best = '', bestN = -1;
     Object.keys(pc).forEach(function(p) { if (pc[p] > bestN) { bestN = pc[p]; best = p; } });
     refs[k].producto = best;
+    var rc = refs[k].rawProdCount, rbest = '', rbestN = -1;
+    Object.keys(rc).forEach(function(p) { if (rc[p] > rbestN) { rbestN = rc[p]; rbest = p; } });
+    refs[k].productoCompleto = rbest;
     refs[k].fechaOrden = _fechaOrdenable(refs[k].fecha);
   });
   var keys = order.slice().sort(function(a, b) {
@@ -2718,7 +2687,7 @@ function consStatusHTML(where) {
       ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
       : '';
     var castLbl = _refCastLabel(g.items);
-    var detailLine = [castLbl, g.producto].filter(Boolean).join(' &middot; ');
+    var detailLine = [castLbl, g.productoCompleto].filter(Boolean).join(' &middot; ');
     var groupHdr = '';
     if (g.producto !== lastProd) { groupHdr = '<div style="font-size:11px;font-weight:800;color:#007aff;text-transform:uppercase;margin:' + (lastProd === null ? '0' : '14px') + ' 0 6px">' + esc(g.producto) + '</div>'; lastProd = g.producto; }
     return groupHdr + '<div style="margin-bottom:12px">' +
