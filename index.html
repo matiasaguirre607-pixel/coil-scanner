@@ -467,6 +467,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pane" id="p-dash">
+
+<!-- RESUMEN DEL DIA (siempre visible, no depende de los filtros de abajo) -->
+<div class="pbi-card" id="dash-hero" style="margin-bottom:10px;background:linear-gradient(135deg,#f0f5ff,#ffffff);border:2px solid #dbe6ff">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+    <div class="pbi-card-title" style="margin-bottom:0">Resumen del dia</div>
+    <button id="tv-mode-btn" onclick="toggleTvMode()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #007aff;background:#fff;color:#007aff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#9974; Modo pantalla grande</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px">
+    <div style="text-align:center">
+      <div id="hero-ton-num" class="hero-num" style="font-size:40px;font-weight:900;color:#007aff;line-height:1.1">0.000</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">TONELADAS HOY</div>
+      <div id="hero-ton-goal" onclick="editDailyGoal()" style="font-size:11px;color:#007aff;margin-top:3px;cursor:pointer;font-weight:600">Meta: — &#9998;</div>
+    </div>
+    <div style="text-align:center;border-left:1.5px solid #e5eaf0;border-right:1.5px solid #e5eaf0">
+      <div id="hero-cnt-num" class="hero-num" style="font-size:40px;font-weight:900;color:#34c759;line-height:1.1">0</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">COILS HOY</div>
+      <div id="hero-cnt-sub" style="font-size:11px;color:#8e9aab;margin-top:3px">&mdash;</div>
+    </div>
+    <div style="text-align:center">
+      <div id="hero-cons-num" class="hero-num" style="font-size:40px;font-weight:900;color:#af52de;line-height:1.1">0/0</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">CONSIGNMENTS COMPLETOS</div>
+      <div id="hero-cons-sub" style="font-size:11px;color:#8e9aab;margin-top:3px">&mdash;</div>
+    </div>
+  </div>
+  <div id="hero-goal-wrap" style="margin-top:14px;display:none">
+    <div style="background:#eef2f7;border-radius:7px;height:16px;overflow:hidden"><div id="hero-goal-bar" style="height:100%;border-radius:7px;transition:width .4s;width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:5px;flex-wrap:wrap;gap:4px">
+      <span id="hero-goal-pct" style="font-size:14px;font-weight:800"></span>
+      <span id="hero-goal-remain" style="font-size:12px;color:#5c6b7a;font-weight:600"></span>
+      <span id="hero-goal-eta" style="font-size:12px;color:#5c6b7a;font-weight:600"></span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESO POR WO (semaforo, siempre visible) -->
+<div class="pbi-card" id="dash-wo-semaforo" style="margin-bottom:10px">
+  <div class="pbi-card-title">Progreso por WO</div>
+  <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs activas</div></div>
+</div>
+
+<!-- QUE FALTA (consignments casi completos, siempre visible) -->
+<div class="pbi-card" id="dash-que-falta" style="margin-bottom:10px">
+  <div class="pbi-card-title">Que falta</div>
+  <div id="que-falta-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Cargando...</div></div>
+</div>
+
+<div id="dash-more">
 <!-- FILTER BAR (segmentador estilo Excel) -->
 <div class="pbi-hdr">
   <!-- Fecha -->
@@ -545,7 +592,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <span style="color:#c7c7cc">■ Sin maq</span>
     </div>
   </div>
-  <canvas id="db-timeline" style="width:100%;height:200px;display:block"></canvas>
+  <canvas id="db-timeline" style="width:100%;height:130px;display:block"></canvas>
 </div>
 
 <!-- SEMANA ACTUAL VS ANTERIOR -->
@@ -630,12 +677,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="db-cast-prog"></div>
 </div>
 
-<!-- CONSIGNMENT SUMMARY IN DASHBOARD -->
-<div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Estado de Consignments</div>
-  <div id="db-cons-summary"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Carga un consignment en la tab Consignment</div></div>
-</div>
-
 <!-- PIVOT -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">Pivot — Producto × WO</div>
@@ -659,6 +700,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <button class="exp-btn" id="btn-share" style="padding:8px 14px;font-size:12px">&#128228; Compartir</button>
   </div>
 </div>
+</div><!-- /dash-more -->
 
 
 <!-- PANE: PRODUCCION -->
@@ -1229,6 +1271,14 @@ function findDuplicateCandidate(coil, cast, peso) {
 }
 
 function _castKeyCv(v) { return String(v || '').trim().split('-')[0].replace(/\D/g, ''); }
+
+function _refCastLabel(items) {
+  var seen = {}, order = [];
+  items.forEach(function(r) { var k = _castKeyCv(r.cast_no); if (k && !seen[k]) { seen[k] = 1; order.push(k); } });
+  if (!order.length) return '';
+  var shown2 = order.slice(0, 3).join(', ');
+  return 'Cast ' + shown2 + (order.length > 3 ? ' +' + (order.length - 3) + ' mas' : '');
+}
 function _numOrCv(v, d) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : d; }
 function _sizeScannedCv(p) { var m = String(p || '').match(/(\d+(?:[.,]\d+)?)\s*mm/i); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
 function _sizeConsCv(p) { var m = String(p || '').match(/^\s*(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
@@ -1679,7 +1729,166 @@ function renderWOChipsDash() {
   });
 }
 
+// ============ RESUMEN DEL DIA (hero) + SEMAFORO POR WO + QUE FALTA + MODO PANTALLA GRANDE ============
+var _dailyGoal = 0;
+try { _dailyGoal = parseFloat(localStorage.getItem('coil_daily_goal') || '0') || 0; } catch(e) {}
+
+function saveDailyGoal() { try { localStorage.setItem('coil_daily_goal', String(_dailyGoal)); } catch(e) {} }
+
+function editDailyGoal() {
+  var v = parseFloat(String(prompt('Meta de toneladas para hoy:', _dailyGoal || '')).replace(',', '.'));
+  if (isFinite(v) && v > 0) { _dailyGoal = v; saveDailyGoal(); renderResumenDia(); }
+  else if (v === 0 || String(v) === 'NaN') { /* cancelado o vacio: no toca nada */ }
+}
+
+function renderResumenDia() {
+  var heroTon = document.getElementById('hero-ton-num');
+  if (!heroTon) return; // el hero no esta en esta pagina
+  var todayStr = new Date().toDateString();
+  var todayData = (records || []).filter(function(r) { return r.created_at && new Date(r.created_at).toDateString() === todayStr; });
+  var yestStr = (function() { var d = new Date(); d.setDate(d.getDate() - 1); return d.toDateString(); })();
+  var yestData = (records || []).filter(function(r) { return r.created_at && new Date(r.created_at).toDateString() === yestStr; });
+  var todayTon = sumTon(todayData);
+
+  heroTon.textContent = todayTon.toFixed(3);
+  document.getElementById('hero-cnt-num').textContent = todayData.length;
+  var yTon = sumTon(yestData);
+  document.getElementById('hero-cnt-sub').textContent = yestData.length ? (todayData.length >= yestData.length ? '▲' : '▼') + ' ' + yestData.length + ' ayer' : 'sin datos de ayer';
+
+  // Consignments completos (sobre todo lo cargado, sin filtrar por producto)
+  var refs = {};
+  (_consignments || []).forEach(function(r) {
+    var k = r.referencia || 'Sin ref';
+    if (!refs[k]) refs[k] = {n: 0, sc: 0};
+    refs[k].n++;
+    if (isCoilScanned(r.lot_no)) refs[k].sc++;
+  });
+  var refKeys = Object.keys(refs);
+  var completos = refKeys.filter(function(k) { return refs[k].n > 0 && refs[k].sc === refs[k].n; }).length;
+  document.getElementById('hero-cons-num').textContent = completos + '/' + refKeys.length;
+  document.getElementById('hero-cons-sub').textContent = refKeys.length ? Math.round(completos / refKeys.length * 100) + '% del total' : 'sin consignments cargados';
+
+  // Meta del dia
+  var goalEl = document.getElementById('hero-ton-goal');
+  var wrap = document.getElementById('hero-goal-wrap');
+  if (_dailyGoal > 0) {
+    goalEl.innerHTML = 'Meta: ' + _dailyGoal.toFixed(1) + 't &#9998;';
+    wrap.style.display = 'block';
+    var pct = Math.min(Math.round(todayTon / _dailyGoal * 100), 150);
+    var color = pct >= 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
+    document.getElementById('hero-goal-bar').style.width = Math.min(pct, 100) + '%';
+    document.getElementById('hero-goal-bar').style.background = color;
+    document.getElementById('hero-goal-pct').textContent = pct + '%';
+    document.getElementById('hero-goal-pct').style.color = color;
+    var remain = Math.max(0, _dailyGoal - todayTon);
+    document.getElementById('hero-goal-remain').textContent = remain > 0 ? remain.toFixed(3) + 't restantes' : '&#10003; Meta alcanzada';
+    var etaEl = document.getElementById('hero-goal-eta');
+    var now = new Date(), hoursElapsed = now.getHours() + now.getMinutes() / 60;
+    if (remain > 0 && hoursElapsed > 0 && todayTon > 0) {
+      var rate = todayTon / hoursElapsed;
+      var finish = new Date(now.getTime() + (remain / rate) * 3600000);
+      etaEl.textContent = 'Fin estimado: ' + finish.getHours() + ':' + String(finish.getMinutes()).padStart(2, '0');
+    } else { etaEl.textContent = ''; }
+  } else {
+    goalEl.innerHTML = 'Meta: — &#9998; (tocar para poner una)';
+    wrap.style.display = 'none';
+  }
+}
+
+function renderWoSemaforo() {
+  var el = document.getElementById('wo-semaforo-list');
+  if (!el) return;
+  var wos = unique((records || []).map(function(r) { return r.wo; }).filter(Boolean)).filter(function(w) { return !isWOClosed(w); });
+  if (!wos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs activas</div>'; return; }
+  var rows = wos.map(function(wo) {
+    var woRecs = records.filter(function(r) { return r.wo === wo; });
+    var entrada = sumTon(woRecs);
+    var producido = (_produccion || []).filter(function(p) { return p.wo === wo; }).reduce(function(s, p) { return s + (parseFloat(p.toneladas_producidas) || 0); }, 0);
+    var pct = entrada > 0 ? Math.round(producido / entrada * 100) : 0;
+    var prods = unique(woRecs.map(function(r) { return normalizeProductoKey(r.producto); }).filter(Boolean));
+    return {wo: wo, entrada: entrada, producido: producido, pct: pct, coils: woRecs.length, prods: prods};
+  }).sort(function(a, b) { return a.pct - b.pct; });
+  var shown = rows.slice(0, 6);
+  el.innerHTML = shown.map(function(r) {
+    var color = r.pct >= 100 ? '#34c759' : r.pct >= 75 ? '#007aff' : r.pct >= 50 ? '#ff9500' : '#ff3b30';
+    return '<div onclick="goTab(\'prod\')" style="cursor:pointer;padding:9px 0;border-bottom:1px solid #f0f2f5">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div style="min-width:0"><span style="font-size:13px;font-weight:700;color:#1a2332">WO: ' + esc(r.wo) + '</span> ' +
+          r.prods.slice(0, 2).map(function(p) { return '<span style="font-size:10px;background:#f0f5ff;color:#007aff;border-radius:4px;padding:1px 5px;margin-left:3px">' + esc(p) + '</span>'; }).join('') + '</div>' +
+        '<span style="font-size:13px;font-weight:800;color:' + color + ';flex-shrink:0">' + r.pct + '%</span>' +
+      '</div>' +
+      '<div style="background:#f0f2f5;border-radius:4px;height:7px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + color + ';width:' + Math.min(r.pct, 100) + '%"></div></div>' +
+      '<div style="font-size:11px;color:#8e9aab;margin-top:3px">' + r.entrada.toFixed(3) + 't escaneadas &middot; ' + r.producido.toFixed(3) + 't producidas &middot; ' + r.coils + ' coils</div>' +
+    '</div>';
+  }).join('');
+  if (rows.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">Ver las ' + rows.length + ' WOs en Produccion &rarr;</div>';
+}
+
+function queFaltaJump(ref, prod) {
+  goTab('cons');
+  _consProdFilter = prod || '';
+  _consFilter = 'miss';
+  _consShown = 10;
+  renderSavedCons();
+  runCrossCheck();
+}
+
+function renderQueFalta() {
+  var el = document.getElementById('que-falta-list');
+  if (!el) return;
+  refreshScannedSet();
+  var refs = {}, order = [];
+  (_consignments || []).forEach(function(r) {
+    var k = r.referencia || 'Sin ref';
+    if (!refs[k]) { refs[k] = {items: [], prodCount: {}}; order.push(k); }
+    refs[k].items.push(r);
+    var pk = _consProdKey(r);
+    refs[k].prodCount[pk] = (refs[k].prodCount[pk] || 0) + 1;
+  });
+  var candidatos = order.map(function(k) {
+    var g = refs[k], n = g.items.length;
+    var sc = g.items.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
+    var pc = g.prodCount, best = '', bestN = -1;
+    Object.keys(pc).forEach(function(p) { if (pc[p] > bestN) { bestN = pc[p]; best = p; } });
+    return {ref: k, n: n, sc: sc, pct: n > 0 ? sc / n * 100 : 0, producto: best};
+  }).filter(function(c) { return c.n > 0 && c.pct >= 90 && c.pct < 100; })
+    .sort(function(a, b) { return b.pct - a.pct; });
+  if (!candidatos.length) {
+    el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin consignments a punto de terminar (90%+)</div>';
+    return;
+  }
+  el.innerHTML = candidatos.slice(0, 5).map(function(c) {
+    var falta = c.n - c.sc;
+    return '<div onclick="queFaltaJump(\'' + _ceAttr(c.ref) + '\', \'' + _ceAttr(c.producto) + '\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0f2f5">' +
+      '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(c.ref) + '</div>' +
+      '<div style="font-size:11px;color:#8e9aab;margin-top:1px">' + esc(c.producto) + ' &middot; faltan ' + falta + ' de ' + c.n + '</div></div>' +
+      '<span style="font-size:14px;font-weight:800;color:#ff9500;flex-shrink:0">' + Math.round(c.pct) + '%</span>' +
+    '</div>';
+  }).join('');
+}
+
+var _tvMode = false;
+try { _tvMode = localStorage.getItem('coil_tv_mode') === '1'; } catch(e) {}
+
+function applyTvMode() {
+  var more = document.getElementById('dash-more');
+  if (more) more.style.display = _tvMode ? 'none' : '';
+  var btn = document.getElementById('tv-mode-btn');
+  if (btn) btn.innerHTML = _tvMode ? '&#8601; Salir de pantalla grande' : '&#9974; Modo pantalla grande';
+  ['hero-ton-num', 'hero-cnt-num', 'hero-cons-num'].forEach(function(id) {
+    var e = document.getElementById(id);
+    if (e) e.style.fontSize = _tvMode ? '64px' : '40px';
+  });
+}
+
+function toggleTvMode() {
+  _tvMode = !_tvMode;
+  try { localStorage.setItem('coil_tv_mode', _tvMode ? '1' : '0'); } catch(e) {}
+  applyTvMode();
+}
+
 function renderDash() {
+  refreshScannedSet();   // por si records se actualizo despues del primer render (evita datos de escaneo viejos)
   var data = getFilteredData();
   var tot = sumTon(data);
   var today = new Date().toDateString();
@@ -1726,9 +1935,11 @@ function renderDash() {
     document.getElementById('db-cnt-trend').innerHTML = '';
   }
 
-  // Meta diaria
-  var todayData = data.filter(function(r){return r.created_at&&new Date(r.created_at).toDateString()===new Date().toDateString();});
-  renderMetaDiaria(todayData);
+  // Resumen del dia (hero), semaforo de WOs y que falta -- siempre sobre TODOS los registros/consignments, no sobre el filtro de abajo
+  renderResumenDia();
+  renderWoSemaforo();
+  renderQueFalta();
+  applyTvMode();
   // Timelines
   renderTimeline(data);
   renderCountTimeline(data);
@@ -1766,8 +1977,6 @@ function renderDash() {
   // Comparison
   renderComparison();
 
-  // Consignment summary
-  renderConsSummaryDash();
   // Pivot
   renderPivot2(data);
 
@@ -2494,7 +2703,9 @@ function consStatusHTML(where) {
     return 0;
   });
   var shown = _consStatusShown[where] || 10;
-  var html = '<div style="font-size:11px;color:#8e9aab;margin-bottom:8px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' · ' + srcRows.length + ' coils' + (where === 'tab' && _consProdFilter ? ' · ' + esc(_consProdFilter) : '') + '</div>';
+  var totalTon = srcRows.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
+  var totalScanned = srcRows.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
+  var html = '<div style="font-size:22px;font-weight:800;color:#1a2332;line-height:1.35;margin-bottom:10px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' &middot; ' + totalTon.toFixed(3) + ' t &middot; ' + totalScanned + '/' + srcRows.length + ' escaneados' + (where === 'tab' && _consProdFilter ? '<br><span style="font-size:14px;font-weight:700;color:#007aff">' + esc(_consProdFilter) + '</span>' : '') + '</div>';
   var lastProd = null;
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
@@ -2506,12 +2717,15 @@ function consStatusHTML(where) {
     var del = where === 'tab'
       ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
       : '';
+    var castLbl = _refCastLabel(g.items);
+    var detailLine = [castLbl, g.producto].filter(Boolean).join(' &middot; ');
     var groupHdr = '';
     if (g.producto !== lastProd) { groupHdr = '<div style="font-size:11px;font-weight:800;color:#007aff;text-transform:uppercase;margin:' + (lastProd === null ? '0' : '14px') + ' 0 6px">' + esc(g.producto) + '</div>'; lastProd = g.producto; }
     return groupHdr + '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div><span style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(ref) + '</span>' +
-          (g.fecha ? ' <span style="font-size:11px;color:#8e9aab">' + esc(g.fecha) + '</span>' : '') + '</div>' +
+          (g.fecha ? ' <span style="font-size:11px;color:#8e9aab">' + esc(g.fecha) + '</span>' : '') +
+          (detailLine ? '<div style="font-size:12px;color:#636366;font-weight:600;margin-top:2px">' + detailLine + '</div>' : '') + '</div>' +
         '<div style="text-align:right;display:flex;align-items:center"><span style="font-size:13px;font-weight:700;color:' + color + '">' + scanned + '/' + g.items.length + '</span>' +
           '<span style="font-size:11px;color:#8e9aab;margin-left:4px">' + ton.toFixed(3) + 't</span>' + del + '</div>' +
       '</div>' +
@@ -3178,7 +3392,7 @@ function renderTimeline(data) {
   if (!canvas) return;
   var W = canvas.parentElement ? canvas.parentElement.clientWidth - 32 : 300;
   if (W < 50) { setTimeout(function(){renderTimeline(data);}, 100); return; }
-  var H = 160;
+  var H = 120;
   canvas.width = W; canvas.height = H;
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
@@ -3344,39 +3558,6 @@ function renderPivot2(data) {
 // ==========================================
 // META DIARIA RENDER
 // ==========================================
-function renderMetaDiaria(todayData) {
-  var metaEl = document.getElementById('meta-diaria');
-  var meta = metaEl ? parseFloat(metaEl.value) : 0;
-  var card = document.getElementById('meta-card');
-  if (!card) return;
-  if (!meta || meta <= 0) { card.style.display='none'; return; }
-  card.style.display='block';
-  var todayTon = sumTon(todayData);
-  var pct = Math.min(Math.round((todayTon/meta)*100), 150);
-  var color = pct >= 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
-  document.getElementById('meta-bar').style.width = Math.min(pct,100)+'%';
-  document.getElementById('meta-bar').style.background = color;
-  document.getElementById('meta-bar-lbl').textContent = todayTon.toFixed(2)+'t';
-  document.getElementById('meta-pct-lbl').textContent = pct+'%';
-  document.getElementById('meta-pct-lbl').style.color = color;
-  var remain = Math.max(0, meta - todayTon);
-  document.getElementById('meta-done-lbl').textContent = todayTon.toFixed(3)+'t escaneadas';
-  document.getElementById('meta-remain-lbl').textContent = remain > 0 ? remain.toFixed(3)+'t restantes' : 'Meta alcanzada!';
-  // Projection based on current rate
-  var now = new Date();
-  var hoursElapsed = now.getHours() + now.getMinutes()/60;
-  if (hoursElapsed > 0 && todayTon > 0 && remain > 0) {
-    var rate = todayTon / hoursElapsed;
-    var hoursNeeded = remain / rate;
-    var finishTime = new Date(now.getTime() + hoursNeeded * 3600000);
-    document.getElementById('meta-proj-lbl').textContent = 'Fin estimado: '+finishTime.getHours()+':'+String(finishTime.getMinutes()).padStart(2,'0');
-  } else if (remain <= 0) {
-    document.getElementById('meta-proj-lbl').textContent = 'Completado';
-    document.getElementById('meta-proj-lbl').style.color = '#34c759';
-  } else {
-    document.getElementById('meta-proj-lbl').textContent = '';
-  }
-}
 
 // ==========================================
 // DELETE CONSIGNMENT
