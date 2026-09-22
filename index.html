@@ -2451,18 +2451,42 @@ async function saveConsignmentRows(rows) {
 var _consStatusShown = {dash: 10, tab: 10};
 var _xcMissShown = 10, _xcExtraShown = 10;
 
+// "14/08/26" -> numero para poder ordenar por fecha (DD/MM/AA o DD/MM/AAAA). Sin fecha valida: al final.
+function _fechaOrdenable(f) {
+  var m = String(f || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return Infinity;
+  var y = parseInt(m[3], 10); if (y < 100) y += 2000;
+  return Date.UTC(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+}
+
 function consStatusHTML(where) {
   refreshScannedSet();
   var refs = {}, order = [];
   (_consignments || []).forEach(function(r) {
     var k = r.referencia || 'Sin ref';
-    if (!refs[k]) { refs[k] = {items: [], fecha: ''}; order.push(k); }
+    if (!refs[k]) { refs[k] = {items: [], fecha: '', prodCount: {}}; order.push(k); }
     refs[k].items.push(r);
     if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
+    var pk = _consProdKey(r);
+    refs[k].prodCount[pk] = (refs[k].prodCount[pk] || 0) + 1;
   });
-  var keys = order.slice().reverse();               // mas nuevos primero
+  // Se ordena por producto (el que mas se repite en ese consignment) y, dentro del mismo producto,
+  // por la fecha que trae el PDF -- asi se puede seguir la trazabilidad en el orden que llegaron.
+  order.forEach(function(k) {
+    var pc = refs[k].prodCount, best = '', bestN = -1;
+    Object.keys(pc).forEach(function(p) { if (pc[p] > bestN) { bestN = pc[p]; best = p; } });
+    refs[k].producto = best;
+    refs[k].fechaOrden = _fechaOrdenable(refs[k].fecha);
+  });
+  var keys = order.slice().sort(function(a, b) {
+    var A = refs[a], B = refs[b];
+    if (A.producto !== B.producto) return A.producto < B.producto ? -1 : 1;
+    if (A.fechaOrden !== B.fechaOrden) return A.fechaOrden - B.fechaOrden;
+    return 0;
+  });
   var shown = _consStatusShown[where] || 10;
   var html = '<div style="font-size:11px;color:#8e9aab;margin-bottom:8px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' · ' + (_consignments || []).length + ' coils</div>';
+  var lastProd = null;
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
     var ton = g.items.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
@@ -2473,7 +2497,9 @@ function consStatusHTML(where) {
     var del = where === 'tab'
       ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
       : '';
-    return '<div style="margin-bottom:12px">' +
+    var groupHdr = '';
+    if (g.producto !== lastProd) { groupHdr = '<div style="font-size:11px;font-weight:800;color:#007aff;text-transform:uppercase;margin:' + (lastProd === null ? '0' : '14px') + ' 0 6px">' + esc(g.producto) + '</div>'; lastProd = g.producto; }
+    return groupHdr + '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div><span style="font-size:13px;font-weight:700;color:#1a2332">Ref: ' + esc(ref) + '</span>' +
           (g.fecha ? ' <span style="font-size:11px;color:#8e9aab">' + esc(g.fecha) + '</span>' : '') + '</div>' +
@@ -2783,6 +2809,7 @@ async function handlePDFUpload(e) {
 
     var totalRows = 0;
     var errors = [];
+    var warnings = [];
     var pagesText = 0, pagesAI = 0;
 
     for (var fi = 0; fi < files.length; fi++) {
@@ -2829,6 +2856,7 @@ async function handlePDFUpload(e) {
           }
         }
       // Una referencia y una fecha por PDF (la mas frecuente): las paginas sin encabezado o mal leidas heredan la del PDF
+      var resolvedRef = '', resolvedFecha = '';
       ['referencia', 'fecha'].forEach(function(field) {
         var cnt = {}, top = '', topN = 0;
         allRows.forEach(function(row) {
@@ -2838,7 +2866,11 @@ async function handlePDFUpload(e) {
           if (cnt[v] > topN) { topN = cnt[v]; top = v; }
         });
         if (top) allRows.forEach(function(row) { row[field] = top; });
+        if (field === 'referencia') resolvedRef = top; else resolvedFecha = top;
       });
+      var totalRowsInPdf = allRows.length;
+      var yaEstabaCargado = resolvedRef && _consignments.some(function(r){ return (r.referencia||'') === resolvedRef; });
+
       // Filter duplicates before saving
       var existingLots = {};
       _consignments.forEach(function(r){ var l=String(r.lot_no||'').trim(); if(l) existingLots[l]=1; });
@@ -2850,13 +2882,23 @@ async function handlePDFUpload(e) {
         return true;
       });
       var dupCount = beforeDup - allRows.length;
-      if (dupCount > 0) txt2.textContent = 'Ignorando ' + dupCount + ' duplicado' + (dupCount>1?'s':'') + '...';
-      if (allRows.length) {
-        txt2.textContent = 'Guardando ' + allRows.length + ' coils...';
-        await saveConsignmentRows(allRows);
-        allRows.forEach(function(row){ _consignments.push(row); }); // so the next PDF dedupes against this one
-      }
+
+      if (yaEstabaCargado && totalRowsInPdf > 0 && allRows.length === 0) {
+        // Este PDF entero ya estaba cargado (misma Ref, todos los lotes ya guardados): no se sube de nuevo.
+        warnings.push('Ref ' + resolvedRef + ' ya estaba cargada (' + totalRowsInPdf + ' coils) — no se subio de nuevo');
+      } else {
+        if (yaEstabaCargado && dupCount > 0) {
+          warnings.push('Ref ' + resolvedRef + ': ' + dupCount + ' coil' + (dupCount === 1 ? '' : 's') + ' ya estaba' + (dupCount === 1 ? '' : 'n') + ' cargado' + (dupCount === 1 ? '' : 's') + ', se agrego' + (allRows.length === 1 ? '' : 'n') + ' ' + allRows.length + ' nuevo' + (allRows.length === 1 ? '' : 's'));
+        } else if (dupCount > 0) {
+          txt2.textContent = 'Ignorando ' + dupCount + ' duplicado' + (dupCount>1?'s':'') + '...';
+        }
+        if (allRows.length) {
+          txt2.textContent = 'Guardando ' + allRows.length + ' coils...';
+          await saveConsignmentRows(allRows);
+          allRows.forEach(function(row){ _consignments.push(row); }); // so the next PDF dedupes against this one
+        }
         totalRows += allRows.length;
+      }
       } catch(fileErr) {
         errors.push(file.name+': '+fileErr.message);
       }
@@ -2864,7 +2906,13 @@ async function handlePDFUpload(e) {
 
     fill.style.width = '100%';
     if (errors.length) {
-      status.textContent = '✓ '+totalRows+' coils importados (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.). Errores: '+errors.join(', ');
+      status.innerHTML = '&#10003; '+totalRows+' coils importados (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.). Errores: '+errors.map(esc).join(', ')+(warnings.length ? '<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ') : '');
+      status.style.color = '#ff9500';
+    } else if (warnings.length && totalRows === 0) {
+      status.innerHTML = '&#9888; '+warnings.map(esc).join('<br>&#9888; ');
+      status.style.color = '#ff9500';
+    } else if (warnings.length) {
+      status.innerHTML = '&#10003; '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ');
       status.style.color = '#ff9500';
     } else {
       status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)';
@@ -3035,7 +3083,7 @@ function renderChangeLog() {
   }).join('');
 }
 
-var _histView = 'flat';
+var _histView = 'grouped';   // antes decia 'flat', pero el boton que se veia activo era "Agrupado"
 
 function setHistView(v) {
   _histView = v;
