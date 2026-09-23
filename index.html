@@ -1,5 +1,5 @@
 <!DOCTYPE html><!-- v1789683955 -->
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -362,18 +362,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
-    <div id="offline-badge" style="display:none;background:#ff9500;color:#fff;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="flushOfflineQueue()">0 pendientes</div><div id="nav-pill" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:4px 10px;border:1px solid var(--border)">0 registros</div>
-    <button onclick="toggleGlobalSearch()" title="Buscar" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128269;</button>
-    <button onclick="shareDailySummary()" title="Resumen del dia" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128200;</button>
+    <div id="offline-badge" style="display:none;background:#ff9500;color:#fff;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="flushOfflineQueue()">0 pending</div><div id="nav-pill" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:4px 10px;border:1px solid var(--border)">0 records</div>
+    <button onclick="toggleGlobalSearch()" title="Search" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128269;</button>
+    <button onclick="shareDailySummary()" title="Daily summary" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128200;</button>
   </div>
 </div>
 
 <!-- TABS -->
 <div class="tabs">
-  <button class="tab" id="t-scan" onclick="goTab('scan')">&#128247; Escanear</button>
-  <button class="tab" id="t-hist" onclick="goTab('hist')">&#128203; Historial</button>
+  <button class="tab" id="t-scan" onclick="goTab('scan')">&#128247; Scan</button>
+  <button class="tab" id="t-hist" onclick="goTab('hist')">&#128203; History</button>
   <button class="tab" id="t-dash" onclick="goTab('dash')">&#128202; Dashboard</button>
-  <button class="tab" id="t-prod" onclick="goTab('prod')">&#9878; Produccion</button>
+  <button class="tab" id="t-prod" onclick="goTab('prod')">&#9878; Production</button>
   <button class="tab" id="t-cons" onclick="goTab('cons')">&#128196; Consignment</button>
 </div>
 
@@ -382,38 +382,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="card">
     <div class="card-title">Work Order</div>
     <div class="field" style="margin-bottom:8px">
-      <input class="wo-inp" type="text" id="wo-input" placeholder="Ej: WO-2026-001" autocomplete="off">
+      <input class="wo-inp" type="text" id="wo-input" placeholder="e.g. WO-2026-001" autocomplete="off">
     </div>
     <div class="wo-chips" id="wo-chips"></div>
   </div>
   <div class="card">
-    <div class="card-title">Maquina</div>
+    <div class="card-title">Machine</div>
     <div style="display:flex;gap:8px">
       <button id="btn-evg" onclick="selectMachine('EVG')" style="flex:1;padding:14px;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s">EVG</button>
       <button id="btn-pittini" onclick="selectMachine('PITTINI')" style="flex:1;padding:14px;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s">PITTINI</button>
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Foto de la etiqueta</div>
+    <div class="card-title">Label photo</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button id="btn-open-camera" onclick="openCamera()" style="flex:1;padding:20px 14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em">&#127909; Camara en vivo</button>
+      <button id="btn-open-camera" onclick="openCamera()" style="flex:1;padding:20px 14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em">&#127909; Live camera</button>
     </div>
     <div id="notif-banner" style="display:none;background:#f0f5ff;border:1px solid #007aff;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <span style="font-size:13px;color:#007aff;font-weight:600">&#128276; Activar notificaciones para alertas de cast completo</span>
-      <button onclick="requestNotifPermission()" style="padding:7px 14px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Activar</button>
+      <span style="font-size:13px;color:#007aff;font-weight:600">&#128276; Turn on notifications for complete-cast alerts</span>
+      <button onclick="requestNotifPermission()" style="padding:7px 14px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Turn on</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:8px">— o subí una foto —</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:8px">— or upload a photo —</div>
     <div class="upload-zone" id="upload-zone">
-      <input type="file" accept="image/*" id="file-in" multiple onclick="if(!currentMachine){alert('Seleccioná una maquina primero');return false;}">
+      <input type="file" accept="image/*" id="file-in" multiple onclick="if(!currentMachine){alert('Select a machine first');return false;}">
       <div class="uz-icon">&#128247;</div>
-      <div class="uz-title">Tocar para subir fotos</div>
-      <div class="uz-sub">Podes seleccionar varias a la vez</div>
+      <div class="uz-title">Tap to upload photos</div>
+      <div class="uz-sub">You can select several at once</div>
     </div>
     <div class="preview-wrap" id="preview-wrap">
       <img class="preview-img" id="preview-img" alt="">
       <div class="preview-bar">
-        <button class="btn-sm" id="btn-change">&#128260; Cambiar</button>
-        <button class="btn-sm blue" id="btn-analyze2">&#9889; Analizar</button>
+        <button class="btn-sm" id="btn-change">&#128260; Change</button>
+        <button class="btn-sm blue" id="btn-analyze2">&#9889; Analyze</button>
       </div>
     </div>
     <div id="prog-wrap" style="display:none;padding-top:8px">
@@ -422,34 +422,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Operario y nota (opcional)</div>
-    <div class="field"><input type="text" id="operario-input" placeholder="Nombre del operario"></div>
-    <div class="field" style="margin-bottom:0"><textarea id="notas-input" placeholder="Observaciones"></textarea></div>
+    <div class="card-title">Operator and note (optional)</div>
+    <div class="field"><input type="text" id="operario-input" placeholder="Operator name"></div>
+    <div class="field" style="margin-bottom:0"><textarea id="notas-input" placeholder="Notes"></textarea></div>
   </div>
   <div class="status" id="status"></div>
   <div class="dup-card" id="dup-card">
-    <div class="dup-title">&#9888; Etiqueta duplicada — ya fue escaneada</div>
+    <div class="dup-title">&#9888; Duplicate label — already scanned</div>
     <div class="dup-row"><span class="dup-key">Coil:</span><span class="dup-val" id="dup-coil"></span></div>
     <div class="dup-row"><span class="dup-key">Cast:</span><span class="dup-val" id="dup-cast"></span></div>
-    <div class="dup-row"><span class="dup-key">Peso:</span><span class="dup-val" id="dup-peso"></span></div>
-    <div class="dup-row"><span class="dup-key">Producto:</span><span class="dup-val" id="dup-prod"></span></div>
+    <div class="dup-row"><span class="dup-key">Weight:</span><span class="dup-val" id="dup-peso"></span></div>
+    <div class="dup-row"><span class="dup-key">Product:</span><span class="dup-val" id="dup-prod"></span></div>
     <div class="dup-row"><span class="dup-key">WO:</span><span class="dup-val" id="dup-wo"></span></div>
-    <div class="dup-row"><span class="dup-key">Registrada:</span><span class="dup-val" id="dup-fecha"></span></div>
+    <div class="dup-row"><span class="dup-key">Recorded:</span><span class="dup-val" id="dup-fecha"></span></div>
   </div>
   <button class="analyze-btn" id="analyze-btn" disabled>
-    <span id="btn-inner">&#128228; Analizar etiqueta con IA</span>
+    <span id="btn-inner">&#128228; Analyze label with AI</span>
   </button>
   <div class="result-card" id="result-card">
     <div class="result-head">
-      <div class="result-head-title" id="res-title">&#128269; Verificar datos antes de guardar</div>
+      <div class="result-head-title" id="res-title">&#128269; Verify data before saving</div>
       <span style="font-size:20px">&#128247;</span>
     </div>
     <div id="res-fields"></div>
     <div style="margin-top:10px;padding:10px;background:#fff8e8;border-radius:10px;border:1px solid #ffe0a0;font-size:12px;color:#7a5c00;margin-bottom:10px">
-      &#9888; Revisá que los datos sean correctos. Podés editar cualquier campo antes de confirmar.
+      &#9888; Check that the data is correct. You can edit any field before confirming.
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="confirmScan()" id="btn-confirm-scan" style="flex:1;padding:14px;background:#34c759;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">&#10003; Confirmar y guardar</button>
+      <button onclick="confirmScan()" id="btn-confirm-scan" style="flex:1;padding:14px;background:#34c759;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">&#10003; Confirm and save</button>
       <button onclick="rejectScan()" style="padding:14px 16px;background:#ff3b30;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer">&#10005;</button>
     </div>
   </div>
@@ -461,16 +461,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div class="pane" id="p-hist">
 <div class="filters">
-    <input class="filter-inp" type="text" id="search-inp" placeholder="Buscar coil, cast, producto...">
+    <input class="filter-inp" type="text" id="search-inp" placeholder="Search coil, cast, product...">
     <input class="filter-inp" type="text" id="wo-filter" placeholder="WO..." style="max-width:110px">
     <button class="btn-sm" id="btn-refresh" style="max-width:50px;flex:none;padding:10px">&#8634;</button>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
     <input type="date" id="hist-date" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);outline:none;flex:1;min-width:130px">
-    <button onclick="document.getElementById('hist-date').value='';renderHistorial()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--muted)">&#10006; Fecha</button>
+    <button onclick="document.getElementById('hist-date').value='';renderHistorial()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--muted)">&#10006; Date</button>
     <div style="display:flex;border:1.5px solid var(--border);border-radius:9px;overflow:hidden">
-      <button id="view-grouped" onclick="setHistView('grouped')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Agrupado</button>
-      <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--blue);color:#fff">Por escaneo</button>
+      <button id="view-grouped" onclick="setHistView('grouped')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--bg);color:var(--muted)">Grouped</button>
+      <button id="view-flat" onclick="setHistView('flat')" style="padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--blue);color:#fff">By scan</button>
     </div>
   </div>
   <div id="rec-list" class="hist-grid-wrap"></div>
@@ -485,25 +485,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- RESUMEN DEL DIA (siempre visible, no depende de los filtros de abajo) -->
 <div class="pbi-card" id="dash-hero" style="margin-bottom:10px;background:linear-gradient(135deg,#f0f5ff,#ffffff);border:2px solid #dbe6ff">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-    <div class="pbi-card-title" style="margin-bottom:0">Resumen del dia</div>
+    <div class="pbi-card-title" style="margin-bottom:0">Daily summary</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button id="export-dash-btn" onclick="exportDashboardImage()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #34c759;background:#fff;color:#1a7a3c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#128228; Exportar</button>
-      <button id="tv-mode-btn" onclick="toggleTvMode()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #007aff;background:#fff;color:#007aff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#9974; Modo pantalla grande</button>
+      <button id="export-dash-btn" onclick="exportDashboardImage()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #34c759;background:#fff;color:#1a7a3c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#128228; Export</button>
+      <button id="tv-mode-btn" onclick="toggleTvMode()" style="padding:7px 14px;border-radius:8px;border:1.5px solid #007aff;background:#fff;color:#007aff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">&#9974; Big screen mode</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px">
     <div style="text-align:center">
       <div id="hero-ton-num" class="hero-num" style="font-size:40px;font-weight:900;color:#007aff;line-height:1.1">0.000</div>
-      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">TONELADAS HOY</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">TONS TODAY</div>
     </div>
     <div style="text-align:center;border-left:1.5px solid #e5eaf0;border-right:1.5px solid #e5eaf0">
       <div id="hero-cnt-num" class="hero-num" style="font-size:40px;font-weight:900;color:#34c759;line-height:1.1">0</div>
-      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">COILS HOY</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">COILS TODAY</div>
       <div id="hero-cnt-sub" style="font-size:11px;color:#8e9aab;margin-top:3px">&mdash;</div>
     </div>
     <div style="text-align:center">
       <div id="hero-cons-num" class="hero-num" style="font-size:40px;font-weight:900;color:#af52de;line-height:1.1">0/0</div>
-      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">CONSIGNMENTS COMPLETOS</div>
+      <div style="font-size:11px;color:#5c6b7a;font-weight:700;letter-spacing:.3px">CONSIGNMENTS COMPLETE</div>
       <div id="hero-cons-sub" style="font-size:11px;color:#8e9aab;margin-top:3px">&mdash;</div>
     </div>
   </div>
@@ -511,8 +511,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- PROGRESO POR WO (semaforo, siempre visible) -->
 <div class="pbi-card" id="dash-wo-semaforo" style="margin-bottom:10px">
-  <div class="pbi-card-title">Progreso por WO</div>
-  <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs activas</div></div>
+  <div class="pbi-card-title">Progress by WO</div>
+  <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">No active WOs</div></div>
 </div>
 
 <div id="dash-more">
@@ -520,53 +520,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pbi-hdr" style="flex-wrap:wrap">
   <!-- Fecha -->
   <div class="pbi-seg">
-    <span class="pbi-seg-lbl">Periodo</span>
-    <button class="pbi-date-chip" id="pd-today" onclick="setPeriod('today')">Hoy</button>
-    <button class="pbi-date-chip" id="pd-week" onclick="setPeriod('week')">7 dias</button>
-    <button class="pbi-date-chip" id="pd-month" onclick="setPeriod('month')">30 dias</button>
-    <button class="pbi-date-chip on" id="pd-all" onclick="setPeriod('all')">Todo</button>
-    <button class="pbi-date-chip" id="pd-custom" onclick="toggleCustomRange()">&#128197; Rango</button>
+    <span class="pbi-seg-lbl">Period</span>
+    <button class="pbi-date-chip" id="pd-today" onclick="setPeriod('today')">Today</button>
+    <button class="pbi-date-chip" id="pd-week" onclick="setPeriod('week')">7 days</button>
+    <button class="pbi-date-chip" id="pd-month" onclick="setPeriod('month')">30 days</button>
+    <button class="pbi-date-chip on" id="pd-all" onclick="setPeriod('all')">All</button>
+    <button class="pbi-date-chip" id="pd-custom" onclick="toggleCustomRange()">&#128197; Range</button>
   </div>
   <div id="custom-range-panel" style="display:none;width:100%;margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;align-items:center;gap:8px;flex-wrap:wrap">
-    <span style="font-size:11px;font-weight:700;color:#5c6b7a">Del</span>
+    <span style="font-size:11px;font-weight:700;color:#5c6b7a">From</span>
     <input type="date" id="range-from" style="padding:6px 8px;border:1.5px solid #d0d8e0;border-radius:7px;font-size:12px;font-family:inherit">
-    <span style="font-size:11px;font-weight:700;color:#5c6b7a">al</span>
+    <span style="font-size:11px;font-weight:700;color:#5c6b7a">to</span>
     <input type="date" id="range-to" style="padding:6px 8px;border:1.5px solid #d0d8e0;border-radius:7px;font-size:12px;font-family:inherit">
-    <button onclick="applyCustomRange()" style="padding:6px 14px;border-radius:7px;border:none;background:#007aff;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Aplicar</button>
+    <button onclick="applyCustomRange()" style="padding:6px 14px;border-radius:7px;border:none;background:#007aff;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Apply</button>
     <span id="range-err" style="font-size:11px;color:#ff3b30;font-weight:600"></span>
   </div>
   <!-- Maquina -->
   <div class="pbi-seg" style="margin-left:6px">
-    <span class="pbi-seg-lbl">Maquina</span>
-    <button class="pbi-chip" id="pm-all" onclick="setMaq('')">Todas</button>
+    <span class="pbi-seg-lbl">Machine</span>
+    <button class="pbi-chip" id="pm-all" onclick="setMaq('')">All</button>
     <button class="pbi-chip" id="pm-evg" onclick="setMaq('EVG')">EVG</button>
     <button class="pbi-chip" id="pm-pit" onclick="setMaq('PITTINI')">PITTINI</button>
   </div>
   <!-- Producto -->
   <div class="pbi-seg" style="margin-left:6px">
-    <span class="pbi-seg-lbl">Producto</span>
+    <span class="pbi-seg-lbl">Product</span>
     <div id="prod-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
   <!-- WO -->
   <div class="pbi-seg" style="margin-left:6px">
     <span class="pbi-seg-lbl">WO</span>
-    <button id="pm-nowo" onclick="setNoWOFilter()" class="pbi-chip" style="background:#fff0f0;color:#cc0000;border-color:#ffcdd2">Sin WO</button>
+    <button id="pm-nowo" onclick="setNoWOFilter()" class="pbi-chip" style="background:#fff0f0;color:#cc0000;border-color:#ffcdd2">No WO</button>
     <div id="wo-chips-dash" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
   <!-- Clear -->
-  <button onclick="clearDashFilters()" style="margin-left:auto;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#5c6b7a">&#10005; Limpiar</button>
+  <button onclick="clearDashFilters()" style="margin-left:auto;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid #d0d8e0;background:#fff;color:#5c6b7a">&#10005; Clear</button>
 </div>
 
 <!-- KPI ROW -->
 <div class="pbi-row" style="grid-template-columns:1fr 1fr">
   <div class="pbi-card" style="border-top:4px solid #007aff">
-    <div class="pbi-card-title">Toneladas</div>
+    <div class="pbi-card-title">Tons</div>
     <div><span class="pbi-kpi-num" id="db-ton">0</span><span class="pbi-kpi-unit">t</span></div>
     <div class="pbi-kpi-sub" id="db-ton-sub">—</div>
     <div class="pbi-kpi-trend" id="db-ton-trend"></div>
   </div>
   <div class="pbi-card" style="border-top:4px solid #34c759">
-    <div class="pbi-card-title">Coils escaneados</div>
+    <div class="pbi-card-title">Coils scanned</div>
     <div><span class="pbi-kpi-num" id="db-cnt">0</span></div>
     <div class="pbi-kpi-sub" id="db-cnt-sub">—</div>
     <div class="pbi-kpi-trend" id="db-cnt-trend"></div>
@@ -584,7 +584,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div class="pbi-kpi-sub" id="db-pit-cnt">0 coils</div>
   </div>
   <div class="pbi-card" style="border-top:4px solid #ff9500">
-    <div class="pbi-card-title">WOs activas</div>
+    <div class="pbi-card-title">Active WOs</div>
     <div><span class="pbi-kpi-num" style="font-size:32px" id="db-wo-cnt">0</span></div>
     <div class="pbi-kpi-sub" id="db-wo-list">—</div>
   </div>
@@ -596,16 +596,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- TN POR DIA (main chart) -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title" style="flex-wrap:wrap;gap:6px">
-    <span id="db-timeline-title">Toneladas por dia</span>
+    <span id="db-timeline-title">Tons per day</span>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div id="db-timeline-legend" style="display:flex;gap:10px;font-size:11px;font-weight:600">
         <span style="color:#007aff">■ EVG</span>
         <span style="color:#af52de">■ PITTINI</span>
-        <span style="color:#c7c7cc">■ Sin maq</span>
+        <span style="color:#c7c7cc">■ No machine</span>
       </div>
       <div style="display:flex;border-radius:7px;overflow:hidden;border:1.5px solid #d0d8e0">
-        <button id="tl-mode-daily" onclick="setTimelineMode('daily')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#007aff;color:#fff">Por dia</button>
-        <button id="tl-mode-cumulative" onclick="setTimelineMode('cumulative')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#5c6b7a">Acumulado</button>
+        <button id="tl-mode-daily" onclick="setTimelineMode('daily')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#007aff;color:#fff">Daily</button>
+        <button id="tl-mode-cumulative" onclick="setTimelineMode('cumulative')" style="padding:4px 10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#5c6b7a">Cumulative</button>
       </div>
     </div>
   </div>
@@ -614,15 +614,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- SEMANA ACTUAL VS ANTERIOR -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Semana actual vs semana anterior</div>
+  <div class="pbi-card-title">This week vs last week</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
     <div style="background:#f0f5ff;border-radius:8px;padding:12px;text-align:center">
-      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">Esta semana</div>
+      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">This week</div>
       <div style="font-size:24px;font-weight:700;color:#007aff" id="week-cur-ton">—</div>
       <div style="font-size:11px;color:#8e9aab" id="week-cur-cnt">—</div>
     </div>
     <div style="background:#f8fafc;border-radius:8px;padding:12px;text-align:center">
-      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">Semana anterior</div>
+      <div style="font-size:10px;font-weight:700;color:#5c6b7a;text-transform:uppercase;margin-bottom:4px">Last week</div>
       <div style="font-size:24px;font-weight:700;color:#8e9aab" id="week-prev-ton">—</div>
       <div style="font-size:11px;color:#8e9aab" id="week-prev-cnt">—</div>
     </div>
@@ -632,14 +632,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- ESCANEOS POR DIA -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Coils escaneados por dia</div>
+  <div class="pbi-card-title">Coils scanned per day</div>
   <canvas id="db-count-timeline" style="width:100%;height:100px;display:block"></canvas>
 </div>
 
 <!-- CALENDARIO -->
 <div class="pbi-card" style="margin-bottom:10px">
   <div class="pbi-card-title">
-    Calendario de produccion
+    Production calendar
     <div style="display:flex;gap:6px;align-items:center">
       <button onclick="calPrev()" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #d0d8e0;background:#fff;cursor:pointer;font-size:14px">&#8592;</button>
       <span id="cal-month-lbl" style="font-size:12px;font-weight:700;color:#1a2332;min-width:100px;text-align:center"></span>
@@ -651,24 +651,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- COMPARAR PERIODOS -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Comparar periodos</div>
+  <div class="pbi-card-title">Compare periods</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
     <div>
-      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Periodo A</div>
+      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Period A</div>
       <select id="cmp-a" onchange="renderComparison()" style="width:100%;padding:8px;border:1.5px solid #e8ecf0;border-radius:8px;font-size:13px;font-family:inherit;background:#f8fafc;outline:none">
-        <option value="week0">Esta semana</option>
-        <option value="week1">Semana anterior</option>
-        <option value="month0">Este mes</option>
-        <option value="month1">Mes anterior</option>
+        <option value="week0">This week</option>
+        <option value="week1">Last week</option>
+        <option value="month0">This month</option>
+        <option value="month1">Last month</option>
       </select>
     </div>
     <div>
-      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Periodo B</div>
+      <div style="font-size:11px;font-weight:700;color:#5c6b7a;margin-bottom:4px">Period B</div>
       <select id="cmp-b" onchange="renderComparison()" style="width:100%;padding:8px;border:1.5px solid #e8ecf0;border-radius:8px;font-size:13px;font-family:inherit;background:#f8fafc;outline:none">
-        <option value="week1">Semana anterior</option>
-        <option value="week0">Esta semana</option>
-        <option value="month1">Mes anterior</option>
-        <option value="month0">Este mes</option>
+        <option value="week1">Last week</option>
+        <option value="week0">This week</option>
+        <option value="month1">Last month</option>
+        <option value="month0">This month</option>
       </select>
     </div>
   </div>
@@ -678,29 +678,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <!-- MAQUINA / PRODUCTO / WO -- 3 tarjetas chicas en linea -->
 <div class="pbi-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
   <div class="pbi-card" style="padding:12px">
-    <div class="pbi-card-title" style="font-size:11px">Por maquina</div>
+    <div class="pbi-card-title" style="font-size:11px">By machine</div>
     <canvas id="db-maq-donut" style="display:block;width:100%;height:84px"></canvas>
     <div id="db-maq-leg" style="margin-top:6px;font-size:11px"></div>
   </div>
   <div class="pbi-card" style="padding:12px">
-    <div class="pbi-card-title" style="font-size:11px">Por producto</div>
+    <div class="pbi-card-title" style="font-size:11px">By product</div>
     <div id="db-prod-bars" class="pbi-bars-compact"></div>
   </div>
   <div class="pbi-card" style="padding:12px">
-    <div class="pbi-card-title" style="font-size:11px">Por WO</div>
+    <div class="pbi-card-title" style="font-size:11px">By WO</div>
     <div id="db-wo-bars" class="pbi-bars-compact"></div>
   </div>
 </div>
 
 <!-- CAST PROGRESS -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Progreso por Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">meta: 48 coils</span></div>
+  <div class="pbi-card-title">Progress by Cast <span style="font-size:10px;color:#8e9aab;font-weight:400;text-transform:none">target: 48 coils</span></div>
   <div id="db-cast-prog"></div>
 </div>
 
 <!-- PIVOT -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Pivot — Producto × WO</div>
+  <div class="pbi-card-title">Pivot — Product × WO</div>
   <div style="overflow-x:auto">
     <table class="tbl pbi-tbl" id="pivot-tbl" style="min-width:100%;border-collapse:collapse"></table>
   </div>
@@ -708,17 +708,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- TABLA -->
 <div class="pbi-card">
-  <div class="pbi-card-title">Detalle de registros <span id="tbl-count" style="font-size:10px;color:#007aff;text-transform:none;font-weight:600"></span></div>
-  <input id="db-search" type="text" placeholder="Buscar coil, cast, producto, WO..." style="width:100%;padding:10px 13px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:#f8fafc;margin-bottom:10px;box-sizing:border-box">
+  <div class="pbi-card-title">Record detail <span id="tbl-count" style="font-size:10px;color:#007aff;text-transform:none;font-weight:600"></span></div>
+  <input id="db-search" type="text" placeholder="Search coil, cast, product, WO..." style="width:100%;padding:10px 13px;border:1.5px solid #e5e5ea;border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:#f8fafc;margin-bottom:10px;box-sizing:border-box">
   <div style="overflow-x:auto">
     <table class="tbl pbi-tbl">
-      <thead><tr><th>Maquina</th><th>Fecha / Hora</th><th>WO</th><th>Producto</th><th>Cast</th><th>Coil</th><th>Peso</th></tr></thead>
+      <thead><tr><th>Machine</th><th>Date / Time</th><th>WO</th><th>Product</th><th>Cast</th><th>Coil</th><th>Weight</th></tr></thead>
       <tbody id="tbl-body"></tbody>
     </table>
   </div>
   <div style="display:flex;gap:8px;margin-top:10px">
     <button class="exp-btn p" id="btn-csv" style="padding:8px 14px;font-size:12px">&#128229; CSV</button>
-    <button class="exp-btn" id="btn-share" style="padding:8px 14px;font-size:12px">&#128228; Compartir</button>
+    <button class="exp-btn" id="btn-share" style="padding:8px 14px;font-size:12px">&#128228; Share</button>
   </div>
 </div>
 </div><!-- /dash-more -->
@@ -730,43 +730,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="pane" id="p-prod">
 <!-- Registrar produccion -->
   <div class="bal-card">
-    <div class="bal-hdr">Registrar produccion por WO</div>
+    <div class="bal-hdr">Record production by WO</div>
     <div class="field">
       <label>Work Order</label>
       <select id="prod-wo-sel" class="prod-inp">
-        <option value="">Selecciona una WO...</option>
+        <option value="">Select a WO...</option>
       </select>
     </div>
     <div class="field">
-      <label>Toneladas producidas</label>
-      <input type="number" id="prod-ton-inp" class="prod-inp" placeholder="Ej: 93.500" step="0.001" min="0" onkeydown="if(event.key==='Enter')saveProduccion()">
+      <label>Tons produced</label>
+      <input type="number" id="prod-ton-inp" class="prod-inp" placeholder="e.g. 93.500" step="0.001" min="0" onkeydown="if(event.key==='Enter')saveProduccion()">
     </div>
     <div class="field" style="margin-bottom:0">
-      <label>Notas (opcional)</label>
-      <input type="text" id="prod-notas-inp" class="prod-inp" placeholder="Observaciones...">
+      <label>Notes (optional)</label>
+      <input type="text" id="prod-notas-inp" class="prod-inp" placeholder="Notes...">
     </div>
     <button onclick="saveProduccion()" id="prod-save-btn" style="width:100%;margin-top:14px;padding:14px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">
-      Guardar produccion
+      Save production
     </button>
     <div id="prod-status" style="text-align:center;font-size:13px;margin-top:10px;min-height:20px"></div>
   </div>
 
   <!-- Balance por WO -->
   <div class="bal-card">
-    <div class="bal-hdr">Balance por Work Order</div>
-    <div id="bal-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Cargando...</div></div>
+    <div class="bal-hdr">Balance by Work Order</div>
+    <div id="bal-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Loading...</div></div>
   </div>
 
   <!-- Historial de registros -->
   <div class="bal-card">
-    <div class="bal-hdr">Historial de produccion</div>
-    <div id="prod-hist-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros</div></div>
+    <div class="bal-hdr">Production history</div>
+    <div id="prod-hist-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No records</div></div>
   </div>
 
 <!-- Historial de cambios -->
   <div class="bal-card">
-    <div class="bal-hdr">Historial de ediciones <button onclick="renderChangeLog()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
-    <div id="change-log-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin ediciones registradas</div></div>
+    <div class="bal-hdr">Edit history <button onclick="renderChangeLog()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Refresh</button></div>
+    <div id="change-log-list"><div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No edits recorded</div></div>
   </div>
 
 
@@ -780,12 +780,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div class="pane" id="p-cons">
 <div class="cons-card">
-    <div class="cons-hdr">Subir Consignment Note (PDF)</div>
+    <div class="cons-hdr">Upload Consignment Note (PDF)</div>
     <div class="upload-pdf-zone" id="pdf-zone">
       <input type="file" accept=".pdf,application/pdf" id="pdf-in" multiple>
       <div style="font-size:32px;margin-bottom:8px">&#128196;</div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Subir PDFs de Pacific Steel</div>
-      <div style="font-size:12px;color:#8e8e93">Podés subir varios PDFs a la vez — se procesan uno por uno</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Upload Pacific Steel PDFs</div>
+      <div style="font-size:12px;color:#8e8e93">You can upload several PDFs at once — they are processed one by one</div>
     </div>
     <div id="pdf-status" style="margin-top:10px;font-size:13px;text-align:center;min-height:20px"></div>
     <div id="pdf-progress" style="display:none;margin-top:8px">
@@ -804,45 +804,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
     <div style="background:#e8ffe8;border-radius:10px;padding:12px;text-align:center">
       <div style="font-size:22px;font-weight:700;color:#1a7a3c;cursor:pointer" id="cons-match-n" onclick="filterCons('ok')">0</div>
-      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('ok')">Escaneados</div>
+      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('ok')">Scanned</div>
     </div>
     <div style="background:#fff0f0;border-radius:10px;padding:12px;text-align:center">
       <div style="font-size:22px;font-weight:700;color:#cc0000;cursor:pointer" id="cons-miss-n" onclick="filterCons('miss')">0</div>
-      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('miss')">Faltantes</div>
+      <div style="font-size:10px;color:#8e8e93;font-weight:600;text-transform:uppercase;cursor:pointer" onclick="filterCons('miss')">Missing</div>
     </div>
   </div>
 
   <!-- Ton summary -->
   <div id="cons-ton-summary" style="display:none;background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.09)">
-    <div class="cons-hdr">Balance de toneladas</div>
+    <div class="cons-hdr">Ton balance</div>
     <div style="display:flex;gap:12px;justify-content:space-around;text-align:center">
-      <div><div style="font-size:20px;font-weight:700;color:#007aff" id="cons-ton-total">0t</div><div style="font-size:10px;color:#8e8e93">En consignment</div></div>
-      <div><div style="font-size:20px;font-weight:700;color:#34c759" id="cons-ton-match">0t</div><div style="font-size:10px;color:#8e8e93">Escaneadas</div></div>
-      <div><div style="font-size:20px;font-weight:700;color:#ff3b30" id="cons-ton-miss">0t</div><div style="font-size:10px;color:#8e8e93">Faltantes</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:#007aff" id="cons-ton-total">0t</div><div style="font-size:10px;color:#8e8e93">In consignment</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:#34c759" id="cons-ton-match">0t</div><div style="font-size:10px;color:#8e8e93">Scanned</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:#ff3b30" id="cons-ton-miss">0t</div><div style="font-size:10px;color:#8e8e93">Missing</div></div>
     </div>
   </div>
 
   <!-- Por producto -->
   <div id="cons-by-prod" style="display:none;background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.09)">
-    <div class="cons-hdr">Por producto <span id="cons-by-prod-sub" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+    <div class="cons-hdr">By product <span id="cons-by-prod-sub" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
     <div id="cons-by-prod-list"></div>
   </div>
 
   <!-- PARA VERIFICAR -->
   <div id="para-verificar-card" class="cons-card" style="margin-bottom:10px;display:none">
     <div class="cons-hdr" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span style="color:#ff3b30">&#9888; Para verificar</span>
+      <span style="color:#ff3b30">&#9888; To verify</span>
       <span id="pv-count-lbl" style="font-size:12px;color:#ff3b30;font-weight:700;background:#fff0f0;padding:3px 8px;border-radius:99px"></span>
     </div>
-    <div style="font-size:12px;color:#636366;margin-bottom:8px">Coils escaneados que NO coinciden con ningun consignment cargado. Verificar si el escaner leyó correctamente.</div>
+    <div style="font-size:12px;color:#636366;margin-bottom:8px">Scanned coils that do NOT match any loaded consignment. Check whether the scanner read them correctly.</div>
     <div id="para-verificar-list"></div>
   </div>
 
   <!-- VERIFICACION CRUZADA -->
   <div id="cross-check-card" class="cons-card" style="margin-bottom:10px;display:none">
     <div class="cons-hdr" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span>&#10003; Verificacion cruzada completa</span>
-      <button onclick="runCrossCheck()" style="padding:5px 12px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">&#8635; Actualizar</button>
+      <span>&#10003; Full cross-check</span>
+      <button onclick="runCrossCheck()" style="padding:5px 12px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">&#8635; Refresh</button>
     </div>
     <div id="cross-check-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px"></div>
     <div id="cross-check-list"></div>
@@ -850,13 +850,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
   <!-- Filter tabs -->
   <div id="cons-filters" style="display:none;display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
-    <button onclick="filterCons('all')" id="cf-all" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#007aff;color:#fff">Todos</button>
-    <button onclick="filterCons('ok')" id="cf-ok" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10003; Escaneados</button>
-    <button onclick="filterCons('miss')" id="cf-miss" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10007; Faltantes</button>
+    <button onclick="filterCons('all')" id="cf-all" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#007aff;color:#fff">All</button>
+    <button onclick="filterCons('ok')" id="cf-ok" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10003; Scanned</button>
+    <button onclick="filterCons('miss')" id="cf-miss" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#10007; Missing</button>
     <button onclick="filterCons('extra')" id="cf-extra" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f2f2f7;color:#8e8e93">&#43; Extra</button>
   </div>
   <div id="cons-prod-filter" style="display:none;display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-    <span style="font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase">Producto:</span>
+    <span style="font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase">Product:</span>
     <div id="cons-prod-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
   </div>
 
@@ -864,15 +864,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div id="cons-side-by-side">
     <div class="cons-card" id="cons-list-card" style="display:none;margin-bottom:0">
       <div class="cons-hdr">
-        Detalle de coils
+        Coil detail
         <span id="cons-ref-lbl" style="font-size:11px;color:#007aff;font-weight:600;text-transform:none"></span>
       </div>
       <div id="cons-list"></div>
     </div>
 
     <div class="cons-card" style="margin-bottom:0">
-      <div class="cons-hdr">Estado de Consignments <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Actualizar</button></div>
-      <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Cargando...</div></div>
+      <div class="cons-hdr">Consignment status <button onclick="loadConsignments()" style="background:none;border:none;cursor:pointer;color:#007aff;font-size:11px;font-weight:600">&#8634; Refresh</button></div>
+      <div id="saved-cons-list"><div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Loading...</div></div>
     </div>
   </div>
 
@@ -882,8 +882,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div id="cam-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:250;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.7)">
-    <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:8px">&#10006; Cerrar</button>
-    <div style="color:#fff;font-size:14px;font-weight:600">Apunta a la etiqueta</div>
+    <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:8px">&#10006; Close</button>
+    <div style="color:#fff;font-size:14px;font-weight:600">Point at the label</div>
     <div style="width:80px"></div>
   </div>
   <div style="flex:1;position:relative;overflow:hidden">
@@ -897,7 +897,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     <div id="cam-confirm-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="camReject()" style="flex:1;padding:16px;background:#ff3b30;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer">&#10005; No</button>
-      <button onclick="camConfirm()" id="cam-confirm-btn" style="flex:2;padding:16px;background:#34c759;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer">&#10003; Confirmar</button>
+      <button onclick="camConfirm()" id="cam-confirm-btn" style="flex:2;padding:16px;background:#34c759;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer">&#10003; Confirm</button>
     </div>
   </div>
 
@@ -910,7 +910,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div id="global-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:400">
   <div style="background:var(--card);margin:60px 16px 0;border-radius:14px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="global-search-inp" type="text" placeholder="Buscar coil, cast, WO, producto..." style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;outline:none" oninput="runGlobalSearch(this.value)" onkeydown="if(event.key==='Escape')closeGlobalSearch()">
+      <input id="global-search-inp" type="text" placeholder="Search coil, cast, WO, product..." style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;outline:none" oninput="runGlobalSearch(this.value)" onkeydown="if(event.key==='Escape')closeGlobalSearch()">
       <button onclick="closeGlobalSearch()" style="padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;font-weight:700">✕</button>
     </div>
     <div id="global-search-results" style="max-height:60vh;overflow-y:auto"></div>
@@ -919,37 +919,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div id="sel-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;padding:12px 16px;z-index:190;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="sel-count" style="color:#fff;font-size:14px;font-weight:600;flex:1"></span>
-  <input id="sel-wo-inp" type="text" placeholder="Escribi la WO..." onkeydown="if(event.key==='Enter'){var wo=this.value.trim();if(wo)assignWOToSelected(wo);}" style="padding:9px 12px;border:none;border-radius:8px;font-size:14px;font-family:inherit;width:160px;outline:none">
-  <button onclick="var wo=document.getElementById('sel-wo-inp').value.trim();if(wo)assignWOToSelected(wo);else alert('Escribi la WO');" style="padding:9px 16px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Asignar WO</button>
-  <button onclick="_selectedIds={};updateSelectionBar();document.querySelectorAll('.coil-chk').forEach(function(cb){cb.checked=false;});" style="padding:9px 12px;background:#636366;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">Cancelar</button>
+  <input id="sel-wo-inp" type="text" placeholder="Type the WO..." onkeydown="if(event.key==='Enter'){var wo=this.value.trim();if(wo)assignWOToSelected(wo);}" style="padding:9px 12px;border:none;border-radius:8px;font-size:14px;font-family:inherit;width:160px;outline:none">
+  <button onclick="var wo=document.getElementById('sel-wo-inp').value.trim();if(wo)assignWOToSelected(wo);else alert('Type the WO');" style="padding:9px 16px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Assign WO</button>
+  <button onclick="_selectedIds={};updateSelectionBar();document.querySelectorAll('.coil-chk').forEach(function(cb){cb.checked=false;});" style="padding:9px 12px;background:#636366;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">Cancel</button>
 </div>
 <div id="edit-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;align-items:flex-end;justify-content:center">
   <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:20px 16px 30px">
     <div style="width:36px;height:4px;background:#e5e5ea;border-radius:99px;margin:0 auto 16px"></div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Editar registro</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Edit record</div>
     <div style="font-size:12px;color:#8e8e93;margin-bottom:16px" id="edit-coil-lbl"></div>
     <div style="margin-bottom:12px">
-      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Maquina</label>
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Machine</label>
       <div style="display:flex;gap:8px">
         <button id="edit-maq-evg" onclick="setEditMaq('EVG')" style="flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #e5e5ea;background:#f2f2f7;color:#8e8e93">EVG</button>
         <button id="edit-maq-pit" onclick="setEditMaq('PITTINI')" style="flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #e5e5ea;background:#f2f2f7;color:#8e8e93">PITTINI</button>
       </div>
     </div>
     <div style="margin-bottom:12px">
-      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Peso (toneladas)</label>
-      <input id="edit-peso" type="number" step="0.001" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 1.475">
+      <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Weight (tons)</label>
+      <input id="edit-peso" type="number" step="0.001" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="e.g. 1.475">
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Cast</label>
-      <input id="edit-cast" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 534735">
+      <input id="edit-cast" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="e.g. 534735">
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px">Coil</label>
-      <input id="edit-coil" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="Ej: 6260300548">
+      <input id="edit-coil" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:15px;font-family:inherit;outline:none" placeholder="e.g. 6260300548">
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="closeEditModal()" style="flex:1;padding:13px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancelar</button>
-      <button onclick="saveEdit()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Guardar cambios</button>
+      <button onclick="closeEditModal()" style="flex:1;padding:13px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="saveEdit()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save changes</button>
     </div>
     <div id="edit-status" style="text-align:center;font-size:13px;margin-top:10px;min-height:18px"></div>
   </div>
@@ -962,17 +962,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div class="modal-date" id="m-date"></div>
       <div id="m-fields"></div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
-        <input id="modal-wo-inp" type="text" placeholder="Asignar WO..." onkeydown="if(event.key==='Enter')saveModalWO()" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg)">
-        <button onclick="saveModalWO()" style="padding:10px 14px;background:#34c759;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Guardar WO</button>
+        <input id="modal-wo-inp" type="text" placeholder="Assign WO..." onkeydown="if(event.key==='Enter')saveModalWO()" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg)">
+        <button onclick="saveModalWO()" style="padding:10px 14px;background:#34c759;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Save WO</button>
       </div>
       <div id="modal-history" style="display:none;padding:10px 0;border-top:1px solid var(--border);margin-top:8px">
-        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Historial de cambios</div>
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Change history</div>
         <div id="modal-history-list" style="font-size:12px;color:var(--muted)"></div>
       </div>
       <div class="modal-btns">
-        <button class="modal-del" id="btn-del">&#128465; Eliminar</button>
-        <button onclick="if(activeRec)editRecord(activeRec)" style="flex:1;padding:13px;background:#ff9500;color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">&#9998; Editar</button>
-        <button class="modal-close" id="btn-modal-close">Cerrar</button>
+        <button class="modal-del" id="btn-del">&#128465; Delete</button>
+        <button onclick="if(activeRec)editRecord(activeRec)" style="flex:1;padding:13px;background:#ff9500;color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">&#9998; Edit</button>
+        <button class="modal-close" id="btn-modal-close">Close</button>
       </div>
     </div>
   </div>
@@ -980,7 +980,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <div class="load-bg" id="load-bg">
   <div class="load-spin"></div>
-  <div class="load-title" id="load-title">Analizando...</div>
+  <div class="load-title" id="load-title">Analyzing...</div>
 </div>
 
 <script>
@@ -990,7 +990,7 @@ var COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b
 var records = [], activeRec = null, pendingImg = null, busy = false, currentMachine = null;
 
 function normalizeProductoKey(raw) {
-  if (!raw) return 'SIN PRODUCTO';
+  if (!raw) return 'NO PRODUCT';
   // Extract mm size and normalize
   var m = String(raw).match(/(\d+\.?\d*)\s*[Mm][Mm]/);
   if (m) return 'COIL REIN ' + parseFloat(m[1]) + 'mm';
@@ -1047,7 +1047,7 @@ async function callGemini(base64, mType) {
     var op2 = document.getElementById('operario-input').value.trim();
     _offlineQueue.push({imageBase64: base64, mediaType: mType||'image/jpeg', wo: wo2, operario: op2, notas: '', maquina: currentMachine});
     saveOfflineQueue();
-    throw new Error('Sin conexion - guardado en cola offline (' + _offlineQueue.length + ' pendiente' + (_offlineQueue.length>1?'s':'') + ')');
+    throw new Error('No connection - saved to offline queue (' + _offlineQueue.length + ' pending' + (_offlineQueue.length>1?'s':'') + ')');
   }
   // Only EXTRACT - do NOT save yet
   var resp = await fetch('/extract', {
@@ -1104,12 +1104,12 @@ function renderWoChips() {
 function onFiles(e) {
   var files = Array.from(e.target.files); e.target.value = '';
   if (!files.length) return;
-  if (!currentMachine) { setStatus('Seleccioná EVG o PITTINI primero.', 'err'); return; }
+  if (!currentMachine) { setStatus('Select EVG or PITTINI first.', 'err'); return; }
   if (files.length === 1) { loadOneFile(files[0]); return; }
   processQueue(files);
 }
 function loadOneFile(file) {
-  if (file.size > 10*1024*1024) { setStatus('Foto demasiado grande.','err'); return; }
+  if (file.size > 10*1024*1024) { setStatus('Photo too large.','err'); return; }
   var reader = new FileReader();
   reader.onload = function(ev) {
     pendingImg = ev.target.result;
@@ -1156,7 +1156,7 @@ async function processQueue(files) {
   document.getElementById('prog-wrap').style.display = 'block';
   for (var i = 0; i < total; i++) {
     document.getElementById('prog-fill').style.width = Math.round((i/total)*100) + '%';
-    document.getElementById('prog-txt').textContent = (i+1) + ' de ' + total + ' - ' + ok + ' ok, ' + dup + ' dup, ' + fail + ' error';
+    document.getElementById('prog-txt').textContent = (i+1) + ' of ' + total + ' - ' + ok + ' ok, ' + dup + ' dup, ' + fail + ' error';
     // Rate limit: max 15 req/min = 1 every 4 seconds
     if (i > 0) await new Promise(function(r){setTimeout(r, 4000);});
     try {
@@ -1182,19 +1182,19 @@ async function processQueue(files) {
     }
   }
   document.getElementById('prog-fill').style.width = '100%';
-  document.getElementById('prog-txt').textContent = 'Listo: ' + ok + ' ok, ' + dup + ' dup, ' + fail + ' error';
+  document.getElementById('prog-txt').textContent = 'Done: ' + ok + ' ok, ' + dup + ' dup, ' + fail + ' error';
   setTimeout(function() { document.getElementById('prog-wrap').style.display = 'none'; }, 3000);
   await loadRecords();
-  var msg = ok + ' procesada' + (ok!==1?'s':'');
-  if (dup) msg += ' - ' + dup + ' duplicada' + (dup!==1?'s':'');
-  if (fail) msg += ' - ' + fail + ' error' + (fail!==1?'es':'');
+  var msg = ok + ' processed';
+  if (dup) msg += ' - ' + dup + ' duplicate' + (dup!==1?'s':'');
+  if (fail) msg += ' - ' + fail + ' error' + (fail!==1?'s':'');
   setStatus(msg, ok > 0 ? 'ok' : 'warn');
 }
 async function analyze() {
   if (busy || !pendingImg) return;
   busy = true;
   document.getElementById('analyze-btn').disabled = true;
-  document.getElementById('btn-inner').innerHTML = '<div class="spin"></div> Analizando...';
+  document.getElementById('btn-inner').innerHTML = '<div class="spin"></div> Analyzing...';
   document.getElementById('result-card').style.display = 'none';
   document.getElementById('dup-card').style.display = 'none';
   clearStatus();
@@ -1219,9 +1219,9 @@ async function analyze() {
       document.getElementById('dup-peso').textContent = (ex.peso || '') + ' t';
       document.getElementById('dup-prod').textContent = ex.producto || '';
       document.getElementById('dup-wo').textContent = ex.wo || '-';
-      document.getElementById('dup-fecha').textContent = ex.created_at ? new Date(ex.created_at).toLocaleString('es', {weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      document.getElementById('dup-fecha').textContent = ex.created_at ? new Date(ex.created_at).toLocaleString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
       document.getElementById('dup-card').style.display = 'block';
-      setStatus('Etiqueta duplicada.', 'warn');
+      setStatus('Duplicate label.', 'warn');
       return;
     }
     // Store pending scan for confirmation
@@ -1237,13 +1237,13 @@ async function analyze() {
       producto: normalizeProducto(parsed.producto)
     };
     showResult({peso:parsed.peso, producto:parsed.producto, coil:parsed.coil, cast:parsed.cast}, wo);
-    setStatus('Revisá los datos y confirmá para guardar', 'warn');
+    setStatus('Check the data and confirm to save', 'warn');
   } catch(err) {
     setStatus(err.message, 'err');
   } finally {
     busy = false;
     document.getElementById('analyze-btn').disabled = false;
-    document.getElementById('btn-inner').textContent = 'Analizar etiqueta con IA';
+    document.getElementById('btn-inner').textContent = 'Analyze label with AI';
   }
 }
 // ---------- Un solo aviso al escanear: duplicado exacto > parecido > consignment > ok ----------
@@ -1299,7 +1299,7 @@ function _refCastLabel(items) {
   items.forEach(function(r) { var k = _castKeyCv(r.cast_no); if (k && !seen[k]) { seen[k] = 1; order.push(k); } });
   if (!order.length) return '';
   var shown2 = order.slice(0, 3).join(', ');
-  return 'Cast ' + shown2 + (order.length > 3 ? ' +' + (order.length - 3) + ' mas' : '');
+  return 'Cast ' + shown2 + (order.length > 3 ? ' +' + (order.length - 3) + ' more' : '');
 }
 function _numOrCv(v, d) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : d; }
 function _sizeScannedCv(p) { var m = String(p || '').match(/(\d+(?:[.,]\d+)?)\s*mm/i); return m ? parseFloat(m[1].replace(',', '.')) : NaN; }
@@ -1318,11 +1318,11 @@ function consVerify(coil, cast, peso, producto) {
   if (exact) {
     res.state = 'ok'; res.match = exact;
     var cp = _numOrCv(exact.peso, NaN);
-    if (isFinite(p) && isFinite(cp) && Math.abs(p - cp) > PESO_TOL) res.warnings.push('Peso: etiqueta ' + p.toFixed(3) + 't vs consignment ' + cp.toFixed(3) + 't (dif ' + Math.round((p - cp) * 1000) + ' kg)');
+    if (isFinite(p) && isFinite(cp) && Math.abs(p - cp) > PESO_TOL) res.warnings.push('Weight: label ' + p.toFixed(3) + 't vs consignment ' + cp.toFixed(3) + 't (diff ' + Math.round((p - cp) * 1000) + ' kg)');
     var ek = _castKeyCv(exact.cast_no);
-    if (ck && ek && ck !== ek) res.warnings.push('Cast: etiqueta ' + ck + ' vs consignment ' + exact.cast_no);
+    if (ck && ek && ck !== ek) res.warnings.push('Cast: label ' + ck + ' vs consignment ' + exact.cast_no);
     var s1 = _sizeScannedCv(producto), s2 = _sizeConsCv(exact.producto);
-    if (isFinite(s1) && isFinite(s2) && Math.abs(s1 - s2) > 0.05) res.warnings.push('Producto: etiqueta ' + s1 + 'mm vs consignment ' + exact.producto);
+    if (isFinite(s1) && isFinite(s2) && Math.abs(s1 - s2) > 0.05) res.warnings.push('Product: label ' + s1 + 'mm vs consignment ' + exact.producto);
     return res;
   }
   var cands = [];
@@ -1362,27 +1362,27 @@ function renderScanStatus(boxId, ids, dark, btnId, baseLabel) {
   var html = '';
 
   if (dup && dup.kind === 'exact') {
-    html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:14px;font-size:17px;font-weight:900;text-align:center;line-height:1.5">⛔ YA ESCANEADA<br>' + dupFlashHTML(dup.rec.coil, dup.rec.cast, dup.rec.producto, dup.rec.created_at, dup.rec.wo).replace('&#9940; YA ESCANEADA<br>', '') + '</div>';
+    html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:14px;font-size:17px;font-weight:900;text-align:center;line-height:1.5">⛔ ALREADY SCANNED<br>' + dupFlashHTML(dup.rec.coil, dup.rec.cast, dup.rec.producto, dup.rec.created_at, dup.rec.wo).replace('&#9940; ALREADY SCANNED<br>', '') + '</div>';
     if (btn) btn.style.display = 'none';           // nada de boton "deshabilitado": directamente no se puede guardar
   } else if (dup && dup.kind === 'similar') {
     var r = dup.rec;
-    html = '<div style="background:' + bg('#fff8e8') + ';color:' + warnC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.5">⚠ Posible duplicado (' + dup.dist + (dup.dist === 1 ? ' digito distinto' : ' digitos distintos') + ')<br><span style="font-weight:600;font-size:12px">Coil parecido ya guardado: ' + esc(r.coil) + '</span><br><span style="font-weight:500;font-size:12px">Si es otra etiqueta, guarda igual.</span></div>';
-    if (btn) { btn.style.display = ''; btn.disabled = false; btn.innerHTML = 'Guardar igual'; }
+    html = '<div style="background:' + bg('#fff8e8') + ';color:' + warnC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;line-height:1.5">⚠ Possible duplicate (' + dup.dist + (dup.dist === 1 ? ' digit different' : ' digits different') + ')<br><span style="font-weight:600;font-size:12px">Similar coil already saved: ' + esc(r.coil) + '</span><br><span style="font-weight:500;font-size:12px">If it is a different label, save anyway.</span></div>';
+    if (btn) { btn.style.display = ''; btn.disabled = false; btn.innerHTML = 'Save anyway'; }
   } else {
     if (btn) { btn.style.display = ''; btn.disabled = false; btn.innerHTML = baseLabel; }
     if (cv.state === 'ok') {
-      html = '<div style="background:' + bg('#f0fff4') + ';color:' + okC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700">✓ En consignment Ref: ' + esc(cv.match.referencia || '—') + '</div>';
+      html = '<div style="background:' + bg('#f0fff4') + ';color:' + okC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700">✓ In consignment Ref: ' + esc(cv.match.referencia || '—') + '</div>';
       if (cv.warnings.length) html += '<div style="background:' + bg('#fff8e8') + ';color:' + warnC + ';border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;margin-top:6px">⚠ ' + cv.warnings.map(esc).join('<br>⚠ ') + '</div>';
     } else if (cv.state === 'suggest') {
       html = '<div style="background:' + bg('#fff8e8') + ';border-radius:10px;padding:10px 12px">' +
-        '<div style="color:' + warnC + ';font-weight:700;font-size:13px;margin-bottom:6px">⚠ No esta en ningun consignment. ¿Sera este?</div>' +
+        '<div style="color:' + warnC + ';font-weight:700;font-size:13px;margin-bottom:6px">⚠ Not in any consignment. Could this be it?</div>' +
         cv.suggestions.map(function(s) {
           var rr = s.c;
           return '<button type="button" data-lot="' + _ceAttr(rr.lot_no) + '" data-cast="' + _ceAttr(_castKeyCv(rr.cast_no)) + '" onclick="applyConsSuggestion(this)" style="display:block;width:100%;text-align:left;margin-bottom:5px;padding:9px 10px;border:1.5px solid ' + warnC + ';border-radius:9px;background:' + (dark ? 'rgba(255,149,0,.15)' : '#fff') + ';color:' + (dark ? '#fff' : '#1c1c1e') + ';font-size:13px;cursor:pointer">' +
             '<b style="font-family:monospace">' + esc(rr.lot_no) + '</b> <span style="color:' + mut + ';font-size:11px">Cast ' + esc(rr.cast_no || '—') + ' · ' + _numOrCv(rr.peso, 0).toFixed(3) + 't</span></button>';
         }).join('') + '</div>';
     } else if (cv.state === 'nomatch') {
-      html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700">✗ No esta en ningun consignment cargado</div>';
+      html = '<div style="background:' + bg('#fff0f0') + ';color:' + badC + ';border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700">✗ Not in any loaded consignment</div>';
     }
   }
   box.innerHTML = html;
@@ -1415,7 +1415,7 @@ function attachScanStatus(boxId, ids, dark, btnId, baseLabel) {
 
 // ---------- Los 3 avisos claros en el celular: duplicado / guardado / error (cancela solo) ----------
 function _fmtWhen(iso) {
-  return iso ? new Date(iso).toLocaleString('es', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+  return iso ? new Date(iso).toLocaleString('en-US', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
 }
 
 function dupFlashHTML(coil, cast, producto, whenIso, wo) {
@@ -1425,7 +1425,7 @@ function dupFlashHTML(coil, cast, producto, whenIso, wo) {
   var when = _fmtWhen(whenIso);
   if (when) rows.push(when);
   if (wo) rows.push('WO ' + esc(wo));
-  return '&#9940; YA ESCANEADA<br>' +
+  return '&#9940; ALREADY SCANNED<br>' +
     '<span style="font-size:22px;font-weight:800">' + esc(coil || '') + '</span>' +
     (rows.length ? '<br><span style="font-size:15px;font-weight:600">' + rows.join(' · ') + '</span>' : '');
 }
@@ -1452,9 +1452,9 @@ function showResult(d, wo) {
   resetScanConfirmBtn();
   var peso = parseFloat(d.peso||0);
   var isOutlier = peso > 0 && (peso < 1.2 || peso > 1.8);
-  document.getElementById('res-title').textContent = d.producto || 'Datos extraidos';
+  document.getElementById('res-title').textContent = d.producto || 'Extracted data';
   if (isOutlier) {
-    setStatus('Atencion: peso inusual (' + d.peso + 't) — verificar etiqueta', 'warn');
+    setStatus('Warning: unusual weight (' + d.peso + 't) — check the label', 'warn');
   }
   // La verificacion contra el consignment (ok / sugerencia / sin coincidencia) se muestra en el cuadro cv-box, mas abajo.
   // Se sigue guardando en "Para verificar" para el seguimiento de la pestaña Consignment.
@@ -1465,28 +1465,28 @@ function showResult(d, wo) {
   var inputStyle = 'width:100%;padding:10px 12px;border:2px solid #e5e5ea;border-radius:9px;font-size:15px;font-family:monospace;font-weight:700;outline:none;box-sizing:border-box;margin-bottom:2px;background:#f8fafc';
   fields.innerHTML =
     '<div class="result-row" style="flex-direction:column;align-items:flex-start">' +
-      '<div class="rr-key" style="margin-bottom:4px">Coil N&#176;</div>' +
-      '<input id="conf-coil" value="' + esc(d.coil||'') + '" style="' + inputStyle + ';font-size:16px" placeholder="Numero de coil" ' +
+      '<div class="rr-key" style="margin-bottom:4px">Coil No.</div>' +
+      '<input id="conf-coil" value="' + esc(d.coil||'') + '" style="' + inputStyle + ';font-size:16px" placeholder="Coil number" ' +
         '>' +
     '</div>' +
     '<div class="result-row" style="flex-direction:column;align-items:flex-start">' +
       '<div class="rr-key" style="margin-bottom:4px">Cast</div>' +
-      '<input id="conf-cast" value="' + esc(d.cast||'') + '" style="' + inputStyle + '" placeholder="Numero de cast" ' +
+      '<input id="conf-cast" value="' + esc(d.cast||'') + '" style="' + inputStyle + '" placeholder="Cast number" ' +
         '>' +
     '</div>' +
     '<div class="result-row" style="flex-direction:column;align-items:flex-start">' +
-      '<div class="rr-key" style="margin-bottom:4px">Peso (t)</div>' +
+      '<div class="rr-key" style="margin-bottom:4px">Weight (t)</div>' +
       '<input id="conf-peso" value="' + esc(d.peso||'') + '" style="' + inputStyle + ';font-size:22px;color:#007aff" placeholder="0.000" type="number" step="0.001" ' +
         '>' +
     '</div>' +
     '<div class="result-row" style="flex-direction:column;align-items:flex-start">' +
-      '<div class="rr-key" style="margin-bottom:4px">Producto</div>' +
-      '<input id="conf-producto" value="' + esc(d.producto||'') + '" style="' + inputStyle + '" placeholder="Producto" ' +
+      '<div class="rr-key" style="margin-bottom:4px">Product</div>' +
+      '<input id="conf-producto" value="' + esc(d.producto||'') + '" style="' + inputStyle + '" placeholder="Product" ' +
         '>' +
     '</div>';
   document.getElementById('result-card').style.display = 'block';
   fields.insertAdjacentHTML('beforeend', '<div id="scan-status" style="padding:10px 0 0"></div>');
-  attachScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
+  attachScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirm and save');
   // Attach enter navigation
   setTimeout(function(){
     var order = ['conf-coil','conf-cast','conf-peso','conf-producto'];
@@ -1522,7 +1522,7 @@ async function loadRecords() {
       });
     }
     records = newRecords;
-    document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
+    document.getElementById('nav-pill').textContent = records.length + ' record' + (records.length!==1?'s':'');
     renderWoChips();
     // Auto-backup to localStorage daily
     try {
@@ -1541,7 +1541,7 @@ async function loadRecords() {
 }
 function renderList(list) {
   var el = document.getElementById('rec-list');
-  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Sin registros</div></div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No records</div></div>'; return; }
   var container = el;
   el.innerHTML = '';
   var groups = {};
@@ -1561,13 +1561,13 @@ function renderList(list) {
     var col = COLORS[gi%COLORS.length];
     var card = document.createElement('div');
     card.className = 'rec-card';
-    var lastDate = g.items[0] && g.items[0].created_at ? new Date(g.items[0].created_at).toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-    card.innerHTML = '<div class="rec-top"><div class="rec-color" style="background:'+col+'"></div><div class="rec-info"><div class="rec-title">'+esc(g.producto||'Sin producto')+'</div><div class="rec-meta">Cast: '+esc(g.cast||'-')+' &middot; '+g.items.length+' coils &middot; '+tot.toFixed(3)+' t</div><div style="font-size:10px;color:var(--muted);margin-top:2px">&#128337; '+lastDate+'</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+g.items.length+' coils</div></div></div><div class="rec-badges">'+(g.cast?'<span class="badge cast-b">Cast: <b>'+esc(g.cast)+'</b></span>':'')+wos.map(function(w){return'<span class="badge wo-b">WO: <b>'+esc(w)+'</b></span>';}).join('')+coils.slice(0,2).map(function(c){return'<span class="badge">Coil: <b>'+esc(c)+'</b></span>';}).join('')+(coils.length>2?'<span class="badge">+'+(coils.length-2)+' mas</span>':'')+'</div><div style="padding:10px 14px 12px;border-top:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Asignar WO a todo el grupo..." id="wo-inp-'+gi+'" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none" /><button onclick="assignWO('+gi+')" style="flex-shrink:0;padding:10px 18px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Asignar</button></div></div><div class="rec-items" id="grp'+gi+'"></div>';
+    var lastDate = g.items[0] && g.items[0].created_at ? new Date(g.items[0].created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    card.innerHTML = '<div class="rec-top"><div class="rec-color" style="background:'+col+'"></div><div class="rec-info"><div class="rec-title">'+esc(g.producto||'No product')+'</div><div class="rec-meta">Cast: '+esc(g.cast||'-')+' &middot; '+g.items.length+' coils &middot; '+tot.toFixed(3)+' t</div><div style="font-size:10px;color:var(--muted);margin-top:2px">&#128337; '+lastDate+'</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+g.items.length+' coils</div></div></div><div class="rec-badges">'+(g.cast?'<span class="badge cast-b">Cast: <b>'+esc(g.cast)+'</b></span>':'')+wos.map(function(w){return'<span class="badge wo-b">WO: <b>'+esc(w)+'</b></span>';}).join('')+coils.slice(0,2).map(function(c){return'<span class="badge">Coil: <b>'+esc(c)+'</b></span>';}).join('')+(coils.length>2?'<span class="badge">+'+(coils.length-2)+' more</span>':'')+'</div><div style="padding:10px 14px 12px;border-top:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Assign WO to the whole group..." id="wo-inp-'+gi+'" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none" /><button onclick="assignWO('+gi+')" style="flex-shrink:0;padding:10px 18px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Assign</button></div></div><div class="rec-items" id="grp'+gi+'"></div>';
     var itemsDiv = card.querySelector('#grp'+gi);
     g.items.forEach(function(r) {
       var row = document.createElement('div');
       row.className = 'rec-item-row';
-      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
       var maqColor = r.maquina === 'EVG' ? '#007aff' : '#af52de';
       var maqBadge = r.maquina ? '<span style="margin-left:6px;font-size:10px;font-weight:700;color:' + maqColor + '">' + r.maquina + '</span>' : '';
       var woBadge = r.wo ? '<span style="background:#fff8e8;color:#7a5c00;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px">' + esc(r.wo) + '</span>' : '';
@@ -1587,7 +1587,7 @@ function renderList(list) {
       var woBadgeHtml = r.wo ? ' <span style="background:#fff8e8;color:#7a5c00;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>' : '';
       var content = document.createElement('div');
       content.style.cssText = 'flex:1;min-width:0;cursor:pointer';
-      content.innerHTML = '<div style="font-size:12px;font-weight:600">'+esc(r.coil||'Sin coil')+mBadge+woBadgeHtml+'</div><div style="font-size:11px;color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div>';
+      content.innerHTML = '<div style="font-size:12px;font-weight:600">'+esc(r.coil||'No coil')+mBadge+woBadgeHtml+'</div><div style="font-size:11px;color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div>';
       content.addEventListener('click', function(){openModal(r);});
       var pesoEl = document.createElement('div');
       pesoEl.style.cssText = 'font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0';
@@ -1615,10 +1615,10 @@ function openModal(r) {
   var recHistory = _changeLog.filter(function(log){return log.id === r.id;});
   if (histDiv && histList) {
     if (recHistory.length) {
-      var fieldNames = {peso:'Peso',cast:'Cast',coil:'Coil',maquina:'Maquina',wo:'WO'};
+      var fieldNames = {peso:'Weight',cast:'Cast',coil:'Coil',maquina:'Machine',wo:'WO'};
       histDiv.style.display = 'block';
       histList.innerHTML = recHistory.map(function(log){
-        var d = new Date(log.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        var d = new Date(log.ts).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
         return '<div style="padding:5px 0;border-bottom:1px solid var(--border)">' +
           '<span style="font-weight:600;color:var(--text)">'+(fieldNames[log.field]||log.field)+':</span> ' +
           '<span style="color:#ff3b30;text-decoration:line-through">'+(log.from||'—')+'</span> ' +
@@ -1629,10 +1629,10 @@ function openModal(r) {
       histDiv.style.display = 'none';
     }
   }
-  document.getElementById('m-title').textContent = r.producto || 'Registro';
-  document.getElementById('m-date').textContent = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('m-title').textContent = r.producto || 'Record';
+  document.getElementById('m-date').textContent = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   var mf = document.getElementById('m-fields'); mf.innerHTML = '';
-  [['Maquina',r.maquina],['WO',r.wo],['Peso (t)',r.peso],['Producto',r.producto],['Coil',r.coil],['Cast',r.cast],['Operario',r.operario],['Notas',r.notas]].forEach(function(p) {
+  [['Machine',r.maquina],['WO',r.wo],['Weight (t)',r.peso],['Product',r.producto],['Coil',r.coil],['Cast',r.cast],['Operator',r.operario],['Notes',r.notas]].forEach(function(p) {
     if (!p[1]) return;
     var d = document.createElement('div'); d.className = 'modal-field';
     d.innerHTML = '<div class="mf-key">'+p[0]+'</div><div class="mf-val">'+esc(p[1])+'</div>';
@@ -1643,11 +1643,11 @@ function openModal(r) {
 function closeModal() { document.getElementById('modal-bg').classList.remove('on'); activeRec = null; }
 async function delRecord() {
   if (!activeRec) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar registro', function(){ delRecord(); }); return; }
-  if (!confirm('Eliminar?')) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to delete record', function(){ delRecord(); }); return; }
+  if (!confirm('Delete?')) return;
   await fetch('/delete?id=' + activeRec.id, {method:'DELETE'});
   records = records.filter(function(r){return r.id!==activeRec.id;});
-  document.getElementById('nav-pill').textContent = records.length + ' registro' + (records.length!==1?'s':'');
+  document.getElementById('nav-pill').textContent = records.length + ' record' + (records.length!==1?'s':'');
   filterRecords(); renderDash(); closeModal();
 }
 function parseTon(p) { if(!p)return 0; var n=parseFloat(String(p).replace(',','.')); return isNaN(n)?0:n; }
@@ -1692,9 +1692,9 @@ function applyCustomRange() {
   var fromInp = document.getElementById('range-from'), toInp = document.getElementById('range-to');
   var errEl = document.getElementById('range-err');
   var fromV = fromInp ? fromInp.value : '', toV = toInp ? toInp.value : '';
-  if (!fromV || !toV) { if (errEl) errEl.textContent = 'Elegi las dos fechas'; return; }
+  if (!fromV || !toV) { if (errEl) errEl.textContent = 'Choose both dates'; return; }
   var from = new Date(fromV + 'T00:00:00'), to = new Date(toV + 'T23:59:59');
-  if (from > to) { if (errEl) errEl.textContent = '"Del" no puede ser despues de "al"'; return; }
+  if (from > to) { if (errEl) errEl.textContent = '"From" cannot be after "to"'; return; }
   if (errEl) errEl.textContent = '';
   _dbFrom = from; _dbTo = to; _dbPeriod = 'custom';
   ['today','week','month','all'].forEach(function(x){ var b = document.getElementById('pd-'+x); if (b) b.className = 'pbi-date-chip'; });
@@ -1738,7 +1738,7 @@ function setWOFilter(w) {
 function clearDashFilters() {
   _dbPeriod = 'all'; _dbMaq = ''; _dbProd = ''; _dbWO = ''; _dbFrom = null; _dbTo = null;
   var customBtn = document.getElementById('pd-custom');
-  if (customBtn) customBtn.innerHTML = '&#128197; Rango';
+  if (customBtn) customBtn.innerHTML = '&#128197; Range';
   var fromInp = document.getElementById('range-from'), toInp = document.getElementById('range-to');
   if (fromInp) fromInp.value = ''; if (toInp) toInp.value = '';
   setPeriod('all');
@@ -1810,12 +1810,12 @@ function renderResumenDia() {
   heroTon.textContent = todayTon.toFixed(3);
   document.getElementById('hero-cnt-num').textContent = todayData.length;
   var yTon = sumTon(yestData);
-  document.getElementById('hero-cnt-sub').textContent = yestData.length ? (todayData.length >= yestData.length ? '▲' : '▼') + ' ' + yestData.length + ' ayer' : 'sin datos de ayer';
+  document.getElementById('hero-cnt-sub').textContent = yestData.length ? (todayData.length >= yestData.length ? '▲' : '▼') + ' ' + yestData.length + ' yesterday' : 'no data for yesterday';
 
   // Consignments completos (sobre todo lo cargado, sin filtrar por producto)
   var refs = {};
   (_consignments || []).forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
+    var k = r.referencia || 'No ref';
     if (!refs[k]) refs[k] = {n: 0, sc: 0};
     refs[k].n++;
     if (isCoilScanned(r.lot_no)) refs[k].sc++;
@@ -1823,7 +1823,7 @@ function renderResumenDia() {
   var refKeys = Object.keys(refs);
   var completos = refKeys.filter(function(k) { return refs[k].n > 0 && refs[k].sc === refs[k].n; }).length;
   document.getElementById('hero-cons-num').textContent = completos + '/' + refKeys.length;
-  document.getElementById('hero-cons-sub').textContent = refKeys.length ? Math.round(completos / refKeys.length * 100) + '% del total' : 'sin consignments cargados';
+  document.getElementById('hero-cons-sub').textContent = refKeys.length ? Math.round(completos / refKeys.length * 100) + '% of total' : 'no consignments loaded';
 
 }
 
@@ -1831,7 +1831,7 @@ function renderWoSemaforo() {
   var el = document.getElementById('wo-semaforo-list');
   if (!el) return;
   var allWos = unique((records || []).map(function(r) { return r.wo; }).filter(Boolean));
-  if (!allWos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin WOs</div>'; return; }
+  if (!allWos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">No WOs</div>'; return; }
   var rows = allWos.map(function(wo) {
     var woRecs = records.filter(function(r) { return r.wo === wo; });
     var entrada = sumTon(woRecs);
@@ -1847,7 +1847,7 @@ function renderWoSemaforo() {
   var shown = ordered.slice(0, 6);
   el.innerHTML = shown.map(function(r) {
     var color = r.closed ? '#8e9aab' : r.pct >= 100 ? '#34c759' : r.pct >= 75 ? '#007aff' : r.pct >= 50 ? '#ff9500' : '#ff3b30';
-    var closedTag = r.closed ? '<span style="font-size:10px;font-weight:700;color:#8e9aab;background:#f0f2f5;border-radius:4px;padding:1px 6px;margin-left:6px">&#128274; CERRADA</span>' : '';
+    var closedTag = r.closed ? '<span style="font-size:10px;font-weight:700;color:#8e9aab;background:#f0f2f5;border-radius:4px;padding:1px 6px;margin-left:6px">&#128274; CLOSED</span>' : '';
     return '<div onclick="goTab(\'prod\')" style="cursor:pointer;padding:9px 0;border-bottom:1px solid #f0f2f5;' + (r.closed ? 'opacity:.6' : '') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div style="min-width:0"><span style="font-size:13px;font-weight:700;color:#1a2332">WO: ' + esc(r.wo) + '</span>' + closedTag + ' ' +
@@ -1855,10 +1855,10 @@ function renderWoSemaforo() {
         '<span style="font-size:13px;font-weight:800;color:' + color + ';flex-shrink:0">' + r.pct + '%</span>' +
       '</div>' +
       '<div style="background:#f0f2f5;border-radius:4px;height:7px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + color + ';width:' + Math.min(r.pct, 100) + '%"></div></div>' +
-      '<div style="font-size:11px;color:#8e9aab;margin-top:3px">' + r.entrada.toFixed(3) + 't escaneadas &middot; ' + r.producido.toFixed(3) + 't producidas &middot; ' + r.coils + ' coils</div>' +
+      '<div style="font-size:11px;color:#8e9aab;margin-top:3px">' + r.entrada.toFixed(3) + 't scanned &middot; ' + r.producido.toFixed(3) + 't produced &middot; ' + r.coils + ' coils</div>' +
     '</div>';
   }).join('');
-  if (ordered.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">Ver las ' + ordered.length + ' WOs en Produccion &rarr;</div>';
+  if (ordered.length > shown.length) el.innerHTML += '<div onclick="goTab(\'prod\')" style="text-align:center;padding:8px;cursor:pointer;color:#007aff;font-size:12px;font-weight:700">See all ' + ordered.length + ' WOs in Production &rarr;</div>';
 }
 
 var _tvMode = false;
@@ -1868,7 +1868,7 @@ function applyTvMode() {
   var more = document.getElementById('dash-more');
   if (more) more.style.display = _tvMode ? 'none' : '';
   var btn = document.getElementById('tv-mode-btn');
-  if (btn) btn.innerHTML = _tvMode ? '&#8601; Salir de pantalla grande' : '&#9974; Modo pantalla grande';
+  if (btn) btn.innerHTML = _tvMode ? '&#8601; Exit big screen mode' : '&#9974; Big screen mode';
   ['hero-ton-num', 'hero-cnt-num', 'hero-cons-num'].forEach(function(id) {
     var e = document.getElementById(id);
     if (e) e.style.fontSize = _tvMode ? '64px' : '40px';
@@ -1900,12 +1900,12 @@ async function exportDashboardImage() {
   var target = document.getElementById('p-dash');
   if (!target) return;
   var origText = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '&#8987; Generando...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '&#8987; Generating...'; }
   try {
     await _loadHtml2Canvas();
     var canvas = await window.html2canvas(target, {backgroundColor: '#f2f2f7', scale: 2, useCORS: true});
     var blob = await new Promise(function(res) { canvas.toBlob(res, 'image/png'); });
-    if (!blob) throw new Error('No se pudo generar la imagen');
+    if (!blob) throw new Error('Could not generate the image');
     var fname = 'dashboard-coil-scanner-' + new Date().toISOString().slice(0, 10) + '.png';
     var file = new File([blob], fname, {type: 'image/png'});
     if (navigator.canShare && navigator.canShare({files: [file]})) {
@@ -1915,7 +1915,7 @@ async function exportDashboardImage() {
     }
   } catch (e) {
     console.error('[exportDashboardImage]', e);
-    if (String(e && e.name) !== 'AbortError') alert('No se pudo exportar: ' + (e && e.message || e));
+    if (String(e && e.name) !== 'AbortError') alert('Could not export: ' + (e && e.message || e));
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origText; }
   }
@@ -1939,10 +1939,10 @@ function renderDash() {
 
   // KPIs
   document.getElementById('db-ton').textContent = tot.toFixed(3);
-  document.getElementById('db-ton-sub').textContent = data.length + ' coils' + (_dbPeriod==='today'?' hoy':_dbPeriod==='week'?' ultimos 7 dias':_dbPeriod==='month'?' ultimos 30 dias':_dbPeriod==='custom'&&_dbFrom&&_dbTo?' del '+_dbFrom.getDate()+'/'+(_dbFrom.getMonth()+1)+' al '+_dbTo.getDate()+'/'+(_dbTo.getMonth()+1):' en total');
+  document.getElementById('db-ton-sub').textContent = data.length + ' coils' + (_dbPeriod==='today'?' today':_dbPeriod==='week'?' last 7 days':_dbPeriod==='month'?' last 30 days':_dbPeriod==='custom'&&_dbFrom&&_dbTo?' from '+_dbFrom.getDate()+'/'+(_dbFrom.getMonth()+1)+' to '+_dbTo.getDate()+'/'+(_dbTo.getMonth()+1):' in total');
 
   document.getElementById('db-cnt').textContent = data.length;
-  document.getElementById('db-cnt-sub').textContent = 'de ' + records.length + ' total';
+  document.getElementById('db-cnt-sub').textContent = 'of ' + records.length + ' total';
 
   var evgD = data.filter(function(r){return r.maquina==='EVG';});
   var pitD = data.filter(function(r){return r.maquina==='PITTINI';});
@@ -1953,7 +1953,7 @@ function renderDash() {
 
   var wosActive = unique(data.map(function(r){return r.wo;}).filter(Boolean));
   document.getElementById('db-wo-cnt').textContent = wosActive.length;
-  document.getElementById('db-wo-list').textContent = wosActive.length ? wosActive.slice(0,3).join(', ')+(wosActive.length>3?'…':'') : 'ninguna';
+  document.getElementById('db-wo-list').textContent = wosActive.length ? wosActive.slice(0,3).join(', ')+(wosActive.length>3?'…':'') : 'none';
 
   // Trend vs previous period
   if (_dbPeriod === 'today') {
@@ -1967,15 +1967,15 @@ function renderDash() {
     if (yTon > 0) {
       var diff = ((tot - yTon)/yTon*100).toFixed(1);
       var up = tot >= yTon;
-      document.getElementById('db-ton-trend').innerHTML = '<span style="color:'+(up?'#34c759':'#ff3b30')+'">'+(up?'▲':'▼')+' '+Math.abs(diff)+'% vs ayer ('+yTon.toFixed(3)+'t)</span>';
-      document.getElementById('db-cnt-trend').innerHTML = '<span style="color:'+(data.length>=yesterday.length?'#34c759':'#ff3b30')+'">'+(data.length>=yesterday.length?'▲':'▼')+' vs ayer ('+yesterday.length+' coils)</span>';
+      document.getElementById('db-ton-trend').innerHTML = '<span style="color:'+(up?'#34c759':'#ff3b30')+'">'+(up?'▲':'▼')+' '+Math.abs(diff)+'% vs yesterday ('+yTon.toFixed(3)+'t)</span>';
+      document.getElementById('db-cnt-trend').innerHTML = '<span style="color:'+(data.length>=yesterday.length?'#34c759':'#ff3b30')+'">'+(data.length>=yesterday.length?'▲':'▼')+' vs yesterday ('+yesterday.length+' coils)</span>';
     }
   } else {
     document.getElementById('db-ton-trend').innerHTML = '';
     document.getElementById('db-cnt-trend').innerHTML = '';
   }
 
-  // Resumen del dia (hero), semaforo de WOs y que falta -- siempre sobre TODOS los registros/consignments, no sobre el filtro de abajo
+  // Daily summary (hero), semaforo de WOs y que falta -- siempre sobre TODOS los registros/consignments, no sobre el filtro de abajo
   renderResumenDia();
   renderWoSemaforo();
   applyTvMode();
@@ -1985,15 +1985,15 @@ function renderDash() {
 
   // Donut maquina
   renderDonut2('db-maq-donut','db-maq-leg',
-    groupSum(data,function(r){return r.maquina||'Sin maq';}),
-    function(k){if(k!=='Sin maq')setMaq(k);});
+    groupSum(data,function(r){return r.maquina||'No machine';}),
+    function(k){if(k!=='No machine')setMaq(k);});
 
   // Producto bars
-  var byProd = groupSum(data,function(r){return normalizeProductoKey(r.producto)||'Sin producto';});
+  var byProd = groupSum(data,function(r){return normalizeProductoKey(r.producto)||'No product';});
   renderBars2('db-prod-bars',byProd,tot,function(k){setProdFilter(k);},5,_shortProdLabel);
   // WO bars (nuevo -- misma idea que Por producto, para ver de un vistazo como se reparte entre WOs)
-  var byWO = groupSum(data,function(r){return r.wo||'Sin WO';});
-  renderBars2('db-wo-bars',byWO,tot,function(k){if(k!=='Sin WO')setWOFilter(k);},5);
+  var byWO = groupSum(data,function(r){return r.wo||'No WO';});
+  renderBars2('db-wo-bars',byWO,tot,function(k){if(k!=='No WO')setWOFilter(k);},5);
 
   // Week comparison
   var curWeek = getWeekData(0);
@@ -2009,8 +2009,8 @@ function renderDash() {
     var diffPct2 = prevTon2>0?((diffTon2/prevTon2)*100).toFixed(1):null;
     var wDiff = document.getElementById('week-diff-lbl');
     if (wDiff) wDiff.innerHTML = diffPct2 ?
-      '<span style="color:'+(diffTon2>=0?'#34c759':'#ff3b30')+'">'+(diffTon2>=0?'▲':'▼')+' '+Math.abs(diffPct2)+'% vs semana anterior</span>' :
-      '<span style="color:#8e9aab">Sin datos semana anterior</span>';
+      '<span style="color:'+(diffTon2>=0?'#34c759':'#ff3b30')+'">'+(diffTon2>=0?'▲':'▼')+' '+Math.abs(diffPct2)+'% vs last week</span>' :
+      '<span style="color:#8e9aab">No data for last week</span>';
   }
   // Cast progress
   renderCastProgressDB(data);
@@ -2024,7 +2024,7 @@ function renderDash() {
 
   // Table
   renderTable(data);
-  document.getElementById('tbl-count').textContent = '('+data.length+' registros)';
+  document.getElementById('tbl-count').textContent = '('+data.length+' records)';
 }
 
 function renderCountTimeline(data) {
@@ -2090,7 +2090,7 @@ function renderCountTimeline(data) {
 
 function castConsHTML(refs) {
   var ks = Object.keys(refs || {});
-  if (!ks.length) return (_consignments && _consignments.length) ? ' <span style="font-size:10px;color:#8e9aab">sin consignment</span>' : '';
+  if (!ks.length) return (_consignments && _consignments.length) ? ' <span style="font-size:10px;color:#8e9aab">no consignment</span>' : '';
   ks.sort(function(a,b){ return refs[b]-refs[a]; });
   var txt = ks.slice(0,3).map(function(k){ return esc(k) + (ks.length>1 ? ' ('+refs[k]+')' : ''); }).join(', ') + (ks.length>3 ? ' +'+(ks.length-3) : '');
   return ' <span style="font-size:10px;font-weight:700;color:#ff9500">Consignment: ' + txt + '</span>';
@@ -2101,7 +2101,7 @@ function renderCastProgressDB(data) {
   if (!el) return;
   var byCast = {};
   var lotRef = {};
-  (_consignments || []).forEach(function(c){ var l = String(c.lot_no||'').trim(); if (l) lotRef[l] = c.referencia || 'Sin ref'; });
+  (_consignments || []).forEach(function(c){ var l = String(c.lot_no||'').trim(); if (l) lotRef[l] = c.referencia || 'No ref'; });
   data.forEach(function(r){
     if(!r.cast) return;
     if(!byCast[r.cast]) byCast[r.cast]={coils:0,ton:0,prod:r.producto,maqE:0,maqP:0,refs:{}};
@@ -2114,7 +2114,7 @@ function renderCastProgressDB(data) {
   });
   var TARGET=48;
   var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
-  if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:13px">Sin datos</div>';return;}
+  if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:13px">No data</div>';return;}
   el.innerHTML=sorted.map(function(cast){
     var d=byCast[cast];
     var pct=Math.min(Math.round((d.coils/TARGET)*100),100);
@@ -2180,9 +2180,9 @@ function renderTable(data) {
   var searchEl = document.getElementById('db-search');
   var q = searchEl ? searchEl.value.toLowerCase().trim() : '';
   var filtered = q ? data.filter(function(r){return [r.coil,r.cast,r.producto,r.wo,r.maquina].some(function(v){return(v||'').toLowerCase().indexOf(q)>=0;});}) : data;
-  if (document.getElementById('tbl-count')) document.getElementById('tbl-count').textContent = '('+filtered.length+' de '+data.length+')';
+  if (document.getElementById('tbl-count')) document.getElementById('tbl-count').textContent = '('+filtered.length+' of '+data.length+')';
   document.getElementById('tbl-body').innerHTML = filtered.slice(0,200).map(function(r) {
-    var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
     return '<tr>' +
       '<td><b style="font-size:12px;color:'+mc+'">'+(r.maquina||'—')+'</b></td>' +
@@ -2198,9 +2198,9 @@ function renderTable(data) {
 
 function exportCSV() {
   if (!records.length) return;
-  var rows = [['Fecha','WO','Producto','Coil','Cast','Peso (t)','Operario','Notas']];
+  var rows = [['Date','WO','Product','Coil','Cast','Weight (t)','Operator','Notes']];
   records.forEach(function(r) {
-    rows.push([r.created_at?new Date(r.created_at).toLocaleString('es'):'', r.wo||'', r.producto||'', r.coil||'', r.cast||'', r.peso||'', r.operario||'', '"'+(r.notas||'').replace(/"/g,'""')+'"']);
+    rows.push([r.created_at?new Date(r.created_at).toLocaleString('en-US'):'', r.wo||'', r.producto||'', r.coil||'', r.cast||'', r.peso||'', r.operario||'', '"'+(r.notas||'').replace(/"/g,'""')+'"']);
   });
   var csv = rows.map(function(r){return r.join(',');}).join('\n');
   var a = document.createElement('a');
@@ -2210,7 +2210,7 @@ function exportCSV() {
 }
 function shareData() {
   var tot = sumTon(records);
-  var text = 'Coil Scanner\nRegistros: ' + records.length + '\nToneladas: ' + tot.toFixed(3) + 't';
+  var text = 'Coil Scanner\nRecords: ' + records.length + '\nTons: ' + tot.toFixed(3) + 't';
   if (navigator.share) navigator.share({title:'Coil Scanner',text:text});
   else navigator.clipboard && navigator.clipboard.writeText(text);
 }
@@ -2220,17 +2220,17 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function unique(arr){var seen={};return arr.filter(function(v){return seen[v]?false:(seen[v]=true);});}
 function groupSum(arr,keyFn){var obj={};arr.forEach(function(r){var k=keyFn(r);obj[k]=(obj[k]||0)+parseTon(r.peso);});return obj;}
 async function assignWO(gi) {
-  guardedAction('Contrasena para asignar WO', async function() {
+  guardedAction('Password to assign WO', async function() {
   var inp = document.getElementById('wo-inp-'+gi);
   var wo = inp ? inp.value.trim() : '';
-  if (!wo) { setStatus('Escribi una WO primero.','err'); return; }
+  if (!wo) { setStatus('Type a WO first.','err'); return; }
   var group = window._histGroups && window._histGroups[gi];
   if (!group || !group.items.length) return;
   var ids = group.items.map(function(r){return r.id;}).filter(Boolean);
   if (!ids.length) return;
   var btn = inp.nextElementSibling;
   var origText = btn.textContent;
-  btn.textContent = 'Guardando '+ids.length+'...';
+  btn.textContent = 'Saving '+ids.length+'...';
   btn.disabled = true;
   var ok = 0;
   // Send all in parallel
@@ -2263,7 +2263,7 @@ var _selectedIds = {};
 async function assignWOToSelected(wo) {
   var ids = Object.keys(_selectedIds);
   if (!ids.length || !wo) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para asignar WO masivo', function(){ assignWOToSelected(wo); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password for bulk WO assignment', function(){ assignWOToSelected(wo); }); return; }
   var promises = ids.map(function(id) {
     return fetch('/updatewo', {
       method: 'POST',
@@ -2293,18 +2293,18 @@ function updateSelectionBar() {
     return;
   }
   bar.style.display = 'flex';
-  document.getElementById('sel-count').textContent = n + ' coil' + (n!==1?'s':'') + ' seleccionado' + (n!==1?'s':'');
+  document.getElementById('sel-count').textContent = n + ' coil' + (n!==1?'s':'') + ' selected';
 }
 
 var _camStream = null;
 
 function openCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatus('Tu dispositivo no soporta camara en vivo. Usa el boton de subir foto.', 'err');
+    setStatus('Your device does not support live camera. Use the upload photo button.', 'err');
     return;
   }
   if (!currentMachine) {
-    setStatus('Selecciona EVG o PITTINI primero.', 'err');
+    setStatus('Select EVG or PITTINI first.', 'err');
     return;
   }
   var modal = document.getElementById('cam-modal');
@@ -2319,10 +2319,10 @@ function openCamera() {
     var video = document.getElementById('cam-video');
     video.srcObject = stream;
     video.play();
-    document.getElementById('cam-status').textContent = 'Lista — apuntá a la etiqueta y tocá el botón';
+    document.getElementById('cam-status').textContent = 'Ready — point at the label and tap the button';
   }).catch(function(err) {
-    var msg = err.name === 'NotAllowedError' ? 'Permiso denegado. Habilitá la cámara en configuración del navegador.' :
-              err.name === 'NotFoundError' ? 'No se encontró cámara.' :
+    var msg = err.name === 'NotAllowedError' ? 'Permission denied. Enable the camera in your browser settings.' :
+              err.name === 'NotFoundError' ? 'No camera found.' :
               'Error: ' + err.message;
     document.getElementById('cam-status').textContent = msg;
     document.getElementById('cam-status').style.color = '#ff3b30';
@@ -2336,11 +2336,11 @@ function resetCamShutter() {
 }
 function resetCamConfirmBtn() {
   var cb = document.getElementById('cam-confirm-btn');
-  if (cb) { cb.disabled = false; cb.innerHTML = '&#10003; Confirmar'; delete cb.dataset.dupState; }
+  if (cb) { cb.disabled = false; cb.innerHTML = '&#10003; Confirm'; delete cb.dataset.dupState; }
 }
 function resetScanConfirmBtn() {
   var b = document.getElementById('btn-confirm-scan');
-  if (b) { b.disabled = false; b.innerHTML = '&#10003; Confirmar y guardar'; delete b.dataset.dupState; }
+  if (b) { b.disabled = false; b.innerHTML = '&#10003; Confirm and save'; delete b.dataset.dupState; }
 }
 
 function closeCamera() {
@@ -2361,7 +2361,7 @@ async function captureAndAnalyze() {
   var status = document.getElementById('cam-status');
   btn.disabled = true;
   btn.style.background = '#e5e5ea';
-  status.textContent = 'Analizando...';
+  status.textContent = 'Analyzing...';
 
   // Capture frame
   var canvas = document.createElement('canvas');
@@ -2383,14 +2383,14 @@ async function captureAndAnalyze() {
       body: JSON.stringify({imageBase64: base64, mediaType: 'image/jpeg'})
     });
     var data = await extractResp.json();
-    if (!extractResp.ok) throw new Error(data.error || 'Error extrayendo datos');
+    if (!extractResp.ok) throw new Error(data.error || 'Error extracting data');
 
     var coil0 = data.coil ? String(data.coil).trim() : null;
     var peso0 = normalizePeso(data.peso);
     var dchk0 = findDuplicateCandidate(coil0, data.cast, peso0);
     if (dchk0 && dchk0.kind === 'exact') {                     // duplicado clarisimo: ni se abre el panel
       camFlash(dupFlashHTML(coil0, dchk0.rec.cast, dchk0.rec.producto, dchk0.rec.created_at, dchk0.rec.wo), 'dup');
-      status.textContent = 'Lista para la siguiente etiqueta';
+      status.textContent = 'Ready for the next label';
       status.style.color = 'rgba(255,255,255,.7)';
       resetCamShutter();
       return;
@@ -2407,8 +2407,8 @@ async function captureAndAnalyze() {
     showCamConfirm(data);
 
   } catch(err) {
-    camFlash('✗ ERROR<br><span style="font-size:14px;font-weight:600">' + esc(err.message) + ' — cancelado</span>', 'err');
-    status.textContent = 'Cancelado — volve a intentar';
+    camFlash('✗ ERROR<br><span style="font-size:14px;font-weight:600">' + esc(err.message) + ' — cancelled</span>', 'err');
+    status.textContent = 'Cancelled — try again';
     status.style.color = 'rgba(255,255,255,.7)';
     resetCamShutter();
   }
@@ -2422,7 +2422,7 @@ async function loadProduccion() {
   // Populate WO selector from records
   var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
   var sel = document.getElementById('prod-wo-sel');
-  if (sel) sel.innerHTML = '<option value="">Selecciona una WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
+  if (sel) sel.innerHTML = '<option value="">Select a WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
 
   // Load produccion records
   try {
@@ -2440,17 +2440,17 @@ async function loadProduccion() {
 }
 
 async function saveProduccion() {
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para registrar produccion', function(){ saveProduccion(); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to record production', function(){ saveProduccion(); }); return; }
   var wo = document.getElementById('prod-wo-sel').value;
   var ton = parseFloat(document.getElementById('prod-ton-inp').value);
   var notas = document.getElementById('prod-notas-inp').value.trim();
   var status = document.getElementById('prod-status');
 
-  if (!wo) { status.textContent = 'Selecciona una WO.'; status.style.color = '#ff3b30'; return; }
-  if (!ton || ton <= 0) { status.textContent = 'Ingresa las toneladas producidas.'; status.style.color = '#ff3b30'; return; }
+  if (!wo) { status.textContent = 'Select a WO.'; status.style.color = '#ff3b30'; return; }
+  if (!ton || ton <= 0) { status.textContent = 'Enter the tons produced.'; status.style.color = '#ff3b30'; return; }
 
   var btn = document.getElementById('prod-save-btn');
-  btn.textContent = 'Guardando...'; btn.disabled = true;
+  btn.textContent = 'Saving...'; btn.disabled = true;
 
   try {
     var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion', {
@@ -2462,7 +2462,7 @@ async function saveProduccion() {
       var errText = await resp.text();
       throw new Error('Error ' + resp.status + ': ' + errText.substring(0,100));
     }
-    status.textContent = '✓ Guardado: ' + ton.toFixed(3) + 't para WO ' + wo;
+    status.textContent = '✓ Saved: ' + ton.toFixed(3) + 't for WO ' + wo;
     status.style.color = '#34c759';
     document.getElementById('prod-ton-inp').value = '';
     document.getElementById('prod-notas-inp').value = '';
@@ -2471,7 +2471,7 @@ async function saveProduccion() {
     status.textContent = '✗ ' + e.message;
     status.style.color = '#ff3b30';
   }
-  btn.textContent = 'Guardar produccion'; btn.disabled = false;
+  btn.textContent = 'Save production'; btn.disabled = false;
 }
 
 function renderBalance() {
@@ -2479,7 +2479,7 @@ function renderBalance() {
   var list = document.getElementById('bal-list');
   if (!list) return;
   if (!wos.length) {
-    list.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No hay WOs asignadas. Asignalas en el Historial.</div>';
+    list.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No WOs assigned. Assign them in History.</div>';
     return;
   }
   list.innerHTML = '';
@@ -2509,19 +2509,19 @@ function renderBalance() {
         '<div style="flex:1;min-width:0">'+
           '<div style="display:flex;align-items:center;gap:8px">'+
             '<div class="bal-wo">WO: '+esc(wo)+'</div>'+
-            (woClosed?'<span style="background:#fff0f0;color:#ff3b30;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px">CERRADA</span>':'')+
+            (woClosed?'<span style="background:#fff0f0;color:#ff3b30;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px">CLOSED</span>':'')+
           '</div>'+
           '<div style="margin-top:4px">'+prodTags+'</div>'+
-          '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+coils+' coils escaneados</div>'+
+          '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+coils+' coils scanned</div>'+
         '</div>'+
         '<div class="bal-nums">'+
           '<div style="text-align:right">'+
             '<div class="bal-num" style="color:#007aff">'+entrada.toFixed(3)+'t</div>'+
-            '<div class="bal-lbl">Entrada</div>'+
+            '<div class="bal-lbl">In</div>'+
           '</div>'+
           '<div style="text-align:right">'+
             '<div class="bal-num" style="color:#34c759">'+producido.toFixed(3)+'t</div>'+
-            '<div class="bal-lbl">Producido</div>'+
+            '<div class="bal-lbl">Produced</div>'+
           '</div>'+
           '<div style="text-align:right">'+
             '<div class="bal-num" style="color:'+stockColor+'">'+stock.toFixed(3)+'t</div>'+
@@ -2533,9 +2533,9 @@ function renderBalance() {
         '<div class="bar-bal-fill" style="width:'+Math.min(pct,100)+'%;background:'+(pct>100?'#ff3b30':'#34c759')+'"></div>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">'+
-        '<div style="font-size:10px;color:#8e8e93"><span>0</span> <span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% producido</span> <span>'+entrada.toFixed(1)+'t</span></div>'+
+        '<div style="font-size:10px;color:#8e8e93"><span>0</span> <span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% produced</span> <span>'+entrada.toFixed(1)+'t</span></div>'+
         '<button data-wo="'+esc(wo)+'" onclick="toggleCloseWO(this.dataset.wo)" style="padding:4px 10px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;background:'+(woClosed?'#e8ffe8':'#fff0f0')+';color:'+(woClosed?'#1a7a3c':'#ff3b30')+'">'+
-          (woClosed?'&#128275; Reabrir WO':'&#128274; Cerrar WO')+
+          (woClosed?'&#128275; Reopen WO':'&#128274; Close WO')+
         '</button>'+
       '</div>';
     list.appendChild(div);
@@ -2548,15 +2548,15 @@ function renderBalance() {
   var summary = document.createElement('div');
   summary.style.cssText = 'background:#f8f8f8;border-radius:10px;padding:14px;margin-top:8px;display:flex;gap:16px;justify-content:space-around;text-align:center';
   summary.innerHTML =
-    '<div><div style="font-size:22px;font-weight:700;color:#007aff">'+totalEntrada.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total entrada</div></div>'+
-    '<div><div style="font-size:22px;font-weight:700;color:#34c759">'+totalProducido.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total producido</div></div>'+
-    '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock disponible</div></div>';
+    '<div><div style="font-size:22px;font-weight:700;color:#007aff">'+totalEntrada.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total in</div></div>'+
+    '<div><div style="font-size:22px;font-weight:700;color:#34c759">'+totalProducido.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total produced</div></div>'+
+    '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock available</div></div>';
   list.appendChild(summary);
 
   // Scrap section
   var scrapDiv = document.createElement('div');
   scrapDiv.style.cssText = 'margin-top:16px';
-  scrapDiv.innerHTML = '<div style="font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Eficiencia / Scrap por WO</div>';
+  scrapDiv.innerHTML = '<div style="font-size:10px;font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Efficiency / Scrap by WO</div>';
   var hasScrap = false;
   wos.forEach(function(wo) {
     var s = calcScrap(wo);
@@ -2566,7 +2566,7 @@ function renderBalance() {
     var sr = document.createElement('div');
     sr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7';
     sr.innerHTML = '<div><div style="font-size:13px;font-weight:700">WO: '+esc(wo)+'</div>'+
-      '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+s.entrada.toFixed(3)+'t entrada → '+s.producido.toFixed(3)+'t producido</div></div>'+
+      '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+s.entrada.toFixed(3)+'t in → '+s.producido.toFixed(3)+'t produced</div></div>'+
       '<div style="text-align:right"><div style="font-size:15px;font-weight:700;color:'+scrapColor+'">'+s.scrap.toFixed(3)+'t</div>'+
       '<div style="font-size:11px;color:'+scrapColor+';font-weight:600">'+s.pctScrap.toFixed(1)+'% scrap</div></div>';
     scrapDiv.appendChild(sr);
@@ -2578,11 +2578,11 @@ function renderProdHist() {
   var hist = document.getElementById('prod-hist-list');
   if (!hist) return;
   if (!_produccion.length) {
-    hist.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin registros de produccion.</div>';
+    hist.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No production records.</div>';
     return;
   }
   hist.innerHTML = _produccion.slice(0,50).map(function(p) {
-    var d = p.created_at ? new Date(p.created_at).toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    var d = p.created_at ? new Date(p.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7">'+
       '<div>'+
         '<div style="font-size:13px;font-weight:700;color:#1c1c1e">WO: '+esc(p.wo||'')+'</div>'+
@@ -2622,7 +2622,7 @@ function _ceAttr(s) {
 function prodChipsHTML(prodOrder, selected) {
   return [''].concat(prodOrder).map(function(k) {
     var on = (k === '' && !selected) || k === selected;
-    return '<button data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid #007aff;background:' + (on ? '#007aff' : '#fff') + ';color:' + (on ? '#fff' : '#007aff') + '">' + (k === '' ? 'Todos' : esc(k)) + '</button>';
+    return '<button data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid #007aff;background:' + (on ? '#007aff' : '#fff') + ';color:' + (on ? '#fff' : '#007aff') + '">' + (k === '' ? 'All' : esc(k)) + '</button>';
   }).join('');
 }
 
@@ -2631,9 +2631,9 @@ function prodChipsHTML(prodOrder, selected) {
 // asi el filtro de producto agrupa igual sin importar si el nombre viene de una etiqueta o de un PDF.
 function _consProdKey(r) {
   var m = String(r.producto || '').match(/(\d+(?:[.,]\d+)?)/);
-  if (!m) return 'SIN PRODUCTO';
+  if (!m) return 'NO PRODUCT';
   var n = parseFloat(m[1].replace(',', '.'));
-  return isFinite(n) ? (n + 'MM') : 'SIN PRODUCTO';
+  return isFinite(n) ? (n + 'MM') : 'NO PRODUCT';
 }
 
 // Trae TODAS las filas en paginas de 1000 usando limit/offset (sin headers custom -> sin problemas de CORS).
@@ -2680,7 +2680,7 @@ async function loadConsignments() {
   if (rows === null) {
     // NO borramos _consignments: mantenemos lo que ya habia y mostramos el error
     var el = document.getElementById('saved-cons-list');
-    if (el) el.innerHTML = '<div style="color:#ff3b30;font-size:13px;text-align:center;padding:16px;line-height:1.5">No se pudieron cargar los consignments.<br><span style="font-size:11px;color:#8e8e93;word-break:break-word">' + esc(lastErr && lastErr.message || 'error de red') + '</span></div>';
+    if (el) el.innerHTML = '<div style="color:#ff3b30;font-size:13px;text-align:center;padding:16px;line-height:1.5">Could not load consignments.<br><span style="font-size:11px;color:#8e8e93;word-break:break-word">' + esc(lastErr && lastErr.message || 'network error') + '</span></div>';
     return;
   }
   _consignments = rows;
@@ -2724,7 +2724,7 @@ async function saveConsignmentRows(rows) {
     if (!resp.ok) {
       var t = '';
       try { t = await resp.text(); } catch(e) {}
-      throw new Error('No se pudo guardar (HTTP ' + resp.status + ') ' + t.substring(0, 150));
+      throw new Error('Could not save (HTTP ' + resp.status + ') ' + t.substring(0, 150));
     }
   }
 }
@@ -2747,11 +2747,11 @@ function consStatusHTML(where) {
   var srcRows = (where === 'tab' && _consProdFilter) ? (_consignments || []).filter(function(r) { return _consProdKey(r) === _consProdFilter; }) : (_consignments || []);
   var refs = {}, order = [];
   srcRows.forEach(function(r) {
-    var k = r.referencia || 'Sin ref';
+    var k = r.referencia || 'No ref';
     if (!refs[k]) { refs[k] = {items: [], fecha: '', rawProdCount: {}}; order.push(k); }
     refs[k].items.push(r);
     if (!refs[k].fecha && r.fecha) refs[k].fecha = r.fecha;
-    var raw = String(r.producto || '').trim() || 'Sin producto';
+    var raw = String(r.producto || '').trim() || 'No product';
     refs[k].rawProdCount[raw] = (refs[k].rawProdCount[raw] || 0) + 1;
   });
   // Ordenado por la fecha que trae el PDF, del mas reciente al mas antiguo.
@@ -2772,7 +2772,7 @@ function consStatusHTML(where) {
   var shown = _consStatusShown[where] || 10;
   var totalTon = srcRows.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
   var totalScanned = srcRows.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
-  var html = '<div style="font-size:22px;font-weight:800;color:#1a2332;line-height:1.35;margin-bottom:10px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' &middot; ' + totalTon.toFixed(3) + ' t &middot; ' + totalScanned + '/' + srcRows.length + ' escaneados' + (where === 'tab' && _consProdFilter ? '<br><span style="font-size:14px;font-weight:700;color:#007aff">' + esc(_consProdFilter) + '</span>' : '') + '</div>';
+  var html = '<div style="font-size:22px;font-weight:800;color:#1a2332;line-height:1.35;margin-bottom:10px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' &middot; ' + totalTon.toFixed(3) + ' t &middot; ' + totalScanned + '/' + srcRows.length + ' scanned' + (where === 'tab' && _consProdFilter ? '<br><span style="font-size:14px;font-weight:700;color:#007aff">' + esc(_consProdFilter) + '</span>' : '') + '</div>';
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
     var ton = g.items.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
@@ -2781,7 +2781,7 @@ function consStatusHTML(where) {
     var pct = Math.round(scanned / g.items.length * 100);
     var color = pct === 100 ? '#34c759' : pct >= 75 ? '#007aff' : pct >= 50 ? '#ff9500' : '#ff3b30';
     var del = where === 'tab'
-      ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Eliminar consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
+      ? '<button data-ref="' + _ceAttr(ref) + '" onclick="deleteConsignment(this.dataset.ref)" title="Delete consignment" style="margin-left:8px;background:#fff0f0;border:1px solid #ffd0d0;color:#ff3b30;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer">&#128465;</button>'
       : '';
     var castLbl = _refCastLabel(g.items);
     var detailLine = [castLbl, g.productoCompleto].filter(Boolean).join(' &middot; ');
@@ -2795,16 +2795,16 @@ function consStatusHTML(where) {
       '</div>' +
       '<div style="background:#f0f2f5;border-radius:4px;height:8px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + color + ';width:' + pct + '%;transition:width .4s"></div></div>' +
       '<div style="display:flex;justify-content:space-between;margin-top:3px">' +
-        '<span style="font-size:11px;color:#34c759;font-weight:600">✓ ' + scanned + ' escaneados</span>' +
-        (missing > 0 ? '<span style="font-size:11px;color:#ff3b30;font-weight:600">✗ ' + missing + ' faltantes</span>' : '<span style="font-size:11px;color:#34c759;font-weight:600">✓ Completo</span>') +
+        '<span style="font-size:11px;color:#34c759;font-weight:600">✓ ' + scanned + ' scanned</span>' +
+        (missing > 0 ? '<span style="font-size:11px;color:#ff3b30;font-weight:600">✗ ' + missing + ' missing</span>' : '<span style="font-size:11px;color:#34c759;font-weight:600">✓ Complete</span>') +
         '<span style="font-size:11px;color:#8e9aab;font-weight:600">' + pct + '%</span>' +
       '</div>' +
     '</div>';
   }).join('');
   if (keys.length > shown) {
     html += '<div style="display:flex;gap:8px;margin-top:4px">' +
-      '<button onclick="consStatusMore(\'' + where + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (keys.length - shown) + ' restantes)</button>' +
-      '<button onclick="consStatusMore(\'' + where + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
+      '<button onclick="consStatusMore(\'' + where + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">See 10 more (' + (keys.length - shown) + ' remaining)</button>' +
+      '<button onclick="consStatusMore(\'' + where + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">All</button></div>';
   }
   return html;
 }
@@ -2817,8 +2817,8 @@ function consStatusMore(where, all) {
 function xcMoreBtn(kind, total, shown) {
   if (total <= shown) return '';
   return '<div style="display:flex;gap:8px;margin:6px 0 4px">' +
-    '<button onclick="xcMore(\'' + kind + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (total - shown) + ' restantes)</button>' +
-    '<button onclick="xcMore(\'' + kind + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
+    '<button onclick="xcMore(\'' + kind + '\')" style="flex:1;padding:9px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">See 10 more (' + (total - shown) + ' remaining)</button>' +
+    '<button onclick="xcMore(\'' + kind + '\',true)" style="padding:9px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">All</button></div>';
 }
 
 function xcMore(kind, all) {
@@ -2856,7 +2856,7 @@ function renderSavedCons() {
   var setTxt = function(id, t) { var e = byId(id); if (e) e.textContent = t; };
 
   if (!all.length) {
-    listEl.innerHTML = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">Sin consignments cargados</div>';
+    listEl.innerHTML = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:20px">No consignments loaded</div>';
     setDisp('cons-ton-summary', false); setDisp('cons-by-prod', false); setDisp('cons-list-card', false);
     var pf0 = byId('cons-prod-filter'); if (pf0) pf0.style.display = 'none';
     setTxt('cons-total-n', '0'); setTxt('cons-match-n', '0'); setTxt('cons-miss-n', '0');
@@ -2885,7 +2885,7 @@ function renderSavedCons() {
   all.forEach(function(r) {
     var k = _consProdKey(r);
     if (!prods[k]) { prods[k] = {n: 0, sc: 0, ton: 0, refs: {}}; prodOrder.push(k); }
-    var rk = r.referencia || 'Sin ref';
+    var rk = r.referencia || 'No ref';
     prods[k].refs[rk] = 1;
     allRefs[rk] = 1;
     allTon += parseFloat(r.peso) || 0;
@@ -2903,7 +2903,7 @@ function renderSavedCons() {
       return '<div data-p="' + _ceAttr(k) + '" onclick="setConsProd(this.dataset.p)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid #f0f2f5;background:' + (sel ? '#f0f5ff' : 'transparent') + '">' +
         '<div style="min-width:0">' +
           '<div style="font-size:12px;font-weight:800;color:#1c1c1e;text-transform:uppercase">' + esc(k) + '</div>' +
-          '<div style="font-size:11px;color:#8e8e93;margin-top:3px">' + nRefs + ' consignment' + (nRefs === 1 ? '' : 's') + ' · ' + g.ton.toFixed(3) + ' t · ' + g.sc + '/' + g.n + ' escaneados</div>' +
+          '<div style="font-size:11px;color:#8e8e93;margin-top:3px">' + nRefs + ' consignment' + (nRefs === 1 ? '' : 's') + ' · ' + g.ton.toFixed(3) + ' t · ' + g.sc + '/' + g.n + ' scanned</div>' +
         '</div>' +
         '<span style="flex-shrink:0"><span style="font-size:26px;font-weight:800;color:#007aff;line-height:1">' + g.n + '</span>' +
         '<span style="font-size:10px;color:#8e8e93;margin-left:4px">coil' + (g.n === 1 ? '' : 's') + '</span></span>' +
@@ -2941,7 +2941,7 @@ function renderSavedCons() {
         '<div class="match-sub">' + (r.cast ? 'Cast ' + esc(r.cast) + ' · ' : '') + esc(r.producto || '') + (r.peso ? ' · ' + esc(r.peso) + 't' : '') + '</div></div>' +
         '<span class="match-status status-extra">+ Extra</span></div>';
     }).join('');
-    if (lblEl) lblEl.textContent = total + ' escaneados sin consignment';
+    if (lblEl) lblEl.textContent = total + ' scanned with no consignment';
   } else {
     var rows = base.filter(function(r) {
       if (_consFilter === 'ok') return isCoilScanned(r.lot_no);
@@ -2952,7 +2952,7 @@ function renderSavedCons() {
       if (A === Infinity && B === Infinity) return 0;
       if (A === Infinity) return 1;
       if (B === Infinity) return -1;
-      return B - A;   // mas reciente primero, igual que "Estado de Consignments"
+      return B - A;   // most recent first, same as "Consignment status"
     });
     total = rows.length;
     html = rows.slice(0, _consShown).map(function(r) {
@@ -2961,14 +2961,14 @@ function renderSavedCons() {
         '<div class="match-dot" style="background:' + (ok ? '#34c759' : '#ff3b30') + '"></div>' +
         '<div class="match-info"><div class="match-coil">' + esc(r.lot_no || '—') + '</div>' +
         '<div class="match-sub">' + (r.cast_no ? 'Cast ' + esc(r.cast_no) + ' · ' : '') + esc(r.producto || '') + (r.peso != null ? ' · ' + (parseFloat(r.peso) || 0).toFixed(3) + 't' : '') + (r.referencia ? ' · Ref ' + esc(r.referencia) : '') + '</div></div>' +
-        '<span class="match-status ' + (ok ? 'status-ok' : 'status-miss') + '">' + (ok ? '✓ Escaneado' : '✗ Falta') + '</span>' +
-        '<button data-id="' + _ceAttr(r.id) + '" onclick="event.stopPropagation();deleteConsRow(this.dataset.id, this.parentNode)" title="Eliminar" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:15px;color:#8e8e93">&#128465;</button>' +
+        '<span class="match-status ' + (ok ? 'status-ok' : 'status-miss') + '">' + (ok ? '✓ Scanned' : '✗ Missing') + '</span>' +
+        '<button data-id="' + _ceAttr(r.id) + '" onclick="event.stopPropagation();deleteConsRow(this.dataset.id, this.parentNode)" title="Delete" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:15px;color:#8e8e93">&#128465;</button>' +
         '</div>';
     }).join('');
     if (lblEl) lblEl.textContent = total + ' coil' + (total === 1 ? '' : 's') + (_consProdFilter ? ' · ' + _consProdFilter : '');
   }
-  if (!total) html = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:16px">Sin resultados</div>';
-  else if (total > _consShown) html += '<div style="display:flex;gap:8px;margin-top:8px"><button onclick="consShowMore()" style="flex:1;padding:10px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">Ver 10 mas (' + (total - _consShown) + ' restantes)</button><button onclick="consShowMore(true)" style="padding:10px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">Todos</button></div>';
+  if (!total) html = '<div style="color:#8e8e93;font-size:13px;text-align:center;padding:16px">No results</div>';
+  else if (total > _consShown) html += '<div style="display:flex;gap:8px;margin-top:8px"><button onclick="consShowMore()" style="flex:1;padding:10px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#007aff;cursor:pointer">See 10 more (' + (total - _consShown) + ' remaining)</button><button onclick="consShowMore(true)" style="padding:10px 14px;background:#f2f2f7;border:none;border-radius:8px;font-size:13px;font-weight:700;color:#8e8e93;cursor:pointer">All</button></div>';
   if (listBox) listBox.innerHTML = html;
 
   // ---- Estado de Consignments (misma tarjeta que el Dashboard, con boton eliminar) ----
@@ -2979,10 +2979,10 @@ function renderSavedCons() {
 function shareDailySummary() {
   var today = new Date().toDateString();
   var d = (records || []).filter(function(r){ return r.created_at && new Date(r.created_at).toDateString() === today; });
-  var fecha = new Date().toLocaleDateString('es', {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'});
-  var lines = ['Coil Scanner — Resumen ' + fecha, ''];
+  var fecha = new Date().toLocaleDateString('en-US', {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'});
+  var lines = ['Coil Scanner — Summary ' + fecha, ''];
   if (!d.length) {
-    lines.push('Sin coils escaneados hoy.');
+    lines.push('No coils scanned today.');
   } else {
     lines.push('Total: ' + d.length + ' coils · ' + sumTon(d).toFixed(3) + ' t');
     ['EVG', 'PITTINI'].forEach(function(m) {
@@ -2990,22 +2990,22 @@ function shareDailySummary() {
       if (x.length) lines.push(m + ': ' + x.length + ' coils · ' + sumTon(x).toFixed(3) + ' t');
     });
     var sm = d.filter(function(r){ return r.maquina !== 'EVG' && r.maquina !== 'PITTINI'; });
-    if (sm.length) lines.push('Sin maquina: ' + sm.length + ' coils · ' + sumTon(sm).toFixed(3) + ' t');
+    if (sm.length) lines.push('No machine: ' + sm.length + ' coils · ' + sumTon(sm).toFixed(3) + ' t');
     var byProd = {};
-    d.forEach(function(r){ var k = r.producto || 'Sin producto'; (byProd[k] = byProd[k] || []).push(r); });
-    lines.push('', 'Por producto:');
+    d.forEach(function(r){ var k = r.producto || 'No product'; (byProd[k] = byProd[k] || []).push(r); });
+    lines.push('', 'By product:');
     Object.keys(byProd).sort().forEach(function(k){ lines.push('- ' + k + ': ' + byProd[k].length + ' coils · ' + sumTon(byProd[k]).toFixed(3) + ' t'); });
     var byWo = {};
     d.forEach(function(r){ if (r.wo) (byWo[r.wo] = byWo[r.wo] || []).push(r); });
     var woKeys = Object.keys(byWo).sort();
     if (woKeys.length) {
-      lines.push('', 'Por WO:');
+      lines.push('', 'By WO:');
       woKeys.forEach(function(k){ lines.push('- ' + k + ': ' + byWo[k].length + ' coils · ' + sumTon(byWo[k]).toFixed(3) + ' t'); });
     }
   }
   var text = lines.join('\n');
-  if (navigator.share) { navigator.share({title: 'Resumen del dia', text: text}).catch(function(){}); }
-  else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function(){ alert('Resumen copiado al portapapeles'); }); }
+  if (navigator.share) { navigator.share({title: 'Daily summary', text: text}).catch(function(){}); }
+  else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function(){ alert('Summary copied to clipboard'); }); }
   else { alert(text); }
 }
 
@@ -3075,20 +3075,20 @@ async function handlePDFUpload(e) {
   var files = Array.from(e.target.files);
   e.target.value = '';
   if (!files.length) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para subir consignments', function(){ alert('Volvé a seleccionar el PDF'); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to upload consignments', function(){ alert('Select the PDF again'); }); return; }
   var status = document.getElementById('pdf-status');
   var prog = document.getElementById('pdf-progress');
   var fill = document.getElementById('pdf-prog-fill');
   var txt2 = document.getElementById('pdf-prog-txt');
 
-  status.textContent = 'Procesando '+files.length+' PDF'+(files.length>1?'s':'')+'...';
+  status.textContent = 'Processing '+files.length+' PDF'+(files.length>1?'s':'')+'...';
   status.style.color = '#007aff';
   prog.style.display = 'block';
   fill.style.width = '5%';
 
   try {
     if (!window.pdfjsLib) {
-      txt2.textContent = 'Cargando PDF.js...';
+      txt2.textContent = 'Loading PDF.js...';
       await new Promise(function(res, rej) {
         var s = document.createElement('script');
         s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -3105,7 +3105,7 @@ async function handlePDFUpload(e) {
 
     for (var fi = 0; fi < files.length; fi++) {
       var file = files[fi];
-      txt2.textContent = 'PDF '+(fi+1)+' de '+files.length+': '+file.name;
+      txt2.textContent = 'PDF '+(fi+1)+' of '+files.length+': '+file.name;
       fill.style.width = (5 + (fi/files.length)*90)+'%';
 
       try {
@@ -3115,14 +3115,14 @@ async function handlePDFUpload(e) {
         var allRows = [];
 
         for (var pageNum = 1; pageNum <= numPages; pageNum++) {
-          txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages;
+          txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — page '+pageNum+'/'+numPages;
           var page = await pdf.getPage(pageNum);
           var textPage = null;
           try { textPage = await tryParseConsPageText(page); } catch(te) { console.warn('[pdf texto]', te); }
           if (textPage && textPage.rows.length) {           // 1) texto del PDF: exacto, gratis e instantaneo
             allRows = allRows.concat(textPage.rows);
             pagesText++;
-            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+textPage.rows.length+' filas por texto, '+allRows.length+' total)';
+            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — page '+pageNum+'/'+numPages+' ('+textPage.rows.length+' rows by text, '+allRows.length+' total)';
             continue;
           }
           pagesAI++;                                        // 2) sin texto confiable: se lee con IA (como antes)
@@ -3140,10 +3140,10 @@ async function handlePDFUpload(e) {
             body: JSON.stringify({imageBase64: imgBase64, mediaType: 'image/jpeg'})
           });
           var data = await resp.json();
-          if (!resp.ok) throw new Error(data.error || 'Error pagina '+pageNum);
+          if (!resp.ok) throw new Error(data.error || 'Error on page '+pageNum);
           if (data.rows) {
             allRows = allRows.concat(data.rows);
-            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — pagina '+pageNum+'/'+numPages+' ('+data.rows.length+' filas leidas, '+allRows.length+' total)';
+            txt2.textContent = 'PDF '+(fi+1)+'/'+files.length+' — page '+pageNum+'/'+numPages+' ('+data.rows.length+' rows read, '+allRows.length+' total)';
           }
         }
       // Una referencia y una fecha por PDF (la mas frecuente): las paginas sin encabezado o mal leidas heredan la del PDF
@@ -3176,15 +3176,15 @@ async function handlePDFUpload(e) {
 
       if (yaEstabaCargado && totalRowsInPdf > 0 && allRows.length === 0) {
         // Este PDF entero ya estaba cargado (misma Ref, todos los lotes ya guardados): no se sube de nuevo.
-        warnings.push('Ref ' + resolvedRef + ' ya estaba cargada (' + totalRowsInPdf + ' coils) — no se subio de nuevo');
+        warnings.push('Ref ' + resolvedRef + ' was already loaded (' + totalRowsInPdf + ' coils) — not uploaded again');
       } else {
         if (yaEstabaCargado && dupCount > 0) {
-          warnings.push('Ref ' + resolvedRef + ': ' + dupCount + ' coil' + (dupCount === 1 ? '' : 's') + ' ya estaba' + (dupCount === 1 ? '' : 'n') + ' cargado' + (dupCount === 1 ? '' : 's') + ', se agrego' + (allRows.length === 1 ? '' : 'n') + ' ' + allRows.length + ' nuevo' + (allRows.length === 1 ? '' : 's'));
+          warnings.push('Ref ' + resolvedRef + ': ' + dupCount + ' coil' + (dupCount === 1 ? '' : 's') + ' already loaded, ' + allRows.length + ' new one' + (allRows.length === 1 ? '' : 's') + ' added');
         } else if (dupCount > 0) {
-          txt2.textContent = 'Ignorando ' + dupCount + ' duplicado' + (dupCount>1?'s':'') + '...';
+          txt2.textContent = 'Skipping ' + dupCount + ' duplicate' + (dupCount>1?'s':'') + '...';
         }
         if (allRows.length) {
-          txt2.textContent = 'Guardando ' + allRows.length + ' coils...';
+          txt2.textContent = 'Saving ' + allRows.length + ' coils...';
           await saveConsignmentRows(allRows);
           allRows.forEach(function(row){ _consignments.push(row); }); // so the next PDF dedupes against this one
         }
@@ -3197,16 +3197,16 @@ async function handlePDFUpload(e) {
 
     fill.style.width = '100%';
     if (errors.length) {
-      status.innerHTML = '&#10003; '+totalRows+' coils importados (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.). Errores: '+errors.map(esc).join(', ')+(warnings.length ? '<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ') : '');
+      status.innerHTML = '&#10003; '+totalRows+' coils imported (text: '+pagesText+' pg., AI: '+pagesAI+' pg.). Errors: '+errors.map(esc).join(', ')+(warnings.length ? '<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ') : '');
       status.style.color = '#ff9500';
     } else if (warnings.length && totalRows === 0) {
       status.innerHTML = '&#9888; '+warnings.map(esc).join('<br>&#9888; ');
       status.style.color = '#ff9500';
     } else if (warnings.length) {
-      status.innerHTML = '&#10003; '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ');
+      status.innerHTML = '&#10003; '+totalRows+' coils imported from '+files.length+' PDF'+(files.length>1?'s':'')+' (text: '+pagesText+' pg., AI: '+pagesAI+' pg.)<br>&#9888; '+warnings.map(esc).join('<br>&#9888; ');
       status.style.color = '#ff9500';
     } else {
-      status.textContent = '✓ '+totalRows+' coils importados de '+files.length+' PDF'+(files.length>1?'s':'')+' (texto: '+pagesText+' pag., IA: '+pagesAI+' pag.)';
+      status.textContent = '✓ '+totalRows+' coils imported from '+files.length+' PDF'+(files.length>1?'s':'')+' (text: '+pagesText+' pg., AI: '+pagesAI+' pg.)';
       status.style.color = '#34c759';
     }
     _consProdFilter = ''; // Reset filter after upload
@@ -3237,7 +3237,7 @@ function setEditMaq(m) {
 }
 
 function editRecord(r) {
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para editar', function(){ editRecord(r); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to edit', function(){ editRecord(r); }); return; }
   _editRec = r;
   _editMaq = r.maquina || '';
   document.getElementById('edit-coil-lbl').textContent = 'Coil: ' + (r.coil||'') + ' — Cast: ' + (r.cast||'');
@@ -3257,7 +3257,7 @@ function closeEditModal() {
 
 async function saveEdit() {
   if (!_editRec) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para editar registro', function(){ saveEdit(); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to edit record', function(){ saveEdit(); }); return; }
   var peso = normalizePeso(document.getElementById('edit-peso').value);
   var cast = document.getElementById('edit-cast').value.trim();
   var coil = document.getElementById('edit-coil').value.trim();
@@ -3266,12 +3266,12 @@ async function saveEdit() {
   if (coil && coil !== _editRec.coil) {
     var dup = records.find(function(r){return r.coil===coil && r.id!==_editRec.id;});
     if (dup) {
-      statusEl.textContent = 'Error: Coil '+coil+' ya existe ('+new Date(dup.created_at).toLocaleDateString('es')+')';
+      statusEl.textContent = 'Error: Coil '+coil+' already exists ('+new Date(dup.created_at).toLocaleDateString('en-US')+')';
       statusEl.style.color = '#ff3b30';
       return;
     }
   }
-  statusEl.textContent = 'Guardando...';
+  statusEl.textContent = 'Saving...';
   statusEl.style.color = '#007aff';
   try {
     var resp = await fetch('/updatewo', {
@@ -3280,7 +3280,7 @@ async function saveEdit() {
       body: JSON.stringify({id: _editRec.id, wo: _editRec.wo, peso: peso, cast: cast||_editRec.cast, coil: coil||_editRec.coil, maquina: _editMaq||_editRec.maquina||null})
     });
     if (resp.ok) {
-      statusEl.textContent = 'Guardado';
+      statusEl.textContent = 'Saved';
       statusEl.style.color = '#34c759';
       // Log the change
       if (peso !== (_editRec.peso||'')) logChange(_editRec.id, 'peso', _editRec.peso, peso);
@@ -3291,9 +3291,9 @@ async function saveEdit() {
       renderList(records);
       closeModal();
       setTimeout(closeEditModal, 800);
-      setStatus('Registro actualizado', 'ok');
+      setStatus('Record updated', 'ok');
     } else {
-      statusEl.textContent = 'Error al guardar';
+      statusEl.textContent = 'Error saving';
       statusEl.style.color = '#ff3b30';
     }
   } catch(e) {
@@ -3307,7 +3307,7 @@ function renderConsSummaryDash() {
   var el = document.getElementById('db-cons-summary');
   if (!el) return;
   if (!_consignments || !_consignments.length) {
-    el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">Sin consignments cargados</div>';
+    el.innerHTML = '<div style="color:#8e9aab;font-size:13px;text-align:center;padding:12px">No consignments loaded</div>';
     return;
   }
   el.innerHTML = consStatusHTML('dash');
@@ -3322,11 +3322,11 @@ function checkStockAlerts() {
     var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
     var producido = _produccion.filter(function(p){return p.wo===wo;}).reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
     var stock = entrada - producido;
-    if (stock < 0) alerts.push('WO '+wo+': stock negativo ('+stock.toFixed(3)+'t)');
-    else if (stock < 0.5 && producido > 0) alerts.push('WO '+wo+': stock bajo ('+stock.toFixed(3)+'t)');
+    if (stock < 0) alerts.push('WO '+wo+': negative stock ('+stock.toFixed(3)+'t)');
+    else if (stock < 0.5 && producido > 0) alerts.push('WO '+wo+': low stock ('+stock.toFixed(3)+'t)');
   });
   if (alerts.length) {
-    setStatus('Alerta: '+alerts.join(' | '), 'warn');
+    setStatus('Alert: '+alerts.join(' | '), 'warn');
   }
 }
 
@@ -3356,12 +3356,12 @@ function renderChangeLog() {
   var el = document.getElementById('change-log-list');
   if (!el) return;
   if (!_changeLog.length) {
-    el.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">Sin ediciones registradas</div>';
+    el.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:13px">No edits recorded</div>';
     return;
   }
-  var fieldNames = {peso:'Peso',cast:'Cast',coil:'Coil',maquina:'Maquina',wo:'WO'};
+  var fieldNames = {peso:'Weight',cast:'Cast',coil:'Coil',maquina:'Machine',wo:'WO'};
   el.innerHTML = _changeLog.map(function(log) {
-    var d = new Date(log.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    var d = new Date(log.ts).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     return '<div style="padding:10px 0;border-bottom:1px solid #f2f2f7;display:flex;align-items:center;gap:10px">' +
       '<div style="flex:1">' +
         '<div style="font-size:13px;font-weight:600">' + (fieldNames[log.field]||log.field) + ': ' +
@@ -3413,7 +3413,7 @@ function renderHistorial() {
 function renderFlatList(list) {
   var el = document.getElementById('rec-list');
   if (!list.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">Sin registros</div></div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No records</div></div>';
     return;
   }
   // Sort by created_at descending
@@ -3427,7 +3427,7 @@ function renderFlatList(list) {
   el.appendChild(grid);
   var container = grid;
   sorted.forEach(function(r, i) {
-    var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     var mc = r.maquina==='EVG'?'#007aff':r.maquina==='PITTINI'?'#af52de':'#8e8e93';
     var card = document.createElement('div');
     card.className = 'flat-card';
@@ -3436,7 +3436,7 @@ function renderFlatList(list) {
       '<div style="font-size:13px;font-weight:800;color:var(--muted);min-width:28px;text-align:center">' + (i+1) + '</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">' +
-          '<span style="font-size:14px;font-weight:700">'+esc(r.coil||'Sin coil')+'</span>' +
+          '<span style="font-size:14px;font-weight:700">'+esc(r.coil||'No coil')+'</span>' +
           (r.maquina?'<span style="font-size:11px;font-weight:700;color:'+mc+'">'+esc(r.maquina)+'</span>':'') +
           (r.wo?'<span style="background:#fff8e8;color:#7a5c00;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px">'+esc(r.wo)+'</span>':'') +
         '</div>' +
@@ -3461,7 +3461,7 @@ function setTimelineMode(m) {
   if (cBtn) { cBtn.style.background = m === 'cumulative' ? '#007aff' : '#fff'; cBtn.style.color = m === 'cumulative' ? '#fff' : '#5c6b7a'; }
   var leg = document.getElementById('db-timeline-legend'), title = document.getElementById('db-timeline-title');
   if (leg) leg.style.display = m === 'cumulative' ? 'none' : 'flex';   // en acumulado no hay split EVG/PIT, no aplica la leyenda
-  if (title) title.textContent = m === 'cumulative' ? 'Toneladas acumuladas' : 'Toneladas por dia';
+  if (title) title.textContent = m === 'cumulative' ? 'Cumulative tons' : 'Tons per day';
   renderTimeline(_lastTimelineData);
 }
 
@@ -3486,7 +3486,7 @@ function renderTimeline(data) {
   if (_timelineMode === 'cumulative') { renderTimelineCumulative(canvas, days, byDay); return; }
   if(!days.length){
     canvas.width=W; canvas.height=H; ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#8e9aab';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('Sin datos para el periodo',W/2,H/2);
+    ctx.fillStyle='#8e9aab';ctx.font='13px sans-serif';ctx.textAlign='center';ctx.fillText('No data for this period',W/2,H/2);
     return;
   }
   canvas.width=W; canvas.height=H;
@@ -3567,7 +3567,7 @@ function renderTimelineCumulative(canvas, days, byDay) {
   if (!days.length) {
     canvas.width = W; canvas.height = H; ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#8e9aab'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('Sin datos para el periodo', W / 2, H / 2);
+    ctx.fillText('No data for this period', W / 2, H / 2);
     return;
   }
   canvas.width = W; canvas.height = H;
@@ -3627,7 +3627,7 @@ function renderTimelineCumulative(canvas, days, byDay) {
       var day = canvas._days[idx2];
       var d2 = new Date(day);
       var lbl = d2.getDate() + '/' + (d2.getMonth() + 1) + '/' + d2.getFullYear();
-      showChartTooltip(canvas, x, 10, '<b>' + lbl + '</b><br>Acumulado: ' + canvas._cum[idx2].toFixed(3) + 't');
+      showChartTooltip(canvas, x, 10, '<b>' + lbl + '</b><br>Cumulative: ' + canvas._cum[idx2].toFixed(3) + 't');
       setTimeout(hideChartTooltip, 3000);
     }
   };
@@ -3642,7 +3642,7 @@ function renderDonut2(canvasId, legId, byKey, onClick) {
   leg.innerHTML = '';
   if(!total) {
     canvas.style.display='none';
-    leg.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">Sin datos</div>';
+    leg.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">No data</div>';
     return;
   }
   canvas.style.display='block';
@@ -3686,7 +3686,7 @@ function renderBars2(containerId, byKey, total, onClick, limit, labelFn) {
   var container=document.getElementById(containerId);
   if(!container)return;
   container.innerHTML='';
-  if(!ents.length){container.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">Sin datos</div>';return;}
+  if(!ents.length){container.innerHTML='<div style="color:#8e9aab;font-size:12px;padding:8px">No data</div>';return;}
   ents.forEach(function(e,i){
     var pct=total>0?Math.round((e[1]/total)*100):0;
     var row=document.createElement('div');
@@ -3708,10 +3708,10 @@ function renderPivot2(data) {
   var tbl=document.getElementById('pivot-tbl');
   if(!tbl)return;
   if(!prods.length||!wos.length){
-    tbl.innerHTML='<tr><td style="padding:14px;color:#8e9aab;font-size:13px">'+(wos.length===0?'Asigna WOs en el Historial para ver la tabla pivot.':'Sin datos.')+'</td></tr>';
+    tbl.innerHTML='<tr><td style="padding:14px;color:#8e9aab;font-size:13px">'+(wos.length===0?'Assign WOs in History to see the pivot table.':'No data.')+'</td></tr>';
     return;
   }
-  var html='<thead><tr><th style="text-align:left">Producto</th>';
+  var html='<thead><tr><th style="text-align:left">Product</th>';
   wos.forEach(function(w){html+='<th style="text-align:center">'+esc(w)+'</th>';});
   html+='<th style="text-align:center;color:#007aff">Total</th></tr></thead><tbody>';
   prods.forEach(function(p){
@@ -3742,8 +3742,8 @@ function renderPivot2(data) {
 // ==========================================
 async function deleteConsRow(id, rowEl) {
   if (!id) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsRow(id, rowEl); }); return; }
-  if (!confirm('Eliminar este coil del consignment?')) return;
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to delete consignment', function(){ deleteConsRow(id, rowEl); }); return; }
+  if (!confirm('Delete this coil from the consignment?')) return;
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
   var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
     method: 'DELETE',
@@ -3758,9 +3758,9 @@ async function deleteConsRow(id, rowEl) {
 }
 
 async function deleteConsignment(ref) {
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para eliminar consignment', function(){ deleteConsignment(ref); }); return; }
-  if (!confirm('Eliminar todos los registros de Ref: '+ref+'?')) return;
-  var toDelete = _consignments.filter(function(r){return (r.referencia||'Sin ref')===ref;});
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to delete consignment', function(){ deleteConsignment(ref); }); return; }
+  if (!confirm('Delete all records for Ref: '+ref+'?')) return;
+  var toDelete = _consignments.filter(function(r){return (r.referencia||'No ref')===ref;});
   var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ";
   var SB_BASE = "https://xqzqrlxjzfxpqigjuzor.supabase.co";
   var deleted = 0;
@@ -3826,11 +3826,11 @@ function calcProjection(wo) {
 
 async function saveModalWO() {
   if (!activeRec) return;
-  if (!_unlocked) { showLockBanner(); requirePassword('Contrasena para asignar WO', function(){ saveModalWO(); }); return; }
+  if (!_unlocked) { showLockBanner(); requirePassword('Password to assign WO', function(){ saveModalWO(); }); return; }
   var wo = document.getElementById('modal-wo-inp').value.trim();
   var btn = document.querySelector('#modal-wo-inp + button');
   var orig = btn.textContent;
-  btn.textContent = 'Guardando...'; btn.disabled = true;
+  btn.textContent = 'Saving...'; btn.disabled = true;
   try {
     var resp = await fetch('/updatewo', {
       method: 'POST',
@@ -3838,7 +3838,7 @@ async function saveModalWO() {
       body: JSON.stringify({id: activeRec.id, wo: wo})
     });
     if (resp.ok) {
-      btn.textContent = '✓ Guardado'; btn.style.background = '#007aff';
+      btn.textContent = '✓ Saved'; btn.style.background = '#007aff';
       await loadRecords();
       renderList(records);
       setTimeout(function(){btn.textContent=orig;btn.style.background='#34c759';btn.disabled=false;}, 1500);
@@ -3865,11 +3865,11 @@ function checkCastCompletion(castNo) {
   var n = castRecs.length;
   if (n < 48) return;
   var ton = sumTon(castRecs);
-  var msg = 'Cast ' + castNo + ' COMPLETO: ' + n + ' coils / ' + ton.toFixed(3) + 't';
+  var msg = 'Cast ' + castNo + ' COMPLETE: ' + n + ' coils / ' + ton.toFixed(3) + 't';
   setStatus(msg, 'ok');
   if (window.Notification) {
     if (Notification.permission === 'granted') {
-      try { new Notification('Cast completo!', {body: msg}); } catch(e){}
+      try { new Notification('Cast complete!', {body: msg}); } catch(e){}
     } else if (Notification.permission !== 'denied') {
       Notification.requestPermission();
     }
@@ -3930,7 +3930,7 @@ function updateOfflineBadge() {
   if (!badge) return;
   if (_offlineQueue.length > 0) {
     badge.style.display = 'flex';
-    badge.textContent = _offlineQueue.length + ' pendiente' + (_offlineQueue.length>1?'s':'');
+    badge.textContent = _offlineQueue.length + ' pending';
   } else {
     badge.style.display = 'none';
   }
@@ -3939,7 +3939,7 @@ function updateOfflineBadge() {
 async function flushOfflineQueue() {
   if (!_offlineQueue.length) return;
   var badge = document.getElementById('offline-badge');
-  if (badge) badge.textContent = 'Sincronizando...';
+  if (badge) badge.textContent = 'Syncing...';
   var sent = 0;
   for (var i = 0; i < _offlineQueue.length; i++) {
     try {
@@ -3955,7 +3955,7 @@ async function flushOfflineQueue() {
   saveOfflineQueue();
   if (sent > 0) {
     await loadRecords();
-    setStatus(sent + ' escaneo' + (sent>1?'s':'') + ' sincronizado' + (sent>1?'s':'') + ' desde la cola offline', 'ok');
+    setStatus(sent + ' scan' + (sent>1?'s':'') + ' synced from the offline queue', 'ok');
   }
 }
 
@@ -3988,14 +3988,14 @@ function closeGlobalSearch() {
 function runGlobalSearch(q) {
   var el = document.getElementById('global-search-results');
   q = q.trim().toLowerCase();
-  if (!q || q.length < 2) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Escribi al menos 2 caracteres</div>'; return; }
+  if (!q || q.length < 2) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Type at least 2 characters</div>'; return; }
   var results = records.filter(function(r){
     return [r.coil,r.cast,r.wo,r.producto,r.maquina,r.operario].some(function(v){return (v||'').toLowerCase().indexOf(q)>=0;});
   }).slice(0,30);
-  if (!results.length) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Sin resultados para "'+esc(q)+'"</div>'; return; }
-  el.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">'+results.length+' resultado'+(results.length>1?'s':'')+'</div>' +
+  if (!results.length) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">No results for "'+esc(q)+'"</div>'; return; }
+  el.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">'+results.length+' result'+(results.length>1?'s':'')+'</div>' +
     results.map(function(r){
-      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
       var mc = r.maquina==='EVG'?'#007aff':r.maquina==='PITTINI'?'#af52de':'#8e8e93';
       return '<div data-coil="'+esc(r.coil||'')+'" onclick="var r2=records.find(function(x){return x.coil===this.dataset.coil;}.bind(this));closeGlobalSearch();if(r2)openModal(r2);" style="padding:12px;border-radius:10px;background:var(--bg);margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px">'+        '<div style="flex:1;min-width:0">'+
           '<div style="font-size:14px;font-weight:700">'+esc(r.coil||'—')+'<span style="font-size:12px;color:'+mc+';font-weight:700;margin-left:6px">'+(r.maquina||'')+'</span>'+(r.wo?'<span style="background:#fff8e8;color:#7a5c00;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px">'+esc(r.wo)+'</span>':'')+'</div>'+
@@ -4042,8 +4042,8 @@ function requestNotifPermission() {
     var banner = document.getElementById('notif-banner');
     if (p === 'granted') {
       if (banner) banner.style.display = 'none';
-      setStatus('Notificaciones activadas', 'ok');
-      try { new Notification('Coil Scanner', {body: 'Notificaciones activadas. Te avisaremos cuando un cast se complete.'}); } catch(e){}
+      setStatus('Notifications turned on', 'ok');
+      try { new Notification('Coil Scanner', {body: 'Notifications turned on. We will let you know when a cast is complete.'}); } catch(e){}
     } else {
       if (banner) banner.style.display = 'none';
     }
@@ -4080,7 +4080,7 @@ function renderCalendar() {
   var grid = document.getElementById('cal-grid');
   var lbl = document.getElementById('cal-month-lbl');
   if (!grid) return;
-  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var meses = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   if (lbl) lbl.textContent = meses[_calMonth] + ' ' + _calYear;
   
   // Build day map
@@ -4098,7 +4098,7 @@ function renderCalendar() {
   var maxTon = Math.max.apply(null, Object.values(byDay).map(function(v){return v.ton;})) || 1;
   
   // Day headers
-  var dias = ['D','L','M','X','J','V','S'];
+  var dias = ['S','M','T','W','T','F','S'];
   var html = dias.map(function(d){return '<div style="text-align:center;font-size:9px;font-weight:700;color:#8e9aab;padding:2px 0">' + d + '</div>';}).join('');
   
   // First day of month
@@ -4158,7 +4158,7 @@ function getPeriodData(val) {
 }
 
 function getPeriodLabel(val) {
-  var labels = {week0:'Esta semana', week1:'Semana anterior', month0:'Este mes', month1:'Mes anterior'};
+  var labels = {week0:'This week', week1:'Last week', month0:'This month', month1:'Last month'};
   return labels[val] || val;
 }
 
@@ -4196,11 +4196,11 @@ function renderComparison() {
     '<div style="background:#f8fafc;border-radius:10px;padding:12px;display:flex;gap:16px;justify-content:space-around;text-align:center">' +
       '<div>' +
         '<div style="font-size:18px;font-weight:700;color:' + color(tonDiff) + '">' + arrow(tonDiff) + ' ' + Math.abs(tonDiff).toFixed(3) + 't</div>' +
-        '<div style="font-size:11px;color:#8e9aab">' + (tonPct ? tonPct + '% toneladas' : 'Sin comparacion') + '</div>' +
+        '<div style="font-size:11px;color:#8e9aab">' + (tonPct ? tonPct + '% tons' : 'No comparison') + '</div>' +
       '</div>' +
       '<div>' +
         '<div style="font-size:18px;font-weight:700;color:' + color(cntDiff) + '">' + arrow(cntDiff) + ' ' + Math.abs(cntDiff) + ' coils</div>' +
-        '<div style="font-size:11px;color:#8e9aab">' + (cntPct ? cntPct + '% coils' : 'Sin comparacion') + '</div>' +
+        '<div style="font-size:11px;color:#8e9aab">' + (cntPct ? cntPct + '% coils' : 'No comparison') + '</div>' +
       '</div>' +
     '</div>';
 }
@@ -4258,7 +4258,7 @@ function addToParaVerificar(coil, cast, producto, peso, maquina, wo, reason) {
   _paraVerificar.unshift({
     coil: coil, cast: cast, producto: producto,
     peso: peso, maquina: maquina, wo: wo,
-    reason: reason || 'No encontrado en consignment',
+    reason: reason || 'Not found in consignment',
     ts: new Date().toISOString()
   });
   saveParaVerificar();
@@ -4282,10 +4282,10 @@ function renderParaVerificar() {
   }
 
   card.style.display = 'block';
-  if (lbl) lbl.textContent = _paraVerificar.length + ' pendiente' + (_paraVerificar.length > 1 ? 's' : '');
+  if (lbl) lbl.textContent = _paraVerificar.length + ' pending';
 
   list.innerHTML = _paraVerificar.map(function(r) {
-    var d = new Date(r.ts).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    var d = new Date(r.ts).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
     var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
     return '<div style="padding:10px;background:#fff8f8;border-radius:8px;margin-bottom:6px;border-left:3px solid #ff3b30">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
@@ -4300,7 +4300,7 @@ function renderParaVerificar() {
           '<div style="font-size:10px;color:#8e8e93;margin-top:2px">' + d + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:4px;flex-shrink:0">' +
-          '<button data-coil="' + esc(r.coil) + '" onclick="removeFromParaVerificar(this.dataset.coil);renderParaVerificar()" title="Marcar como revisado" style="padding:5px 8px;background:#34c759;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">&#10003; OK</button>' +
+          '<button data-coil="' + esc(r.coil) + '" onclick="removeFromParaVerificar(this.dataset.coil);renderParaVerificar()" title="Mark as reviewed" style="padding:5px 8px;background:#34c759;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">&#10003; OK</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -4351,9 +4351,9 @@ function runCrossCheck() {
   // Summary tiles
   if (summary) {
     summary.innerHTML = [
-      {n: inCons, lbl: 'Coinciden', color: '#34c759', bg: '#e8ffe8'},
-      {n: notInCons, lbl: 'Extra (sin cons.)', color: '#ff9500', bg: '#fff5e8'},
-      {n: consNotScanned, lbl: 'Sin escanear', color: '#ff3b30', bg: '#fff0f0'},
+      {n: inCons, lbl: 'Match', color: '#34c759', bg: '#e8ffe8'},
+      {n: notInCons, lbl: 'Extra (no cons.)', color: '#ff9500', bg: '#fff5e8'},
+      {n: consNotScanned, lbl: 'Not scanned', color: '#ff3b30', bg: '#fff0f0'},
     ].map(function(t) {
       return '<div style="background:' + t.bg + ';border-radius:10px;padding:10px;text-align:center">' +
         '<div style="font-size:24px;font-weight:800;color:' + t.color + '">' + t.n + '</div>' +
@@ -4366,10 +4366,10 @@ function runCrossCheck() {
   var html = '';
 
   if (notInCons > 0) {
-    html += '<div style="font-size:11px;font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Escaneados SIN consignment (' + notInCons + ')</div>';
+    html += '<div style="font-size:11px;font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Scanned with NO consignment (' + notInCons + ')</div>';
     html += extraScans.slice(0, _xcExtraShown).map(function(r) {
       var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
-      var d = r.created_at ? new Date(r.created_at).toLocaleString('es',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
       return '<div style="padding:8px 10px;background:#fff8f0;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff9500;display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;font-family:monospace">' + esc(r.coil||'—') + '</div>' +
@@ -4382,7 +4382,7 @@ function runCrossCheck() {
   }
 
   if (consNotScanned > 0) {
-    html += '<div style="font-size:11px;font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments SIN escanear (' + consNotScanned + ')</div>';
+    html += '<div style="font-size:11px;font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments NOT scanned (' + consNotScanned + ')</div>';
     html += missingFromScan.slice(0, _xcMissShown).map(function(con) {
       return '<div style="padding:8px 10px;background:#fff8f8;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff3b30;display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
@@ -4396,7 +4396,7 @@ function runCrossCheck() {
   }
 
   if (!notInCons && !consNotScanned) {
-    html = '<div style="color:#34c759;font-weight:700;font-size:14px;text-align:center;padding:12px">&#10003; Todo coincide perfectamente</div>';
+    html = '<div style="color:#34c759;font-weight:700;font-size:14px;text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
   }
 
   if (list) list.innerHTML = html;
@@ -4409,7 +4409,7 @@ function checkCoilVsConsignment(coil, cast, producto, peso, maquina, wo) {
     return String(c.lot_no||'').trim() === String(coil||'').trim();
   });
   if (!found) {
-    addToParaVerificar(coil, cast, producto, peso, maquina, wo, 'No encontrado en consignment');
+    addToParaVerificar(coil, cast, producto, peso, maquina, wo, 'Not found in consignment');
     renderParaVerificar();
     // Show warning banner
     var warnBanner = document.getElementById('cons-warn-banner');
@@ -4420,7 +4420,7 @@ function checkCoilVsConsignment(coil, cast, producto, peso, maquina, wo) {
       warnBanner.onclick = function(){this.style.display='none';goTab('cons');};
       document.body.appendChild(warnBanner);
     }
-    warnBanner.innerHTML = '&#9888; Coil ' + coil + ' NO en consignment<br><span style="font-size:12px;opacity:.9">Guardado en "Para verificar" · Tap para ver</span>';
+    warnBanner.innerHTML = '&#9888; Coil ' + coil + ' NOT in consignment<br><span style="font-size:12px;opacity:.9">Saved in "To verify" · Tap to view</span>';
     warnBanner.style.display = 'block';
     setTimeout(function(){if(warnBanner)warnBanner.style.display='none';}, 6000);
   }
@@ -4438,7 +4438,7 @@ function showCamConfirm(data) {
   var inputStyle = 'background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-size:15px;font-weight:700;font-family:monospace;padding:8px 10px;width:100%;box-sizing:border-box;outline:none';
   fields.innerHTML =
     '<div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Coil N°</div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Coil No.</div>' +
       '<input id="cc-coil" value="' + esc(data.coil||'') + '" style="' + inputStyle + ';font-size:14px">' +
     '</div>' +
     '<div>' +
@@ -4450,12 +4450,12 @@ function showCamConfirm(data) {
       '<input id="cc-peso" value="' + esc(data.peso||'') + '" type="number" step="0.001" style="' + inputStyle + ';font-size:18px;color:#34c759">' +
     '</div>' +
     '<div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Producto</div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;margin-bottom:4px">Product</div>' +
       '<input id="cc-prod" value="' + esc(normalizeProducto(data.producto)||'') + '" style="' + inputStyle + ';font-size:12px">' +
     '</div>';
 
   fields.insertAdjacentHTML('afterbegin', '<div id="cc-status" style="grid-column:1/-1"></div>');
-  attachScanStatus('cc-status', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
+  attachScanStatus('cc-status', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cam-confirm-btn', '&#10003; Confirm');
   overlay.style.display = 'block';
   if (shootBar) shootBar.style.display = 'none';
 
@@ -4465,7 +4465,7 @@ function showCamConfirm(data) {
 
 async function camConfirm() {
   var btn = document.getElementById('cam-confirm-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
   var coil = (document.getElementById('cc-coil').value||'').trim();
   var cast = (document.getElementById('cc-cast').value||'').trim();
@@ -4475,24 +4475,24 @@ async function camConfirm() {
   var dchk = findDuplicateCandidate(coil, cast, peso);   // por si lo corrigio a mano y quedo igual a uno ya guardado
   if (dchk && dchk.kind === 'exact') {
     camFlash(dupFlashHTML(coil, dchk.rec.cast, dchk.rec.producto, dchk.rec.created_at, dchk.rec.wo), 'dup');
-    document.getElementById('cam-status').textContent = 'No se guardo — corregi el coil o cancela';
+    document.getElementById('cam-status').textContent = 'Not saved — fix the coil or cancel';
     document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
-    renderScanStatus('cc-status', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cam-confirm-btn', '&#10003; Confirmar');
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Confirmar'; }
+    renderScanStatus('cc-status', {coil: 'cc-coil', cast: 'cc-cast', peso: 'cc-peso', producto: 'cc-prod'}, true, 'cam-confirm-btn', '&#10003; Confirm');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm'; }
     return;
   }
   var camWo = _pendingScan ? _pendingScan.wo : '';
   if (camWo && isWOClosed(camWo) && !_unlocked) {
-    document.getElementById('cam-status').textContent = '⚠ WO ' + camWo + ' CERRADA — ingresá contrasena';
+    document.getElementById('cam-status').textContent = '⚠ WO ' + camWo + ' CLOSED — enter password';
     document.getElementById('cam-status').style.color = '#ff3b30';
-    requirePassword('Contrasena para agregar a WO cerrada', function(){ camConfirm(); });
-    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+    requirePassword('Password to add to a closed WO', function(){ camConfirm(); });
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirm';}
     return;
   }
   if (!coil) {
-    document.getElementById('cam-status').textContent = 'Ingresá el número de coil';
+    document.getElementById('cam-status').textContent = 'Enter the coil number';
     document.getElementById('cam-status').style.color = '#ff3b30';
-    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirm';}
     return;
   }
 
@@ -4511,11 +4511,11 @@ async function camConfirm() {
     if (saveResp.status === 409 || saveData.duplicate) {
       var exr = saveData.existing || {};
       camFlash(dupFlashHTML(coil, exr.cast, exr.producto, exr.created_at, exr.wo), 'dup');   // antes este mensaje se pisaba con "Cancelado"
-      camReject('No se guardo — lo escaneo otro operario', 'rgba(255,255,255,.7)');
+      camReject('Not saved — another operator scanned it', 'rgba(255,255,255,.7)');
       loadRecords();
       return;
     }
-    if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
+    if (!saveResp.ok) throw new Error(saveData.error || 'Error saving');
 
     // Success
     checkCoilVsConsignment(coil, cast, producto, peso, currentMachine, _pendingScan.wo);
@@ -4527,14 +4527,14 @@ async function camConfirm() {
     document.getElementById('cam-shoot-bar').style.display = 'flex';
     resetCamShutter(); resetCamConfirmBtn();   // <- faltaba: dejaba el obturador bloqueado
     camFlash('✓ GUARDADO<br><span style="font-size:14px;font-weight:600">Coil ' + esc(coil) + ' · ' + peso + 't</span>', 'ok');
-    document.getElementById('cam-status').textContent = 'Listo para siguiente etiqueta';
+    document.getElementById('cam-status').textContent = 'Ready for the next label';
     document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
 
   } catch(err) {
-    camFlash('✗ ERROR<br><span style="font-size:14px;font-weight:600">' + esc(err.message) + ' — cancelado</span>', 'err');
-    document.getElementById('cam-status').textContent = 'Cancelado — corregi y reintenta';
+    camFlash('✗ ERROR<br><span style="font-size:14px;font-weight:600">' + esc(err.message) + ' — cancelled</span>', 'err');
+    document.getElementById('cam-status').textContent = 'Cancelled — fix it and try again';
     document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
-    if(btn){btn.disabled=false;btn.textContent='✓ Confirmar';}
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirm';}
   }
 }
 
@@ -4543,7 +4543,7 @@ function camReject(msg, color) {
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
   resetCamShutter(); resetCamConfirmBtn();
-  document.getElementById('cam-status').textContent = (typeof msg === 'string' && msg) ? msg : 'Cancelado — intentá de nuevo';
+  document.getElementById('cam-status').textContent = (typeof msg === 'string' && msg) ? msg : 'Cancelled — try again';
   document.getElementById('cam-status').style.color = (typeof msg === 'string' && msg && color) ? color : 'rgba(255,255,255,.7)';
 }
 
@@ -4554,7 +4554,7 @@ function confNext(el, nextId) {
 async function confirmScan() {
   if (!_pendingScan) return;
   var btn = document.getElementById('btn-confirm-scan');
-  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
   // Read edited values from fields
   var coil = (document.getElementById('conf-coil').value || '').trim();
@@ -4565,21 +4565,21 @@ async function confirmScan() {
   var operario = _pendingScan.operario;
   var notas = _pendingScan.notas;
 
-  if (!coil) { setStatus('Ingresa el numero de coil', 'err'); if(btn){btn.disabled=false;btn.textContent='✓ Confirmar y guardar';} return; }
+  if (!coil) { setStatus('Enter the coil number', 'err'); if(btn){btn.disabled=false;btn.textContent='✓ Confirm and save';} return; }
   var dchk = findDuplicateCandidate(coil, cast, peso);          // tambien cubre la tecla Enter
   if (dchk && dchk.kind === 'exact') {
-    setStatus('⛔ DUPLICADO — ' + coil + ' ya fue escaneado. No se guardo.', 'err');
-    renderScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
+    setStatus('⛔ DUPLICATE — ' + coil + ' was already scanned. Not saved.', 'err');
+    renderScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirm and save');
     if (btn) btn.disabled = false;
     return;
   }
   if (wo && isWOClosed(wo)) {
     if (!_unlocked) {
-      setStatus('WO ' + wo + ' está CERRADA. Ingresá contrasena para continuar.', 'err');
-      requirePassword('Contrasena para agregar a WO cerrada ' + wo, function(){
+      setStatus('WO ' + wo + ' is CLOSED. Enter the password to continue.', 'err');
+      requirePassword('Password to add to closed WO ' + wo, function(){
         document.getElementById('btn-confirm-scan').click();
       });
-      if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
+      if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirm and save';}
       return;
     }
   }
@@ -4592,16 +4592,16 @@ async function confirmScan() {
     });
     var saveData = await saveResp.json();
     if (saveResp.status === 409 || saveData.duplicate) {
-      setStatus('⛔ DUPLICADO — ' + coil + ' ya fue escaneado. No se guardo.', 'err');
-      if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
+      setStatus('⛔ DUPLICATE — ' + coil + ' was already scanned. Not saved.', 'err');
+      if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirm and save';}
       await loadRecords();                                          // por si lo guardo otro operario: ahora si lo vemos
-      renderScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirmar y guardar');
+      renderScanStatus('scan-status', {coil: 'conf-coil', cast: 'conf-cast', peso: 'conf-peso', producto: 'conf-producto'}, false, 'btn-confirm-scan', '&#10003; Confirm and save');
       return;
     }
-    if (!saveResp.ok) throw new Error(saveData.error || 'Error guardando');
+    if (!saveResp.ok) throw new Error(saveData.error || 'Error saving');
     // Check consignment match with confirmed data
     checkCoilVsConsignment(coil, cast, producto, peso, currentMachine, wo);
-    setStatus('✓ Guardado: ' + coil + (wo ? ' — WO: ' + wo : ''), 'ok');
+    setStatus('✓ Saved: ' + coil + (wo ? ' — WO: ' + wo : ''), 'ok');
     document.getElementById('result-card').style.display = 'none';
     document.getElementById('notas-input').value = '';
     resetImg();
@@ -4609,8 +4609,8 @@ async function confirmScan() {
     resetScanConfirmBtn();
     await loadRecords();
   } catch(err) {
-    setStatus('✗ Error: ' + err.message + ' — cancelado, volve a intentar', 'err');
-    if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirmar y guardar';}
+    setStatus('✗ Error: ' + err.message + ' — cancelled, try again', 'err');
+    if(btn){btn.disabled=false;btn.innerHTML='&#10003; Confirm and save';}
   }
 }
 
@@ -4618,7 +4618,7 @@ function rejectScan() {
   _pendingScan = null;
   document.getElementById('result-card').style.display = 'none';
   clearStatus();
-  setStatus('Escaneo cancelado. Volvé a intentar con mejor foto.', 'warn');
+  setStatus('Scan cancelled. Try again with a clearer photo.', 'warn');
   resetImg();
 }
 
@@ -4630,7 +4630,7 @@ var PASSWORD = 'Machine';
 function requirePassword(reason, callback) {
   if (_unlocked) { callback(); return; }
   _pwdCallback = callback;
-  document.getElementById('pwd-reason').textContent = reason || 'Ingresá la contrasena para continuar';
+  document.getElementById('pwd-reason').textContent = reason || 'Enter the password to continue';
   document.getElementById('pwd-inp').value = '';
   document.getElementById('pwd-err').textContent = '';
   var bg = document.getElementById('pwd-modal-bg');
@@ -4651,7 +4651,7 @@ function checkPassword() {
         lockEl = document.createElement('span');
         lockEl.id = 'lock-status';
         lockEl.style.cssText = 'font-size:11px;font-weight:700;color:#34c759;background:#e8ffe8;border-radius:99px;padding:3px 8px;margin-left:4px;cursor:pointer';
-        lockEl.title = 'Click para bloquear';
+        lockEl.title = 'Click to lock';
         lockEl.onclick = lockApp;
         pill.parentNode.insertBefore(lockEl, pill);
       }
@@ -4659,7 +4659,7 @@ function checkPassword() {
     }
     if (_pwdCallback) { _pwdCallback(); _pwdCallback = null; }
   } else {
-    document.getElementById('pwd-err').textContent = 'Contrasena incorrecta';
+    document.getElementById('pwd-err').textContent = 'Incorrect password';
     document.getElementById('pwd-inp').value = '';
     document.getElementById('pwd-inp').focus();
   }
@@ -4710,14 +4710,14 @@ function isWOClosed(wo) {
 function toggleCloseWO(wo) {
   if (isWOClosed(wo)) {
     // Reopen
-    guardedAction('Ingresar contrasena para reabrir WO ' + wo, function() {
+    guardedAction('Enter the password to reopen WO ' + wo, function() {
       _closedWOs = _closedWOs.filter(function(w){ return w !== wo; });
       saveClosedWOs();
       renderBalance();
     });
   } else {
     // Close
-    guardedAction('Ingresar contrasena para cerrar WO ' + wo, function() {
+    guardedAction('Enter the password to close WO ' + wo, function() {
       if (!_closedWOs.includes(wo)) _closedWOs.push(wo);
       saveClosedWOs();
       renderBalance();
@@ -4781,20 +4781,20 @@ window.addEventListener('load', function() {
 <!-- PASSWORD MODAL -->
 <div id="pwd-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;padding:28px 24px;width:90%;max-width:340px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
-    <div style="font-size:20px;font-weight:700;margin-bottom:6px;text-align:center">&#128274; Acceso restringido</div>
-    <div style="font-size:13px;color:#8e8e93;text-align:center;margin-bottom:20px" id="pwd-reason">Ingresá la contrasena para continuar</div>
-    <input id="pwd-inp" type="password" placeholder="Contrasena..." style="width:100%;padding:13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:16px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div style="font-size:20px;font-weight:700;margin-bottom:6px;text-align:center">&#128274; Restricted access</div>
+    <div style="font-size:13px;color:#8e8e93;text-align:center;margin-bottom:20px" id="pwd-reason">Enter the password to continue</div>
+    <input id="pwd-inp" type="password" placeholder="Password..." style="width:100%;padding:13px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:16px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px" onkeydown="if(event.key==='Enter')checkPassword()">
     <div id="pwd-err" style="color:#ff3b30;font-size:12px;text-align:center;min-height:16px;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px">
-      <button onclick="closePwdModal()" style="flex:1;padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancelar</button>
-      <button onclick="checkPassword()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Ingresar</button>
+      <button onclick="closePwdModal()" style="flex:1;padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="checkPassword()" style="flex:2;padding:13px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Enter</button>
     </div>
   </div>
 </div>
 
 <!-- LOCK BANNER -->
 <div id="lock-banner" style="display:none;position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.9);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;pointer-events:none">
-  &#128274; Solo lectura — ingresá contrasena para editar
+  &#128274; Read only — enter the password to edit
 </div>
 
 </body>
