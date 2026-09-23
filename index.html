@@ -362,7 +362,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
     </div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
-    <div id="offline-badge" style="display:none;background:#ff9500;color:#fff;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="flushOfflineQueue()">0 pending</div><div id="nav-pill" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:4px 10px;border:1px solid var(--border)">0 records</div>
+    <div id="offline-badge" style="display:none;background:#ff9500;color:#fff;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="flushOfflineQueue()">0 pending</div><span id="live-dot" title="Live sync" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c7c7cc;flex-shrink:0"></span><div id="nav-pill" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:4px 10px;border:1px solid var(--border)">0 records</div>
     <button onclick="toggleGlobalSearch()" title="Search" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128269;</button>
     <button onclick="shareDailySummary()" title="Daily summary" style="width:32px;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">&#128200;</button>
   </div>
@@ -983,6 +983,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="load-title" id="load-title">Analyzing...</div>
 </div>
 
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 
 
@@ -4725,6 +4726,65 @@ function toggleCloseWO(wo) {
   }
 }
 
+// ============ REAL-TIME SYNC (Supabase Realtime) ============
+// Se conecta una vez; si un operario guarda un coil o sube un consignment, los demas lo ven
+// solo, sin esperar el refresco de 30s. Si no se puede conectar (red restringida, libreria
+// que no cargo), la app sigue funcionando igual con el refresco de siempre, como respaldo.
+var _rtOk = false, _rtClient = null, _rtTimer = null, _rtPend = {rec: false, cons: false}, _rtTick = 0;
+
+function updateLiveBadge() {
+  var dot = document.getElementById('live-dot');
+  if (!dot) return;
+  dot.style.background = _rtOk ? '#34c759' : '#c7c7cc';
+  dot.title = _rtOk ? 'Live sync connected' : 'Live sync off - refreshing every 30s';
+}
+
+function refreshActiveView() {
+  var activeTab = document.querySelector('.tab.on');
+  if (!activeTab) return;
+  if (activeTab.id === 't-dash') renderDash();
+  else if (activeTab.id === 't-hist') renderHistorial();
+  else if (activeTab.id === 't-cons') { renderSavedCons(); runCrossCheck(); renderParaVerificar(); }
+}
+
+function rtSchedule(kind) {
+  _rtPend[kind] = true;
+  clearTimeout(_rtTimer);
+  _rtTimer = setTimeout(rtFlush, 1000);   // junta varios cambios seguidos (ej. subir un PDF) en un solo refresco
+}
+
+async function rtFlush() {
+  var pend = _rtPend;
+  _rtPend = {rec: false, cons: false};
+  try {
+    if (pend.rec) await loadRecords();
+    if (pend.cons) await loadConsignments();
+    refreshActiveView();
+  } catch (e) { console.error('[realtime]', e); }
+}
+
+function startRealtime() {
+  if (_rtClient || !window.supabase || !window.supabase.createClient) {
+    updateLiveBadge();   // sin supabase-js: se queda en gris y sigue con el refresco de 30s
+    return;
+  }
+  try {
+    _rtClient = window.supabase.createClient(SB_BASE_PROD, SB_KEY_PROD, {auth: {persistSession: false, autoRefreshToken: false}});
+    _rtClient.channel('coil-live')
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'etiquetas'}, function() { rtSchedule('rec'); })
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'consignments'}, function() { rtSchedule('cons'); })
+      .subscribe(function(status) {
+        var wasDown = !_rtOk;
+        _rtOk = (status === 'SUBSCRIBED');
+        if (_rtOk && wasDown) { rtSchedule('rec'); rtSchedule('cons'); }   // al conectar (o reconectar), se pone al dia
+        updateLiveBadge();
+      });
+  } catch (e) {
+    console.error('[realtime]', e);
+    updateLiveBadge();
+  }
+}
+
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
@@ -4753,20 +4813,20 @@ window.addEventListener('load', function() {
   loadRecords().then(loadScheduleWOs);
   loadConsignments();
   goTab('scan');
+  startRealtime();
+  updateLiveBadge();
   // Show notification banner if not yet decided
   if (window.Notification && Notification.permission === 'default') {
     var nb = document.getElementById('notif-banner');
     if (nb) nb.style.display = 'flex';
   }
-  // Real-time sync: poll every 30 seconds
+  // Refresco de respaldo: cada 30s si el tiempo real no esta conectado; si esta conectado,
+  // solo cada ~2 min como red de seguridad (el tiempo real ya se encarga de lo normal).
   setInterval(function() {
-    if (!document.hidden) {
-      loadRecords().then(function() {
-        var activeTab = document.querySelector('.tab.on');
-        if (activeTab && activeTab.id === 't-dash') renderDash();
-        if (activeTab && activeTab.id === 't-hist') renderHistorial();
-      });
-    }
+    if (document.hidden) return;
+    _rtTick++;
+    if (_rtOk && _rtTick % 4 !== 0) return;
+    loadRecords().then(refreshActiveView);
   }, 30000);
   // Also sync when tab becomes visible
   document.addEventListener('visibilitychange', function() {
