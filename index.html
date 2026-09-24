@@ -3086,11 +3086,18 @@ function parseConsPageItems(items) {
     var cast = null;
     if (cands.length === 1) cast = cands[0].val;
     else if (cands.length > 1) {
-      if (castX != null) {
-        cands.sort(function(a, b) { return Math.abs(a.x - castX) - Math.abs(b.x - castX); });
-        cast = cands[0].val;
+      // Un cast casi siempre viene con sufijo "-01"/"-02" (sub-colada); un numero de 6 cifras suelto
+      // (Cust PO, numero de orden, etc.) casi nunca lo tiene. Si hay uno con sufijo, es el cast: se prioriza
+      // por sobre la posicion, porque no depende de acertarle a la columna exacta del PDF.
+      var suffixed = cands.filter(function(c) { return /-\d/.test(c.val); });
+      var pool = suffixed.length ? suffixed : cands;
+      if (pool.length === 1) {
+        cast = pool[0].val;
+      } else if (castX != null) {
+        pool.sort(function(a, b) { return Math.abs(a.x - castX) - Math.abs(b.x - castX); });
+        cast = pool[0].val;
       } else {
-        cast = cands[0].val;   // sin encabezado detectado: se mantiene el comportamiento anterior (primer numero de 6 cifras)
+        cast = pool[0].val;   // sin encabezado detectado: se mantiene el comportamiento anterior (primer numero de 6 cifras)
       }
     }
     rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast,
