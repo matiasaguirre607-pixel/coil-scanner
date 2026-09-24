@@ -2492,6 +2492,7 @@ function renderBalance() {
       .filter(function(p){return p.wo===wo;})
       .reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
     var stock = entrada - producido;
+    var scrapEst = entrada * 0.0075;   // 0.75% de merma esperada, estimada sobre lo escaneado (In)
     var pct = entrada > 0 ? Math.round((producido/entrada)*100) : 0;
     var stockColor = stock > 0.1 ? '#ff9500' : stock < -0.1 ? '#ff3b30' : '#34c759';
 
@@ -2528,6 +2529,10 @@ function renderBalance() {
             '<div class="bal-num" style="color:'+stockColor+'">'+stock.toFixed(3)+'t</div>'+
             '<div class="bal-lbl">Stock</div>'+
           '</div>'+
+          '<div style="text-align:right">'+
+            '<div class="bal-num" style="font-size:14px;color:#8e8e93;font-weight:600">'+scrapEst.toFixed(3)+'t</div>'+
+            '<div class="bal-lbl">Scrap est.</div>'+
+          '</div>'+
         '</div>'+
       '</div>'+
       '<div class="bar-bal">'+
@@ -2546,12 +2551,14 @@ function renderBalance() {
   var totalEntrada = sumTon(records.filter(function(r){return r.wo;}));
   var totalProducido = _produccion.reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
   var totalStock = totalEntrada - totalProducido;
+  var totalScrapEst = totalEntrada * 0.0075;
   var summary = document.createElement('div');
   summary.style.cssText = 'background:#f8f8f8;border-radius:10px;padding:14px;margin-top:8px;display:flex;gap:16px;justify-content:space-around;text-align:center';
   summary.innerHTML =
     '<div><div style="font-size:22px;font-weight:700;color:#007aff">'+totalEntrada.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total in</div></div>'+
     '<div><div style="font-size:22px;font-weight:700;color:#34c759">'+totalProducido.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Total produced</div></div>'+
-    '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock available</div></div>';
+    '<div><div style="font-size:22px;font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Stock available</div></div>'+
+    '<div><div style="font-size:22px;font-weight:700;color:#8e8e93">'+totalScrapEst.toFixed(3)+'t</div><div style="font-size:11px;color:#8e8e93">Est. scrap (0.75%)</div></div>';
   list.appendChild(summary);
 
   // Scrap section
