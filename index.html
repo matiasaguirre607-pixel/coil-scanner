@@ -3019,10 +3019,12 @@ function _pdfLines(items) {
     if (!cur || Math.abs(cur.y - it.y) > 2.5) { cur = {y: it.y, parts: []}; lines.push(cur); }
     cur.parts.push(it);
   });
-  return lines.map(function(l) {
-    l.parts.sort(function(a, b) { return a.x - b.x; });
-    return l.parts.map(function(p) { return String(p.s).trim(); }).join(' ').replace(/\s+/g, ' ').trim();
-  });
+  lines.forEach(function(l) { l.parts.sort(function(a, b) { return a.x - b.x; }); });
+  return lines;   // cada elemento: {y, parts:[{s,x,y}, ...]} -- se conserva la posicion, no solo el texto
+}
+
+function _lineText(l) {
+  return l.parts.map(function(p) { return String(p.s).trim(); }).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 function _fmtProdPdf(num, words) {
@@ -3031,25 +3033,67 @@ function _fmtProdPdf(num, words) {
   return (isFinite(n) ? n.toFixed(1) : String(num)) + ' ' + w;
 }
 
+// Todos los numeros con forma de cast (6 cifras, con o sin sufijo "-NN") que aparecen en la fila,
+// cada uno con su posicion x (el texto puede venir separado en varias piezas, ej. "433" y "818").
+function _castCandidates(line) {
+  var out = [], text = _lineText(line);
+  var re = /\b(\d{6}(?:-\d{1,3})?)\b/g, m;
+  while ((m = re.exec(text))) {
+    // ubica esa cifra entre las piezas originales para sacarle su x real
+    var acc = '', x = null;
+    for (var i = 0; i < line.parts.length; i++) {
+      var s = line.parts[i].s.trim();
+      var start = acc.length ? acc.length + 1 : 0;
+      acc = acc ? acc + ' ' + s : s;
+      if (start <= m.index && m.index < acc.length) { x = line.parts[i].x; break; }
+    }
+    out.push({val: m[1], x: x == null ? 0 : x});
+  }
+  return out;
+}
+
 // items: [{s, x, y}]  ->  {rows, ref, fecha} o null si no es confiable (entonces se usa la IA)
 function parseConsPageItems(items) {
   if (!items || items.length < 8) return null;               // sin capa de texto (PDF escaneado)
   var lines = _pdfLines(items);
-  var full = lines.join('\n');
+  var texts = lines.map(_lineText);
+  var full = texts.join('\n');
   var refM = full.match(/\bR\d{9}\b/);
   var dateRe = /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/;
   var fecha = '';
-  lines.forEach(function(l) { if (!fecha && /date|fecha/i.test(l)) { var m = l.match(dateRe); if (m) fecha = m[0]; } });
+  texts.forEach(function(t) { if (!fecha && /date|fecha/i.test(t)) { var m = t.match(dateRe); if (m) fecha = m[0]; } });
   if (!fecha) { var dm = full.match(dateRe); if (dm) fecha = dm[0]; }
 
+  // Posicion (x) de la columna "Cast", sacada del encabezado de la tabla -- asi no importa en que
+  // columna este (columna 1, 8, la que sea): se usa la fila real para no confundirla con otro numero
+  // de 6 cifras que pueda haber antes en la misma linea (ej. un numero de orden repetido en cada fila).
+  var castX = null;
+  for (var h = 0; h < lines.length; h++) {
+    if (!(/\bcast\b/i.test(texts[h]) && /lot|product|weight/i.test(texts[h]))) continue;
+    for (var p = 0; p < lines[h].parts.length; p++) {
+      if (/cast/i.test(lines[h].parts[p].s)) { castX = lines[h].parts[p].x; break; }
+    }
+    if (castX != null) break;
+  }
+
   var rows = [];
-  lines.forEach(function(l, idx) {
+  texts.forEach(function(l, idx) {
     var lot = l.match(/(?:^|\s)(\d{10})(?=\s|$)/);
     var peso = l.match(/(?:^|\s)(\d{1,2}[.,]\d{3})(?=\s|$)/);
     var prod = l.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s+([A-Za-z][A-Za-z ]*?\bROD)\b/i);
     if (!lot || !peso || !prod) return;
-    var cast = l.match(/(?:^|\s)(\d{6}(?:-\d{1,3})?)(?=\s|$)/);
-    rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast ? cast[1] : null,
+    var cands = _castCandidates(lines[idx]);
+    var cast = null;
+    if (cands.length === 1) cast = cands[0].val;
+    else if (cands.length > 1) {
+      if (castX != null) {
+        cands.sort(function(a, b) { return Math.abs(a.x - castX) - Math.abs(b.x - castX); });
+        cast = cands[0].val;
+      } else {
+        cast = cands[0].val;   // sin encabezado detectado: se mantiene el comportamiento anterior (primer numero de 6 cifras)
+      }
+    }
+    rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast,
       lot_no: lot[1], producto: _fmtProdPdf(prod[1], prod[2]), peso: parseFloat(peso[1].replace(',', '.'))}});
   });
   if (!rows.length) return null;
@@ -3058,9 +3102,9 @@ function parseConsPageItems(items) {
   // control 2: desde el encabezado de la tabla no puede haber mas lotes (10 digitos) que filas leidas
   //            (si una fila no se pudo leer, se descarta toda la pagina y la lee la IA)
   var tableStart = 0;
-  for (var h = 0; h < lines.length; h++) { if (/\blot\b/i.test(lines[h]) && /cast|product|weight/i.test(lines[h])) { tableStart = h; break; } }
+  for (var k2 = 0; k2 < texts.length; k2++) { if (/\blot\b/i.test(texts[k2]) && /cast|product|weight/i.test(texts[k2])) { tableStart = k2; break; } }
   var lotLines = 0;
-  for (var k = tableStart; k < lines.length; k++) if (/(?:^|\s)\d{10}(?=\s|$)/.test(lines[k])) lotLines++;
+  for (var k = tableStart; k < texts.length; k++) if (/(?:^|\s)\d{10}(?=\s|$)/.test(texts[k])) lotLines++;
   if (lotLines > rows.length) return null;
   return {rows: rows.map(function(r) { return r.row; }), ref: refM ? refM[0] : null, fecha: fecha};
 }
