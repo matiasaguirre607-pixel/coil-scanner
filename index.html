@@ -2501,32 +2501,44 @@ function renderBalance() {
     div.style.flexDirection = 'column';
     div.style.alignItems = 'stretch';
     var woClosed = isWOClosed(wo);
+    // Muted palette for closed WOs so they read as "done/inactive" at a glance
+    var cIn = woClosed ? '#a0a0a5' : '#007aff';
+    var cProd = woClosed ? '#a0a0a5' : '#34c759';
+    var cStock = woClosed ? '#a0a0a5' : stockColor;
+    var cBar = woClosed ? '#c7c7cc' : (pct>100?'#ff3b30':'#34c759');
+    var cPct = woClosed ? '#8e8e93' : (pct>100?'#ff3b30':'#1c1c1e');
+    if (woClosed) {
+      div.style.background = '#f7f7f8';
+      div.style.borderRadius = '10px';
+      div.style.padding = '12px 10px';
+      div.style.opacity = '0.72';
+    }
     var woRecs = records.filter(function(r){return r.wo===wo;});
     var prods = unique(woRecs.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean));
     var prodTags = prods.map(function(p){
-      return '<span style="background:#f0f5ff;color:#007aff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;margin-right:3px">'+esc(p)+'</span>';
+      return '<span style="background:'+(woClosed?'#eceef1':'#f0f5ff')+';color:'+(woClosed?'#8e8e93':'#007aff')+';font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;margin-right:3px">'+esc(p)+'</span>';
     }).join('');
     div.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
         '<div style="flex:1;min-width:0">'+
           '<div style="display:flex;align-items:center;gap:8px">'+
-            '<div class="bal-wo">WO: '+esc(wo)+'</div>'+
-            (woClosed?'<span style="background:#fff0f0;color:#ff3b30;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px">CLOSED</span>':'')+
+            '<div class="bal-wo" style="'+(woClosed?'color:#8e8e93':'')+'">WO: '+esc(wo)+'</div>'+
+            (woClosed?'<span style="background:#eceef1;color:#8e8e93;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px">CLOSED</span>':'')+
           '</div>'+
           '<div style="margin-top:4px">'+prodTags+'</div>'+
           '<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+coils+' coils scanned</div>'+
         '</div>'+
         '<div class="bal-nums">'+
           '<div style="text-align:right">'+
-            '<div class="bal-num" style="color:#007aff">'+entrada.toFixed(3)+'t</div>'+
+            '<div class="bal-num" style="color:'+cIn+'">'+entrada.toFixed(3)+'t</div>'+
             '<div class="bal-lbl">In</div>'+
           '</div>'+
           '<div style="text-align:right">'+
-            '<div class="bal-num" style="color:#34c759">'+producido.toFixed(3)+'t</div>'+
+            '<div class="bal-num" style="color:'+cProd+'">'+producido.toFixed(3)+'t</div>'+
             '<div class="bal-lbl">Produced</div>'+
           '</div>'+
           '<div style="text-align:right">'+
-            '<div class="bal-num" style="color:'+stockColor+'">'+stock.toFixed(3)+'t</div>'+
+            '<div class="bal-num" style="color:'+cStock+'">'+stock.toFixed(3)+'t</div>'+
             '<div class="bal-lbl">Stock</div>'+
           '</div>'+
           '<div style="text-align:right">'+
@@ -2536,10 +2548,10 @@ function renderBalance() {
         '</div>'+
       '</div>'+
       '<div class="bar-bal">'+
-        '<div class="bar-bal-fill" style="width:'+Math.min(pct,100)+'%;background:'+(pct>100?'#ff3b30':'#34c759')+'"></div>'+
+        '<div class="bar-bal-fill" style="width:'+Math.min(pct,100)+'%;background:'+cBar+'"></div>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">'+
-        '<div style="font-size:10px;color:#8e8e93"><span>0</span> <span style="font-weight:600;color:'+(pct>100?'#ff3b30':'#1c1c1e')+'">'+pct+'% produced</span> <span>'+entrada.toFixed(1)+'t</span></div>'+
+        '<div style="font-size:10px;color:#8e8e93"><span>0</span> <span style="font-weight:600;color:'+cPct+'">'+pct+'% produced</span> <span>'+entrada.toFixed(1)+'t</span></div>'+
         '<button data-wo="'+esc(wo)+'" onclick="toggleCloseWO(this.dataset.wo)" style="padding:4px 10px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;background:'+(woClosed?'#e8ffe8':'#fff0f0')+';color:'+(woClosed?'#1a7a3c':'#ff3b30')+'">'+
           (woClosed?'&#128275; Reopen WO':'&#128274; Close WO')+
         '</button>'+
