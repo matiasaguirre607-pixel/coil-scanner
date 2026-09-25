@@ -2491,8 +2491,8 @@ function renderBalance() {
     var producido = _produccion
       .filter(function(p){return p.wo===wo;})
       .reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
-    var stock = entrada - producido;
-    var scrapEst = entrada * 0.0075;   // 0.75% de merma esperada, estimada sobre lo escaneado (In)
+    var scrapEst = producido * (0.0075/0.9925);   // 0.75% de merma esperada, calculada sobre lo producido
+    var stock = entrada - producido - scrapEst;
     var pct = entrada > 0 ? Math.round((producido/entrada)*100) : 0;
     var stockColor = stock > 0.1 ? '#ff9500' : stock < -0.1 ? '#ff3b30' : '#34c759';
 
@@ -2550,8 +2550,8 @@ function renderBalance() {
   // Total stock summary
   var totalEntrada = sumTon(records.filter(function(r){return r.wo;}));
   var totalProducido = _produccion.reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
-  var totalStock = totalEntrada - totalProducido;
-  var totalScrapEst = totalEntrada * 0.0075;
+  var totalScrapEst = totalProducido * (0.0075/0.9925);
+  var totalStock = totalEntrada - totalProducido - totalScrapEst;
   var summary = document.createElement('div');
   summary.style.cssText = 'background:#f8f8f8;border-radius:10px;padding:14px;margin-top:8px;display:flex;gap:16px;justify-content:space-around;text-align:center';
   summary.innerHTML =
@@ -3380,7 +3380,8 @@ function checkStockAlerts() {
   wos.forEach(function(wo) {
     var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
     var producido = _produccion.filter(function(p){return p.wo===wo;}).reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
-    var stock = entrada - producido;
+    var scrapEst = producido * (0.0075/0.9925);
+    var stock = entrada - producido - scrapEst;
     if (stock < 0) alerts.push('WO '+wo+': negative stock ('+stock.toFixed(3)+'t)');
     else if (stock < 0.5 && producido > 0) alerts.push('WO '+wo+': low stock ('+stock.toFixed(3)+'t)');
   });
