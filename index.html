@@ -2447,11 +2447,22 @@ var SB_KEY_PROD = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 var SB_BASE_PROD = 'https://xqzqrlxjzfxpqigjuzor.supabase.co';
 var _produccion = [];
 
-async function loadProduccion() {
-  // Populate WO selector from records
+function refreshProdWOSelector() {
   var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
   var sel = document.getElementById('prod-wo-sel');
-  if (sel) sel.innerHTML = '<option value="">Select a WO...</option>' + wos.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'</option>';}).join('');
+  if (!sel) return;
+  var prevVal = sel.value;
+  sel.innerHTML = '<option value="">Select a WO...</option>' + wos.map(function(w){
+    var closed = isWOClosed(w);
+    return '<option value="'+esc(w)+'"'+(closed?' disabled':'')+'>'+esc(w)+(closed?' (closed — reopen to record production)':'')+'</option>';
+  }).join('');
+  // Keep the previous selection unless it just became closed
+  if (prevVal && !isWOClosed(prevVal)) sel.value = prevVal;
+}
+
+async function loadProduccion() {
+  // Populate WO selector from records
+  refreshProdWOSelector();
 
   // Load produccion records
   try {
@@ -2476,6 +2487,7 @@ async function saveProduccion() {
   var status = document.getElementById('prod-status');
 
   if (!wo) { status.textContent = 'Select a WO.'; status.style.color = '#ff3b30'; return; }
+  if (isWOClosed(wo)) { status.textContent = 'WO ' + wo + ' is closed. Reopen it first to record production.'; status.style.color = '#ff3b30'; return; }
   if (!ton || ton <= 0) { status.textContent = 'Enter the tons produced.'; status.style.color = '#ff3b30'; return; }
 
   var btn = document.getElementById('prod-save-btn');
@@ -2626,14 +2638,38 @@ function renderProdHist() {
   }
   hist.innerHTML = _produccion.slice(0,50).map(function(p) {
     var d = p.created_at ? new Date(p.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7">'+
-      '<div>'+
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7;gap:10px">'+
+      '<div style="min-width:0">'+
         '<div style="font-size:calc(26px * var(--fs-scale));font-weight:700;color:#1c1c1e">WO: '+esc(p.wo||'')+'</div>'+
         '<div style="font-size:calc(22px * var(--fs-scale));color:#8e8e93;margin-top:2px">'+d+(p.notas?' · '+esc(p.notas):'')+'</div>'+
       '</div>'+
-      '<div style="font-size:calc(32px * var(--fs-scale));font-weight:700;color:#34c759">'+parseFloat(p.toneladas_producidas||0).toFixed(3)+'t</div>'+
+      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">'+
+        '<div style="font-size:calc(32px * var(--fs-scale));font-weight:700;color:#34c759">'+parseFloat(p.toneladas_producidas||0).toFixed(3)+'t</div>'+
+        '<button data-id="'+esc(p.id)+'" data-wo="'+esc(p.wo||'')+'" data-ton="'+parseFloat(p.toneladas_producidas||0)+'" onclick="deleteProduccion(this.dataset.id,this.dataset.wo,parseFloat(this.dataset.ton))" title="Delete this production entry" style="width:34px;height:34px;flex-shrink:0;border:none;border-radius:8px;background:#fff0f0;color:#ff3b30;cursor:pointer;font-size:calc(20px * var(--fs-scale));display:flex;align-items:center;justify-content:center;padding:0">&#128465;</button>'+
+      '</div>'+
     '</div>';
   }).join('');
+}
+
+async function deleteProduccion(id, wo, ton) {
+  guardedAction('Enter the password to delete this production entry', async function() {
+    if (!confirm('Delete this production entry?\nWO ' + wo + ' — ' + ton.toFixed(3) + 't\n\nThis will reduce "Produced" and increase available Stock for that WO.')) return;
+    try {
+      var resp = await fetch(SB_BASE_PROD+'/rest/v1/produccion?id=eq.'+encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: {apikey: SB_KEY_PROD, Authorization: 'Bearer '+SB_KEY_PROD}
+      });
+      if (!resp.ok) {
+        var errText = await resp.text();
+        alert('Error deleting: ' + errText.substring(0,150));
+        return;
+      }
+      await loadProduccion();
+      setStatus('Production entry deleted (WO ' + wo + ', ' + ton.toFixed(3) + 't)', 'ok');
+    } catch(e) {
+      alert('Error deleting: ' + e.message);
+    }
+  });
 }
 
 var _consignments = [];
@@ -4809,6 +4845,7 @@ function toggleCloseWO(wo) {
       _closedWOs = _closedWOs.filter(function(w){ return w !== wo; });
       saveClosedWOs();
       renderBalance();
+      refreshProdWOSelector();
     });
   } else {
     // Close
@@ -4816,6 +4853,7 @@ function toggleCloseWO(wo) {
       if (!_closedWOs.includes(wo)) _closedWOs.push(wo);
       saveClosedWOs();
       renderBalance();
+      refreshProdWOSelector();
     });
   }
 }
