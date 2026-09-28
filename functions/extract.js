@@ -1,5 +1,6 @@
 export async function onRequestPost(context) {
   const GEMINI_KEY = context.env.GEMINI_KEY;
+  if (!GEMINI_KEY) return rj({error: "Server misconfigured: GEMINI_KEY is not set in Cloudflare Pages environment variables"}, 500);
 
   let body;
   try { body = await context.request.json(); } catch(e) { return rj({error:"Body invalido"},400); }
@@ -28,19 +29,38 @@ Rules:
 - Respond with ONLY a JSON object, nothing else, no markdown:
 {"peso": "1.460", "producto": "COIL REIN 6.1mm", "coil": "6260300548", "cast": "530736"}`;
 
-  const gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      contents: [{parts: [
-        {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-        {text: prompt}
-      ]}],
-      generationConfig: {temperature: 0, maxOutputTokens: 256}
-    })
-  });
-  const gd = await gr.json();
-  if (!gr.ok) return rj({error: gd?.error?.message || "Error Gemini"}, 500);
+  // Antes esto no tenia limite de tiempo ni try/catch: si Gemini se colgaba, tardaba, o la red
+  // fallaba, la funcion de Cloudflare se quedaba esperando para siempre sin devolver nunca una
+  // respuesta -- por eso la app se quedaba en "Analyzing..." sin fin. Ahora corta a los 15s (menos
+  // que el limite de 20s del lado del celular, para que el error real de ESTE lado llegue primero)
+  // y cualquier fallo de red devuelve un JSON claro en vez de colgar la funcion entera.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  let gr;
+  try {
+    gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        contents: [{parts: [
+          {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
+          {text: prompt}
+        ]}],
+        generationConfig: {temperature: 0, maxOutputTokens: 256}
+      }),
+      signal: ctrl.signal
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e && e.name === "AbortError") return rj({error: "Gemini API did not respond within 15s (server-side timeout)"}, 504);
+    return rj({error: "Network error calling Gemini API: " + (e && e.message ? e.message : String(e))}, 502);
+  }
+  clearTimeout(timer);
+
+  let gd;
+  try { gd = await gr.json(); }
+  catch (e) { return rj({error: "Gemini returned a non-JSON response (HTTP " + gr.status + ")"}, 502); }
+  if (!gr.ok) return rj({error: gd?.error?.message || ("Error Gemini (HTTP " + gr.status + ")")}, 500);
 
   const raw = gd?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   let parsed = null;
