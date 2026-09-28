@@ -2425,7 +2425,7 @@ async function captureAndAnalyze() {
   var status = document.getElementById('cam-status');
   btn.disabled = true;
   btn.style.background = '#e5e5ea';
-  status.style.color = '';
+  status.style.color = 'rgba(255,255,255,.8)';   // reset a blanco legible (antes se borraba con '' y quedaba negro sobre fondo negro)
   status.textContent = 'Analyzing...';
   var _tick = _tickStatus(function(s) {
     var el = document.getElementById('cam-status');
