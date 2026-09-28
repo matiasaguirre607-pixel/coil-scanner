@@ -1049,6 +1049,43 @@ function normalizeProducto(raw) {
   }
   return s;
 }
+// Antes el fetch a /extract no tenia limite de tiempo: si el servidor se colgaba (o la conexion
+// era mala), la promesa nunca se resolvia y la pantalla quedaba en "Analyzing..." para siempre,
+// con el boton bloqueado y sin forma de reintentar. Ahora se corta a los EXTRACT_TIMEOUT_MS y tira
+// un error claro y reintentable. Tambien se valida que la respuesta sea JSON real: si el servidor
+// devuelve una pagina de error (HTML) en vez de JSON, antes eso rompia con un mensaje confuso.
+var EXTRACT_TIMEOUT_MS = 20000;
+async function fetchExtract(base64, mediaType) {
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, EXTRACT_TIMEOUT_MS) : null;
+  var resp;
+  try {
+    resp = await fetch('/extract', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({imageBase64: base64, mediaType: mediaType}),
+      signal: ctrl ? ctrl.signal : undefined
+    });
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Timed out reading the label (' + (EXTRACT_TIMEOUT_MS / 1000) + 's). Check your connection and try again.');
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+  var text = await resp.text();
+  var data;
+  try { data = text ? JSON.parse(text) : {}; }
+  catch (e) { throw new Error('Server returned an invalid response (HTTP ' + resp.status + '). Try again.'); }
+  if (!resp.ok) throw new Error(data.error || 'Error ' + resp.status);
+  return data;
+}
+// Muestra segundos transcurridos mientras se espera /extract, asi la pantalla no da la sensacion
+// de estar trabada mientras en realidad sigue esperando al servidor.
+function _tickStatus(setFn) {
+  var start = Date.now();
+  setFn(0);
+  return setInterval(function() { setFn(Math.floor((Date.now() - start) / 1000)); }, 1000);
+}
 async function callGemini(base64, mType) {
   // Check offline
   if (!navigator.onLine) {
@@ -1059,14 +1096,7 @@ async function callGemini(base64, mType) {
     throw new Error('No connection - saved to offline queue (' + _offlineQueue.length + ' pending' + (_offlineQueue.length>1?'s':'') + ')');
   }
   // Only EXTRACT - do NOT save yet
-  var resp = await fetch('/extract', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({imageBase64: base64, mediaType: mType})
-  });
-  var data = await resp.json();
-  if (!resp.ok) throw new Error(data.error || 'Error ' + resp.status);
-  return data;
+  return fetchExtract(base64, mType);
 }
 
 
@@ -1224,6 +1254,10 @@ async function analyze() {
   busy = true;
   document.getElementById('analyze-btn').disabled = true;
   document.getElementById('btn-inner').innerHTML = '<div class="spin"></div> Analyzing...';
+  var _tick = _tickStatus(function(s) {
+    var el = document.getElementById('btn-inner');
+    if (el) el.innerHTML = '<div class="spin"></div> Analyzing' + (s ? ' (' + s + 's)' : '...');
+  });
   document.getElementById('result-card').style.display = 'none';
   document.getElementById('dup-card').style.display = 'none';
   clearStatus();
@@ -1270,6 +1304,7 @@ async function analyze() {
   } catch(err) {
     setStatus(err.message, 'err');
   } finally {
+    clearInterval(_tick);
     busy = false;
     document.getElementById('analyze-btn').disabled = false;
     document.getElementById('btn-inner').textContent = 'Analyze label with AI';
@@ -2390,14 +2425,28 @@ async function captureAndAnalyze() {
   var status = document.getElementById('cam-status');
   btn.disabled = true;
   btn.style.background = '#e5e5ea';
+  status.style.color = '';
   status.textContent = 'Analyzing...';
+  var _tick = _tickStatus(function(s) {
+    var el = document.getElementById('cam-status');
+    if (el) el.textContent = 'Analyzing' + (s ? ' (' + s + 's)' : '...');
+  });
 
-  // Capture frame
+  // Capture frame -- antes se mandaba el frame entero (hasta 1920x1080 @ calidad 0.85, varios MB en
+  // base64), mucho mas pesado que la foto subida por archivo (que ya se comprimia a 700px). Con wifi
+  // de planta eso tardaba mucho o directamente se colgaba. Ahora se achica igual que la otra via:
+  // sigue siendo mas que suficiente resolucion para leer una etiqueta, pero pesa una fraccion.
+  var srcW = video.videoWidth || 1280, srcH = video.videoHeight || 720;
+  var capW = srcW, capH = srcH, CAP_MAX = 900;
+  if (capW > CAP_MAX || capH > CAP_MAX) {
+    if (capW > capH) { capH = Math.round(capH * CAP_MAX / capW); capW = CAP_MAX; }
+    else { capW = Math.round(capW * CAP_MAX / capH); capH = CAP_MAX; }
+  }
   var canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 1280;
-  canvas.height = video.videoHeight || 720;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  canvas.width = capW;
+  canvas.height = capH;
+  canvas.getContext('2d').drawImage(video, 0, 0, capW, capH);
+  var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
   var base64 = dataUrl.split(',')[1];
 
   var wo = document.getElementById('wo-input').value.trim();
@@ -2405,14 +2454,9 @@ async function captureAndAnalyze() {
   var notas = document.getElementById('notas-input').value.trim();
 
   try {
-    // Extract only - do not save yet
-    var extractResp = await fetch('/extract', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({imageBase64: base64, mediaType: 'image/jpeg'})
-    });
-    var data = await extractResp.json();
-    if (!extractResp.ok) throw new Error(data.error || 'Error extracting data');
+    // Extract only - do not save yet (con timeout: antes, si /extract se colgaba, esto quedaba
+    // esperando para siempre con "Analyzing..." en pantalla y sin forma de reintentar)
+    var data = await fetchExtract(base64, 'image/jpeg');
 
     var coil0 = data.coil ? String(data.coil).trim() : null;
     var peso0 = normalizePeso(data.peso);
@@ -2440,6 +2484,8 @@ async function captureAndAnalyze() {
     status.textContent = 'Cancelled — try again';
     status.style.color = 'rgba(255,255,255,.7)';
     resetCamShutter();
+  } finally {
+    clearInterval(_tick);
   }
 }
 
@@ -2706,13 +2752,20 @@ function prodChipsHTML(prodOrder, selected) {
 }
 
 // Antes esto era el texto completo ("COIL REIN 9mm" / "9.0 DUCTILE ROD"): dos formas de nombrar
-// EL MISMO diametro no se agrupaban juntas. Ahora la clave es solo el numero + mm ("9MM"),
-// asi el filtro de producto agrupa igual sin importar si el nombre viene de una etiqueta o de un PDF.
+// EL MISMO diametro no se agrupaban juntas. Ahora la clave es el numero + mm ("9MM"), MAS el grado/material
+// si el PDF lo trajo (ej. "9MM · 500E PL"), asi dos materiales distintos con el mismo diametro (que antes
+// quedaban indistinguibles, ej. "500E PL" vs "1008 Rod" en 7mm) ya no se agrupan como si fueran lo mismo.
+function _consProdGrade(r) {
+  var m = String(r.producto || '').match(/—\s*([^()]+?)(?:\s*\([^)]*\))?\s*$/);
+  return m ? m[1].trim().toUpperCase() : '';
+}
 function _consProdKey(r) {
   var m = String(r.producto || '').match(/(\d+(?:[.,]\d+)?)/);
   if (!m) return 'NO PRODUCT';
   var n = parseFloat(m[1].replace(',', '.'));
-  return isFinite(n) ? (n + 'MM') : 'NO PRODUCT';
+  if (!isFinite(n)) return 'NO PRODUCT';
+  var grade = _consProdGrade(r);
+  return (n + 'MM') + (grade ? ' · ' + grade : '');
 }
 
 // Trae TODAS las filas en paginas de 1000 usando limit/offset (sin headers custom -> sin problemas de CORS).
@@ -3111,6 +3164,20 @@ function _fmtProdPdf(num, words) {
   return (isFinite(n) ? n.toFixed(1) : String(num)) + ' ' + w;
 }
 
+// Dado un x de referencia (la posicion de una columna, sacada del encabezado), devuelve el texto
+// de la pieza de esa fila mas cercana a esa columna -- misma idea que se usa para el Cast, pero
+// generica para poder reusarla con Grade e Item Code (columnas que Pacific Steel ya trae separadas
+// como piezas de texto propias, ej. "500E PL" o "416119").
+function _partNearX(line, x) {
+  if (x == null || !line || !line.parts || !line.parts.length) return null;
+  var best = null, bestD = Infinity;
+  for (var i = 0; i < line.parts.length; i++) {
+    var d = Math.abs(line.parts[i].x - x);
+    if (d < bestD) { bestD = d; best = line.parts[i]; }
+  }
+  return best ? String(best.s).trim() : null;
+}
+
 // Todos los numeros con forma de cast (6 cifras, con o sin sufijo "-NN") que aparecen en la fila,
 // cada uno con su posicion x (el texto puede venir separado en varias piezas, ej. "433" y "818").
 function _castCandidates(line) {
@@ -3154,6 +3221,26 @@ function parseConsPageItems(items) {
     if (castX != null) break;
   }
 
+  // Posicion (x) de las columnas "Grade" e "Item Code", mismo truco que con Cast: distintos materiales
+  // (ej. "500E PL" vs "1008") pueden compartir el mismo diametro y quedarian indistinguibles si solo se
+  // guarda el Product. El Item Code (codigo de producto del proveedor) se guarda al lado como doble chequeo.
+  var gradeX = null;
+  for (var hg = 0; hg < lines.length; hg++) {
+    if (!(/\bgrade\b/i.test(texts[hg]) && /product|type|item/i.test(texts[hg]))) continue;
+    for (var pg = 0; pg < lines[hg].parts.length; pg++) {
+      if (/grade/i.test(lines[hg].parts[pg].s)) { gradeX = lines[hg].parts[pg].x; break; }
+    }
+    if (gradeX != null) break;
+  }
+  var itemCodeX = null;
+  for (var hi = 0; hi < lines.length; hi++) {
+    if (!(/item/i.test(texts[hi]) && /code/i.test(texts[hi]))) continue;
+    for (var pi = 0; pi < lines[hi].parts.length; pi++) {
+      if (/item/i.test(lines[hi].parts[pi].s)) { itemCodeX = lines[hi].parts[pi].x; break; }
+    }
+    if (itemCodeX != null) break;
+  }
+
   var rows = [];
   texts.forEach(function(l, idx) {
     var lot = l.match(/(?:^|\s)(\d{10})(?=\s|$)/);
@@ -3178,8 +3265,16 @@ function parseConsPageItems(items) {
         cast = pool[0].val;   // sin encabezado detectado: se mantiene el comportamiento anterior (primer numero de 6 cifras)
       }
     }
+    // Grade (material) e Item Code (doble chequeo), si el PDF trae esas columnas. Se descartan si por
+    // error terminaron apuntando al mismo texto que ya se uso para lote/cast/peso (encabezado no confiable).
+    var grade = _partNearX(lines[idx], gradeX);
+    var itemCode = _partNearX(lines[idx], itemCodeX);
+    if (grade && (grade === lot[1] || grade === cast || grade === peso[1])) grade = null;
+    if (itemCode && (itemCode === lot[1] || itemCode === cast || itemCode === peso[1])) itemCode = null;
+    var prodTxt = _fmtProdPdf(prod[1], prod[2]);
+    if (grade) prodTxt += ' — ' + grade + (itemCode ? ' (' + itemCode + ')' : '');
     rows.push({idx: idx, row: {referencia: refM ? refM[0] : null, fecha: fecha || null, cast_no: cast,
-      lot_no: lot[1], producto: _fmtProdPdf(prod[1], prod[2]), peso: parseFloat(peso[1].replace(',', '.'))}});
+      lot_no: lot[1], producto: prodTxt, peso: parseFloat(peso[1].replace(',', '.'))}});
   });
   if (!rows.length) return null;
   // control 1: pesos razonables para un coil (t)
