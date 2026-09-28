@@ -37,7 +37,7 @@ Rules:
   // quedaba esperando para siempre); solo se reintenta ante 503/429 (saturado) o timeout -- un
   // error real de la API (ej. clave invalida) no se reintenta, se devuelve altiro.
   const ATTEMPT_TIMEOUT_MS = 7000;
-  const MAX_ATTEMPTS = 2;
+  const MAX_ATTEMPTS = 3;
   const RETRY_DELAY_MS = 900;
   const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY;
   const geminiBody = JSON.stringify({
