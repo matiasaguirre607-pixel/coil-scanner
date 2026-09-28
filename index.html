@@ -1054,7 +1054,10 @@ function normalizeProducto(raw) {
 // con el boton bloqueado y sin forma de reintentar. Ahora se corta a los EXTRACT_TIMEOUT_MS y tira
 // un error claro y reintentable. Tambien se valida que la respuesta sea JSON real: si el servidor
 // devuelve una pagina de error (HTML) en vez de JSON, antes eso rompia con un mensaje confuso.
-var EXTRACT_TIMEOUT_MS = 20000;
+// 30s (no 20s): el servidor ahora reintenta hasta 3 veces cuando Gemini esta saturado ("high
+// demand"), y ese ciclo completo puede tardar unos 23-25s -- si el celular cortara antes a los 20s,
+// nunca le daria tiempo al 3er intento a terminar.
+var EXTRACT_TIMEOUT_MS = 30000;
 async function fetchExtract(base64, mediaType) {
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, EXTRACT_TIMEOUT_MS) : null;
