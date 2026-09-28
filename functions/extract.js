@@ -29,33 +29,57 @@ Rules:
 - Respond with ONLY a JSON object, nothing else, no markdown:
 {"peso": "1.460", "producto": "COIL REIN 6.1mm", "coil": "6260300548", "cast": "530736"}`;
 
-  // Antes esto no tenia limite de tiempo ni try/catch: si Gemini se colgaba, tardaba, o la red
-  // fallaba, la funcion de Cloudflare se quedaba esperando para siempre sin devolver nunca una
-  // respuesta -- por eso la app se quedaba en "Analyzing..." sin fin. Ahora corta a los 15s (menos
-  // que el limite de 20s del lado del celular, para que el error real de ESTE lado llegue primero)
-  // y cualquier fallo de red devuelve un JSON claro en vez de colgar la funcion entera.
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
-  let gr;
-  try {
-    gr = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        contents: [{parts: [
-          {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
-          {text: prompt}
-        ]}],
-        generationConfig: {temperature: 0, maxOutputTokens: 256}
-      }),
-      signal: ctrl.signal
-    });
-  } catch (e) {
-    clearTimeout(timer);
-    if (e && e.name === "AbortError") return rj({error: "Gemini API did not respond within 15s (server-side timeout)"}, 504);
-    return rj({error: "Network error calling Gemini API: " + (e && e.message ? e.message : String(e))}, 502);
+  // Se confirmo con pruebas reales que Gemini devuelve "This model is currently experiencing high
+  // demand" (HTTP 503) o directamente no responde -- eso es saturacion del lado de Google, no un
+  // bug del codigo. Como suele ser momentaneo, ahora se reintenta un par de veces con una pausa
+  // corta antes de rendirse, en vez de fallar (o colgarse) a la primera. Cada intento individual
+  // sigue teniendo su propio limite de tiempo (antes no tenia ninguno, por eso la funcion se
+  // quedaba esperando para siempre); solo se reintenta ante 503/429 (saturado) o timeout -- un
+  // error real de la API (ej. clave invalida) no se reintenta, se devuelve altiro.
+  const ATTEMPT_TIMEOUT_MS = 7000;
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 900;
+  const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key="+GEMINI_KEY;
+  const geminiBody = JSON.stringify({
+    contents: [{parts: [
+      {inline_data: {mime_type: mediaType||"image/jpeg", data: imageBase64}},
+      {text: prompt}
+    ]}],
+    generationConfig: {temperature: 0, maxOutputTokens: 256}
+  });
+
+  let gr = null, lastErr = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+    try {
+      const r = await fetch(geminiUrl, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: geminiBody,
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (r.status === 503 || r.status === 429) {
+        lastErr = {kind: "overloaded", status: r.status};
+        if (attempt < MAX_ATTEMPTS) { await new Promise(res => setTimeout(res, RETRY_DELAY_MS)); continue; }
+        break;   // se agotaron los reintentos: gr queda null, lo maneja el bloque de abajo
+      }
+      gr = r;
+      break;
+    } catch (e) {
+      clearTimeout(timer);
+      const aborted = e && e.name === "AbortError";
+      lastErr = {kind: aborted ? "timeout" : "network", message: e && e.message ? e.message : String(e)};
+      if (attempt < MAX_ATTEMPTS) { await new Promise(res => setTimeout(res, RETRY_DELAY_MS)); continue; }
+    }
   }
-  clearTimeout(timer);
+
+  if (!gr) {
+    if (lastErr && lastErr.kind === "timeout") return rj({error: "Gemini API did not respond after " + MAX_ATTEMPTS + " attempts (server-side timeout) -- Google's API may be overloaded right now"}, 504);
+    if (lastErr && lastErr.kind === "network") return rj({error: "Network error calling Gemini API: " + lastErr.message}, 502);
+    return rj({error: "Gemini API is overloaded (HTTP " + (lastErr && lastErr.status) + ") after " + MAX_ATTEMPTS + " attempts -- try again in a moment"}, 503);
+  }
 
   let gd;
   try { gd = await gr.json(); }
