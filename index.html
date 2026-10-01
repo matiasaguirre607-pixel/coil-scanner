@@ -1367,10 +1367,17 @@ function _castKeyCv(v) { return String(v || '').trim().split('-')[0].replace(/\D
 // cast). Antes se asumia un valor fijo de 48 coils por cast en todos lados (Progress by Cast, el
 // aviso de "cast completo"), pero esa regla no siempre se cumple. Si todavia no hay consignments
 // cargados para ese cast especifico, se usa 48 como respaldo (comportamiento anterior).
+function _castNormCv(v) { return String(v || '').trim().toUpperCase().replace(/\s+/g, ''); }
 function _castExpectedTotal(castNo) {
-  var k = String(castNo || '').trim();
+  var k = _castNormCv(castNo);
   if (!k) return 48;
-  var n = (_consignments || []).filter(function(c) { return String(c.cast_no || '').trim() === k; }).length;
+  var n = (_consignments || []).filter(function(c) { return _castNormCv(c.cast_no) === k; }).length;
+  if (n === 0 && _consignments && _consignments.length) {
+    // Hay consignments cargados pero ninguno con este cast exacto -- se usa 48 de respaldo, pero
+    // queda este aviso en consola para poder detectar un problema real de formato/match (ej. el
+    // cast escaneado trae caracteres distintos al cast_no del PDF) en vez de una falta de datos.
+    console.warn('[_castExpectedTotal] No consignment row matches cast "' + castNo + '" (normalized: "' + k + '") -- falling back to 48. Loaded cast_no samples: ' + _consignments.slice(0,5).map(function(c){return '"'+c.cast_no+'"';}).join(', '));
+  }
   return n > 0 ? n : 48;
 }
 
