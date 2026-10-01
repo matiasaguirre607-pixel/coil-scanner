@@ -702,7 +702,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 
 <!-- CAST PROGRESS -->
 <div class="pbi-card" style="margin-bottom:10px">
-  <div class="pbi-card-title">Progress by Cast <span style="font-size:calc(20px * var(--fs-scale));color:#8e9aab;font-weight:400;text-transform:none">target: 48 coils</span></div>
+  <div class="pbi-card-title">Progress by Cast <span style="font-size:calc(20px * var(--fs-scale));color:#8e9aab;font-weight:400;text-transform:none">target: real coils per consignment</span></div>
   <div id="db-cast-prog"></div>
 </div>
 
@@ -1361,6 +1361,19 @@ function findDuplicateCandidate(coil, cast, peso) {
 
 function _castKeyCv(v) { return String(v || '').trim().split('-')[0].replace(/\D/g, ''); }
 
+// Total real de coils esperados para un cast, sumando TODAS las filas de consignment (de cualquier
+// referencia) que tengan ese mismo numero de cast -- un mismo cast puede repartirse entre varios
+// consignments mas chicos (ver "Consignment: R... (15), R... (13), R... (9)" en la tarjeta de ese
+// cast). Antes se asumia un valor fijo de 48 coils por cast en todos lados (Progress by Cast, el
+// aviso de "cast completo"), pero esa regla no siempre se cumple. Si todavia no hay consignments
+// cargados para ese cast especifico, se usa 48 como respaldo (comportamiento anterior).
+function _castExpectedTotal(castNo) {
+  var k = String(castNo || '').trim();
+  if (!k) return 48;
+  var n = (_consignments || []).filter(function(c) { return String(c.cast_no || '').trim() === k; }).length;
+  return n > 0 ? n : 48;
+}
+
 function _refCastLabel(items) {
   var seen = {}, order = [];
   items.forEach(function(r) { var k = _castKeyCv(r.cast_no); if (k && !seen[k]) { seen[k] = 1; order.push(k); } });
@@ -1582,9 +1595,11 @@ async function loadRecords() {
       var oldCasts = {};
       records.forEach(function(r){if(r.cast)oldCasts[r.cast]=(oldCasts[r.cast]||0)+1;});
       newRecords.forEach(function(r){
-        if(r.cast && (oldCasts[r.cast]||0) < 48) {
+        if(!r.cast) return;
+        var target = _castExpectedTotal(r.cast);
+        if ((oldCasts[r.cast]||0) < target) {
           var newCount = newRecords.filter(function(x){return x.cast===r.cast;}).length;
-          if (newCount >= 48) checkCastCompletion(r.cast);
+          if (newCount >= target) checkCastCompletion(r.cast);
         }
       });
     }
@@ -2295,11 +2310,11 @@ function renderCastProgressDB(data) {
     if(r.maquina==='EVG') byCast[r.cast].maqE++;
     else if(r.maquina==='PITTINI') byCast[r.cast].maqP++;
   });
-  var TARGET=48;
   var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
   if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:calc(26px * var(--fs-scale))">No data</div>';return;}
   el.innerHTML=sorted.map(function(cast){
     var d=byCast[cast];
+    var TARGET=_castExpectedTotal(cast);
     var pct=Math.min(Math.round((d.coils/TARGET)*100),100);
     var color=pct>=100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
     return '<div style="margin-bottom:10px">'+
@@ -2322,7 +2337,7 @@ function renderCastProgressDB(data) {
       '<div style="display:flex;justify-content:space-between;margin-top:2px">'+
         '<span style="font-size:calc(18px * var(--fs-scale));color:#8e9aab">0</span>'+
         '<span style="font-size:calc(18px * var(--fs-scale));font-weight:700;color:'+color+'">'+pct+'%</span>'+
-        '<span style="font-size:calc(18px * var(--fs-scale));color:#8e9aab">48</span>'+
+        '<span style="font-size:calc(18px * var(--fs-scale));color:#8e9aab">'+TARGET+'</span>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -4209,9 +4224,10 @@ function checkCastCompletion(castNo) {
   if (!castNo) return;
   var castRecs = records.filter(function(r){return r.cast===castNo;});
   var n = castRecs.length;
-  if (n < 48) return;
+  var target = _castExpectedTotal(castNo);
+  if (n < target) return;
   var ton = sumTon(castRecs);
-  var msg = 'Cast ' + castNo + ' COMPLETE: ' + n + ' coils / ' + ton.toFixed(3) + 't';
+  var msg = 'Cast ' + castNo + ' COMPLETE: ' + n + '/' + target + ' coils / ' + ton.toFixed(3) + 't';
   setStatus(msg, 'ok');
   if (window.Notification) {
     if (Notification.permission === 'granted') {
