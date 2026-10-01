@@ -2702,8 +2702,26 @@ async function saveProduccion() {
   btn.textContent = 'Save production'; btn.disabled = false;
 }
 
+// Fecha mas reciente escaneada para una WO (max created_at entre sus records). Se usa para ordenar
+// cronologicamente dentro de cada grupo (abiertas / cerradas) de renderBalance().
+function _woLastDate(wo) {
+  var max = 0;
+  records.forEach(function(r) {
+    if (r.wo !== wo || !r.created_at) return;
+    var t = new Date(r.created_at).getTime();
+    if (t > max) max = t;
+  });
+  return max;
+}
 function renderBalance() {
-  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean));
+  // Las WO abiertas van primero, las cerradas despues; dentro de cada grupo, la de actividad
+  // (escaneo) mas reciente va arriba -- igual criterio que el resto de la app (Historial, etc.).
+  wos.sort(function(a, b) {
+    var ac = isWOClosed(a), bc = isWOClosed(b);
+    if (ac !== bc) return ac ? 1 : -1;
+    return _woLastDate(b) - _woLastDate(a);
+  });
   var list = document.getElementById('bal-list');
   if (!list) return;
   if (!wos.length) {
