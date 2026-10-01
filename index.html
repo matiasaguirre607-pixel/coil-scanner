@@ -1624,26 +1624,29 @@ function _coilNum(coil) {
   var n = parseInt(String(coil||'').replace(/\D/g,''), 10);
   return isNaN(n) ? Infinity : n;
 }
-function renderList(list) {
-  var el = document.getElementById('rec-list');
-  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No records</div></div>'; return; }
-  var container = el;
-  el.innerHTML = '';
+// Estado de navegacion en cascada de la vista Grouped: 'diam' (lista de diametros) -> 'cast'
+// (lista de casts dentro de un diametro) -> 'coils' (coils de un cast). Se resetea a 'diam' cada
+// vez que se entra de nuevo a la pestana Grouped (ver setHistView), y tambien automaticamente si
+// un filtro/busqueda hace que la seleccion actual deje de existir en los datos (ver renderList).
+var _grpLevel = 'diam';
+var _grpDiamKey = null;
+var _grpCastKey = null;
+
+// Arma los grupos "un cast dentro de un diametro" (misma logica de agrupado/orden que antes:
+// diametro ascendente, cast mas reciente primero, coils ordenados por numero), pero ya no dibuja
+// nada -- renderList() decide que nivel de la cascada mostrar con este arreglo.
+function _buildHistGroups(list) {
   var groups = {};
   list.forEach(function(r) {
     var normProd = normalizeProductoKey(r.producto);
     var key = normProd + '|||' + (r.cast||'');
-    if (!groups[key]) groups[key] = {producto:normProd, cast:r.cast, items:[]};
+    if (!groups[key]) groups[key] = {key:key, producto:normProd, cast:r.cast, items:[]};
     groups[key].items.push(r);
   });
-  // Cada grupo ya es "un cast dentro de un diametro" (la key de arriba no cambio). Lo que cambia es
-  // el orden: primero se agrupan visualmente por diametro (COIL REIN 9mm, COIL REIN 6.1mm, etc.),
-  // y dentro de cada diametro los casts quedan ordenados por fecha (el mas reciente primero), y los
-  // coils dentro de cada cast quedan ordenados por numero de coil.
   Object.values(groups).forEach(function(g) {
     g.items.sort(function(a,b) { return _coilNum(a.coil) - _coilNum(b.coil); });
   });
-  var sorted = Object.values(groups).sort(function(a,b) {
+  return Object.values(groups).sort(function(a,b) {
     var ma = _groupMM(a.producto), mb = _groupMM(b.producto);
     if (ma !== mb) {
       if (ma == null) return 1;
@@ -1652,64 +1655,134 @@ function renderList(list) {
     }
     return _groupRepDate(b.items) - _groupRepDate(a.items);
   });
-  window._histGroups = sorted;
+}
+function _grpDiamLabel(g) {
+  var mm = _groupMM(g.producto);
+  return mm != null ? ('COIL REIN ' + mm + 'mm') : (g.producto || 'No product');
+}
+function _grpBackBar(label, onClick) {
+  var bar = document.createElement('div');
+  bar.className = 'grp-back-bar';
+  bar.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 2px;margin-bottom:8px;color:var(--blue);font-weight:700;font-size:calc(26px * var(--fs-scale))';
+  bar.innerHTML = '&#8592; ' + esc(label);
+  bar.addEventListener('click', onClick);
+  return bar;
+}
+function renderList(list) {
+  var el = document.getElementById('rec-list');
   el.innerHTML = '';
-  var _lastMM;
-  sorted.forEach(function(g, gi) {
-    var curMM = _groupMM(g.producto);
-    if (gi === 0 || curMM !== _lastMM) {
-      var hdr = document.createElement('div');
-      hdr.className = 'hist-diam-hdr';
-      hdr.style.cssText = 'font-size:calc(24px * var(--fs-scale));font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:' + (gi === 0 ? '0' : '18px') + ' 2px 6px';
-      hdr.textContent = curMM != null ? ('COIL REIN ' + curMM + 'mm') : (g.producto || 'No product');
-      container.appendChild(hdr);
-      _lastMM = curMM;
-    }
-    var tot = sumTon(g.items);
-    var wos = unique(g.items.map(function(r){return r.wo;}).filter(Boolean));
-    var coils = unique(g.items.map(function(r){return r.coil;}).filter(Boolean));
-    var col = COLORS[gi%COLORS.length];
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No records</div></div>'; window._histGroups = []; return; }
+  var sorted = _buildHistGroups(list);
+  // Si el diametro o cast actualmente seleccionado ya no existe en los datos filtrados (ej. el
+  // usuario escribio algo en el buscador que lo descarta), se vuelve al nivel de arriba en vez de
+  // mostrar una pantalla vacia o rota.
+  if (_grpLevel !== 'diam' && !sorted.some(function(g){ return _grpDiamLabel(g) === _grpDiamKey; })) {
+    _grpLevel = 'diam'; _grpDiamKey = null; _grpCastKey = null;
+  }
+  if (_grpLevel === 'coils' && !sorted.some(function(g){ return g.key === _grpCastKey; })) {
+    _grpLevel = 'cast'; _grpCastKey = null;
+  }
+  if (_grpLevel === 'cast') { renderGrpCastLevel(el, sorted); }
+  else if (_grpLevel === 'coils') { renderGrpCoilLevel(el, sorted); }
+  else { renderGrpDiamLevel(el, sorted); }
+}
+// Nivel 1: una entrada por diametro (COIL REIN 9mm, COIL REIN 6.1mm, etc.), agregando todos los
+// casts de ese diametro -- cantidad de casts, coils totales y toneladas totales.
+function renderGrpDiamLevel(el, sorted) {
+  window._histGroups = sorted;
+  var byDiam = {};
+  var order = [];
+  sorted.forEach(function(g) {
+    var label = _grpDiamLabel(g);
+    if (!byDiam[label]) { byDiam[label] = {label:label, groups:[]}; order.push(label); }
+    byDiam[label].groups.push(g);
+  });
+  order.forEach(function(label, di) {
+    var bucket = byDiam[label];
+    var allItems = [].concat.apply([], bucket.groups.map(function(g){return g.items;}));
+    var tot = sumTon(allItems);
+    var col = COLORS[di%COLORS.length];
     var card = document.createElement('div');
     card.className = 'rec-card';
-    var lastDate = g.items[0] && g.items[0].created_at ? new Date(g.items[0].created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-    card.innerHTML = '<div class="rec-top"><div class="rec-color" style="background:'+col+'"></div><div class="rec-info"><div class="rec-title">'+esc(g.producto||'No product')+'</div><div class="rec-meta">Cast: '+esc(g.cast||'-')+' &middot; '+g.items.length+' coils &middot; '+tot.toFixed(3)+' t</div><div style="font-size:calc(20px * var(--fs-scale));color:var(--muted);margin-top:2px">&#128337; '+lastDate+'</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+g.items.length+' coils</div></div></div><div class="rec-badges">'+(g.cast?'<span class="badge cast-b">Cast: <b>'+esc(g.cast)+'</b></span>':'')+wos.map(function(w){return'<span class="badge wo-b">WO: <b>'+esc(w)+'</b></span>';}).join('')+coils.slice(0,2).map(function(c){return'<span class="badge">Coil: <b>'+esc(c)+'</b></span>';}).join('')+(coils.length>2?'<span class="badge">+'+(coils.length-2)+' more</span>':'')+'</div><div style="padding:10px 14px 12px;border-top:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Assign WO to the whole group..." id="wo-inp-'+gi+'" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:calc(28px * var(--fs-scale));font-family:inherit;outline:none" /><button onclick="assignWO('+gi+')" style="flex-shrink:0;padding:10px 18px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:calc(28px * var(--fs-scale));font-weight:700;cursor:pointer;white-space:nowrap">Assign</button></div></div><div class="rec-items" id="grp'+gi+'"></div>';
-    var itemsDiv = card.querySelector('#grp'+gi);
-    g.items.forEach(function(r) {
-      var row = document.createElement('div');
-      row.className = 'rec-item-row';
-      var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-      var maqColor = r.maquina === 'EVG' ? '#007aff' : '#af52de';
-      var maqBadge = r.maquina ? '<span style="margin-left:6px;font-size:calc(20px * var(--fs-scale));font-weight:700;color:' + maqColor + '">' + r.maquina + '</span>' : '';
-      var woBadge = r.wo ? '<span style="background:#fff8e8;color:#7a5c00;font-size:calc(20px * var(--fs-scale));font-weight:700;border-radius:4px;padding:1px 5px">' + esc(r.wo) + '</span>' : '';
-      var mc2 = r.maquina === 'EVG' ? '#007aff' : '#af52de';
-      var maqBadge = r.maquina ? ' <b style="font-size:calc(20px * var(--fs-scale));color:'+mc2+'">'+r.maquina+'</b>' : '';
-      var woBadge = r.wo ? ' <span style="background:#fff8e8;color:#7a5c00;font-size:calc(20px * var(--fs-scale));font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>' : '';
-      // Checkbox for bulk selection
-      var chk = document.createElement('input');
-      chk.type = 'checkbox';
-      chk.className = 'coil-chk';
-      chk.style.cssText = 'width:16px;height:16px;flex-shrink:0;cursor:pointer;accent-color:#007aff;margin-right:6px';
-      chk.checked = !!_selectedIds[r.id];
-      chk.addEventListener('change', function(e){e.stopPropagation();toggleCoilSelect(r.id,this.checked);});
-      row.appendChild(chk);
-      var mc2 = r.maquina === 'EVG' ? '#007aff' : '#af52de';
-      var mBadge = r.maquina ? ' <b style="font-size:calc(20px * var(--fs-scale));color:'+mc2+'">'+r.maquina+'</b>' : '';
-      var woBadgeHtml = r.wo ? ' <span style="background:#fff8e8;color:#7a5c00;font-size:calc(20px * var(--fs-scale));font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>' : '';
-      var content = document.createElement('div');
-      content.style.cssText = 'flex:1;min-width:0;cursor:pointer';
-      content.innerHTML = '<div style="font-size:calc(24px * var(--fs-scale));font-weight:600">'+esc(r.coil||'No coil')+mBadge+woBadgeHtml+'</div><div style="font-size:calc(22px * var(--fs-scale));color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div>';
-      content.addEventListener('click', function(){openModal(r);});
-      var pesoEl = document.createElement('div');
-      pesoEl.style.cssText = 'font-size:calc(28px * var(--fs-scale));font-weight:700;color:var(--blue);flex-shrink:0';
-      pesoEl.textContent = (r.peso||'-')+' t';
-      row.appendChild(content);
-      row.appendChild(pesoEl);
-      itemsDiv.appendChild(row);
-    });
+    card.innerHTML = '<div class="rec-top" style="cursor:pointer"><div class="rec-color" style="background:'+col+'"></div><div class="rec-info"><div class="rec-title">'+esc(label)+'</div><div class="rec-meta">'+bucket.groups.length+' casts &middot; '+allItems.length+' coils &middot; '+tot.toFixed(3)+' t</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+bucket.groups.length+' casts</div></div></div>';
     card.querySelector('.rec-top').addEventListener('click', function() {
-      itemsDiv.style.display = itemsDiv.style.display === 'block' ? 'none' : 'block';
+      _grpLevel = 'cast'; _grpDiamKey = label; _grpCastKey = null;
+      renderHistorial();
     });
-    container.appendChild(card);
+    el.appendChild(card);
+  });
+}
+// Nivel 2: casts dentro del diametro seleccionado, con cuantos coils tiene cada uno.
+function renderGrpCastLevel(el, sorted) {
+  window._histGroups = sorted;
+  var inDiam = sorted.filter(function(g){ return _grpDiamLabel(g) === _grpDiamKey; });
+  el.appendChild(_grpBackBar('Diameters', function() {
+    _grpLevel = 'diam'; _grpDiamKey = null; _grpCastKey = null;
+    renderHistorial();
+  }));
+  var hdr = document.createElement('div');
+  hdr.className = 'hist-diam-hdr';
+  hdr.style.cssText = 'font-size:calc(24px * var(--fs-scale));font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:0 2px 6px';
+  hdr.textContent = _grpDiamKey;
+  el.appendChild(hdr);
+  inDiam.forEach(function(g, gi) {
+    var tot = sumTon(g.items);
+    var col = COLORS[gi%COLORS.length];
+    var lastDate = g.items[0] && g.items[0].created_at ? new Date(g.items[0].created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    var card = document.createElement('div');
+    card.className = 'rec-card';
+    card.innerHTML = '<div class="rec-top" style="cursor:pointer"><div class="rec-color" style="background:'+col+'"></div><div class="rec-info"><div class="rec-title">Cast: '+esc(g.cast||'-')+'</div><div class="rec-meta">'+g.items.length+' coils &middot; '+tot.toFixed(3)+' t</div><div style="font-size:calc(20px * var(--fs-scale));color:var(--muted);margin-top:2px">&#128337; '+lastDate+'</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+g.items.length+' coils</div></div></div>';
+    card.querySelector('.rec-top').addEventListener('click', function() {
+      _grpLevel = 'coils'; _grpCastKey = g.key;
+      renderHistorial();
+    });
+    el.appendChild(card);
+  });
+}
+// Nivel 3: coils individuales del cast seleccionado. window._histGroups queda como un arreglo de
+// un solo elemento para que assignWO(0) (sin cambios) siga funcionando igual que antes.
+function renderGrpCoilLevel(el, sorted) {
+  var g = sorted.find(function(x){ return x.key === _grpCastKey; });
+  if (!g) { _grpLevel = 'diam'; _grpDiamKey = null; _grpCastKey = null; renderGrpDiamLevel(el, sorted); return; }
+  window._histGroups = [g];
+  var gi = 0;
+  el.appendChild(_grpBackBar('Casts', function() {
+    _grpLevel = 'cast'; _grpCastKey = null;
+    renderHistorial();
+  }));
+  var tot = sumTon(g.items);
+  var wos = unique(g.items.map(function(r){return r.wo;}).filter(Boolean));
+  var coils = unique(g.items.map(function(r){return r.coil;}).filter(Boolean));
+  var card = document.createElement('div');
+  card.className = 'rec-card';
+  var lastDate = g.items[0] && g.items[0].created_at ? new Date(g.items[0].created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  card.innerHTML = '<div class="rec-top"><div class="rec-info"><div class="rec-title">'+esc(g.producto||'No product')+'</div><div class="rec-meta">Cast: '+esc(g.cast||'-')+' &middot; '+g.items.length+' coils &middot; '+tot.toFixed(3)+' t</div><div style="font-size:calc(20px * var(--fs-scale));color:var(--muted);margin-top:2px">&#128337; '+lastDate+'</div></div><div style="text-align:right;flex-shrink:0"><div class="rec-peso">'+tot.toFixed(3)+' t</div><div class="rec-sub">'+g.items.length+' coils</div></div></div><div class="rec-badges">'+(g.cast?'<span class="badge cast-b">Cast: <b>'+esc(g.cast)+'</b></span>':'')+wos.map(function(w){return'<span class="badge wo-b">WO: <b>'+esc(w)+'</b></span>';}).join('')+coils.slice(0,2).map(function(c){return'<span class="badge">Coil: <b>'+esc(c)+'</b></span>';}).join('')+(coils.length>2?'<span class="badge">+'+(coils.length-2)+' more</span>':'')+'</div><div style="padding:10px 14px 12px;border-top:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Assign WO to the whole group..." id="wo-inp-'+gi+'" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:calc(28px * var(--fs-scale));font-family:inherit;outline:none" /><button onclick="assignWO('+gi+')" style="flex-shrink:0;padding:10px 18px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:calc(28px * var(--fs-scale));font-weight:700;cursor:pointer;white-space:nowrap">Assign</button></div></div><div class="rec-items" id="grp'+gi+'" style="display:block"></div>';
+  el.appendChild(card);
+  var itemsDiv = card.querySelector('#grp'+gi);
+  g.items.forEach(function(r) {
+    var row = document.createElement('div');
+    row.className = 'rec-item-row';
+    var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'coil-chk';
+    chk.style.cssText = 'width:16px;height:16px;flex-shrink:0;cursor:pointer;accent-color:#007aff;margin-right:6px';
+    chk.checked = !!_selectedIds[r.id];
+    chk.addEventListener('change', function(e){e.stopPropagation();toggleCoilSelect(r.id,this.checked);});
+    row.appendChild(chk);
+    var mc2 = r.maquina === 'EVG' ? '#007aff' : '#af52de';
+    var mBadge = r.maquina ? ' <b style="font-size:calc(20px * var(--fs-scale));color:'+mc2+'">'+r.maquina+'</b>' : '';
+    var woBadgeHtml = r.wo ? ' <span style="background:#fff8e8;color:#7a5c00;font-size:calc(20px * var(--fs-scale));font-weight:700;border-radius:4px;padding:1px 5px">'+esc(r.wo)+'</span>' : '';
+    var content = document.createElement('div');
+    content.style.cssText = 'flex:1;min-width:0;cursor:pointer';
+    content.innerHTML = '<div style="font-size:calc(24px * var(--fs-scale));font-weight:600">'+esc(r.coil||'No coil')+mBadge+woBadgeHtml+'</div><div style="font-size:calc(22px * var(--fs-scale));color:var(--muted)">'+d+(r.operario?' &middot; '+esc(r.operario):'')+'</div>';
+    content.addEventListener('click', function(){openModal(r);});
+    var pesoEl = document.createElement('div');
+    pesoEl.style.cssText = 'font-size:calc(28px * var(--fs-scale));font-weight:700;color:var(--blue);flex-shrink:0';
+    pesoEl.textContent = (r.peso||'-')+' t';
+    row.appendChild(content);
+    row.appendChild(pesoEl);
+    itemsDiv.appendChild(row);
   });
 }
 function filterRecords() {
@@ -3650,6 +3723,7 @@ var _histView = 'flat';   // por defecto: primero "Por escaneo", despues "Agrupa
 
 function setHistView(v) {
   _histView = v;
+  if (v === 'grouped') { _grpLevel = 'diam'; _grpDiamKey = null; _grpCastKey = null; }
   document.getElementById('view-grouped').style.background = v==='grouped' ? 'var(--blue)' : 'var(--bg)';
   document.getElementById('view-grouped').style.color = v==='grouped' ? '#fff' : 'var(--muted)';
   document.getElementById('view-flat').style.background = v==='flat' ? 'var(--blue)' : 'var(--bg)';
