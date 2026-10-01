@@ -1606,6 +1606,24 @@ async function loadRecords() {
     } catch(e) {}
   } catch(e) { console.error('loadRecords exception:', e); records = []; }
 }
+// Diametro (mm) de un producto ya normalizado (ej. "COIL REIN 9mm" -> 9). null si no matchea.
+function _groupMM(producto) {
+  var m = String(producto||'').match(/(\d+\.?\d*)\s*mm/i);
+  return m ? parseFloat(m[1]) : null;
+}
+// Fecha representativa de un grupo de coils (el escaneo mas reciente dentro de ese cast) -- se usa
+// para ordenar los casts entre si dentro de un mismo diametro, mas reciente primero.
+function _groupRepDate(items) {
+  var max = 0;
+  items.forEach(function(r) { var t = r.created_at ? new Date(r.created_at).getTime() : 0; if (t > max) max = t; });
+  return max;
+}
+// Numero de coil como entero, para poder ordenarlos numericamente (no alfabeticamente: "9" antes
+// que "10"). Un coil sin numero valido se manda al final.
+function _coilNum(coil) {
+  var n = parseInt(String(coil||'').replace(/\D/g,''), 10);
+  return isNaN(n) ? Infinity : n;
+}
 function renderList(list) {
   var el = document.getElementById('rec-list');
   if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No records</div></div>'; return; }
@@ -1618,10 +1636,35 @@ function renderList(list) {
     if (!groups[key]) groups[key] = {producto:normProd, cast:r.cast, items:[]};
     groups[key].items.push(r);
   });
-  var sorted = Object.values(groups).sort(function(a,b) { return sumTon(b.items) - sumTon(a.items); });
+  // Cada grupo ya es "un cast dentro de un diametro" (la key de arriba no cambio). Lo que cambia es
+  // el orden: primero se agrupan visualmente por diametro (COIL REIN 9mm, COIL REIN 6.1mm, etc.),
+  // y dentro de cada diametro los casts quedan ordenados por fecha (el mas reciente primero), y los
+  // coils dentro de cada cast quedan ordenados por numero de coil.
+  Object.values(groups).forEach(function(g) {
+    g.items.sort(function(a,b) { return _coilNum(a.coil) - _coilNum(b.coil); });
+  });
+  var sorted = Object.values(groups).sort(function(a,b) {
+    var ma = _groupMM(a.producto), mb = _groupMM(b.producto);
+    if (ma !== mb) {
+      if (ma == null) return 1;
+      if (mb == null) return -1;
+      return ma - mb;
+    }
+    return _groupRepDate(b.items) - _groupRepDate(a.items);
+  });
   window._histGroups = sorted;
   el.innerHTML = '';
+  var _lastMM;
   sorted.forEach(function(g, gi) {
+    var curMM = _groupMM(g.producto);
+    if (gi === 0 || curMM !== _lastMM) {
+      var hdr = document.createElement('div');
+      hdr.className = 'hist-diam-hdr';
+      hdr.style.cssText = 'font-size:calc(24px * var(--fs-scale));font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:' + (gi === 0 ? '0' : '18px') + ' 2px 6px';
+      hdr.textContent = curMM != null ? ('COIL REIN ' + curMM + 'mm') : (g.producto || 'No product');
+      container.appendChild(hdr);
+      _lastMM = curMM;
+    }
     var tot = sumTon(g.items);
     var wos = unique(g.items.map(function(r){return r.wo;}).filter(Boolean));
     var coils = unique(g.items.map(function(r){return r.coil;}).filter(Boolean));
