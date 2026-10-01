@@ -2812,26 +2812,6 @@ function renderBalance() {
     '<div><div style="font-size:calc(44px * var(--fs-scale));font-weight:700;color:#ff9500">'+totalStock.toFixed(3)+'t</div><div style="font-size:calc(22px * var(--fs-scale));color:#8e8e93">Stock available</div></div>'+
     '<div><div style="font-size:calc(44px * var(--fs-scale));font-weight:700;color:#8e8e93">'+totalScrapEst.toFixed(3)+'t</div><div style="font-size:calc(22px * var(--fs-scale));color:#8e8e93">Est. scrap (0.75%)</div></div>';
   list.appendChild(summary);
-
-  // Scrap section
-  var scrapDiv = document.createElement('div');
-  scrapDiv.style.cssText = 'margin-top:16px';
-  scrapDiv.innerHTML = '<div style="font-size:calc(20px * var(--fs-scale));font-weight:800;color:#8e8e93;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Efficiency / Scrap by WO</div>';
-  var hasScrap = false;
-  wos.forEach(function(wo) {
-    var s = calcScrap(wo);
-    if (!s) return;
-    hasScrap = true;
-    var scrapColor = s.pctScrap > 10 ? '#ff3b30' : s.pctScrap > 5 ? '#ff9500' : '#34c759';
-    var sr = document.createElement('div');
-    sr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7';
-    sr.innerHTML = '<div><div style="font-size:calc(26px * var(--fs-scale));font-weight:700">WO: '+esc(wo)+'</div>'+
-      '<div style="font-size:calc(22px * var(--fs-scale));color:#8e8e93;margin-top:2px">'+s.entrada.toFixed(3)+'t in → '+s.producido.toFixed(3)+'t produced</div></div>'+
-      '<div style="text-align:right"><div style="font-size:calc(30px * var(--fs-scale));font-weight:700;color:'+scrapColor+'">'+s.scrap.toFixed(3)+'t</div>'+
-      '<div style="font-size:calc(22px * var(--fs-scale));color:'+scrapColor+';font-weight:600">'+s.pctScrap.toFixed(1)+'% scrap</div></div>';
-    scrapDiv.appendChild(sr);
-  });
-  if (hasScrap) list.appendChild(scrapDiv);
 }
 
 function renderProdHist() {
