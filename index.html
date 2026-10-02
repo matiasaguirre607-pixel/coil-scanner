@@ -1368,10 +1368,22 @@ function _castKeyCv(v) { return String(v || '').trim().split('-')[0].replace(/\D
 // aviso de "cast completo"), pero esa regla no siempre se cumple. Si todavia no hay consignments
 // cargados para ese cast especifico, se usa 48 como respaldo (comportamiento anterior).
 function _castNormCv(v) { return String(v || '').trim().toUpperCase().replace(/\s+/g, ''); }
+// El cast escaneado en la etiqueta (records.cast) a veces NO trae el sufijo "-01"/"-02" que si
+// tiene el cast_no del consignment (ej. etiqueta escaneada "534726" vs consignment "534726-01").
+// Si el cast escaneado no tiene guion, tambien cuenta como match cualquier consignment cuyo cast_no
+// empiece exactamente con "<cast>-" (limite de guion, para no matchear "5347260-05" con "5347").
+// Si el cast escaneado SI tiene guion (ej. "533369-01"), solo vale el match exacto.
+function _castMatches(consCastNo, scannedCastKey, scannedHasSuffix) {
+  var ck = _castNormCv(consCastNo);
+  if (ck === scannedCastKey) return true;
+  if (!scannedHasSuffix && ck.indexOf(scannedCastKey + '-') === 0) return true;
+  return false;
+}
 function _castExpectedTotal(castNo) {
   var k = _castNormCv(castNo);
   if (!k) return 48;
-  var n = (_consignments || []).filter(function(c) { return _castNormCv(c.cast_no) === k; }).length;
+  var hasSuffix = k.indexOf('-') >= 0;
+  var n = (_consignments || []).filter(function(c) { return _castMatches(c.cast_no, k, hasSuffix); }).length;
   if (n === 0 && _consignments && _consignments.length) {
     // Hay consignments cargados pero ninguno con este cast exacto -- se usa 48 de respaldo, pero
     // queda este aviso en consola para poder detectar un problema real de formato/match (ej. el
@@ -1388,9 +1400,10 @@ function _castExpectedTotal(castNo) {
 function _castConsBreakdown(castNo) {
   var k = _castNormCv(castNo);
   if (!k) return [];
+  var hasSuffix = k.indexOf('-') >= 0;
   var byRef = {}, order = [];
   (_consignments || []).forEach(function(c) {
-    if (_castNormCv(c.cast_no) !== k) return;
+    if (!_castMatches(c.cast_no, k, hasSuffix)) return;
     var ref = c.referencia || 'No ref';
     if (!byRef[ref]) { byRef[ref] = 0; order.push(ref); }
     byRef[ref]++;
