@@ -1381,6 +1381,24 @@ function _castExpectedTotal(castNo) {
   return n > 0 ? n : 48;
 }
 
+// Desglose real: cuantos coils (filas de consignment) hay de un cast especifico, por cada
+// referencia de consignment, ordenado de mayor a menor. Esto es lo que respalda el total de
+// _castExpectedTotal -- se usa en Progress by Cast para mostrar "Consignment Rxxx: N coils" al
+// tocar "Coils per consignment" en cada cast.
+function _castConsBreakdown(castNo) {
+  var k = _castNormCv(castNo);
+  if (!k) return [];
+  var byRef = {}, order = [];
+  (_consignments || []).forEach(function(c) {
+    if (_castNormCv(c.cast_no) !== k) return;
+    var ref = c.referencia || 'No ref';
+    if (!byRef[ref]) { byRef[ref] = 0; order.push(ref); }
+    byRef[ref]++;
+  });
+  order.sort(function(a, b) { return byRef[b] - byRef[a]; });
+  return order.map(function(ref) { return {ref: ref, n: byRef[ref]}; });
+}
+
 function _refCastLabel(items) {
   var seen = {}, order = [];
   items.forEach(function(r) { var k = _castKeyCv(r.cast_no); if (k && !seen[k]) { seen[k] = 1; order.push(k); } });
@@ -2319,19 +2337,22 @@ function renderCastProgressDB(data) {
   });
   var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
   if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:calc(26px * var(--fs-scale))">No data</div>';return;}
-  el.innerHTML=sorted.map(function(cast){
+  el.innerHTML='';
+  sorted.forEach(function(cast){
     var d=byCast[cast];
     var TARGET=_castExpectedTotal(cast);
     var pct=Math.min(Math.round((d.coils/TARGET)*100),100);
     var color=pct>=100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
-    return '<div style="margin-bottom:10px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+    var wrap=document.createElement('div');
+    wrap.style.marginBottom='10px';
+    wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
         '<div>'+
           '<span style="font-size:calc(24px * var(--fs-scale));font-weight:700;color:#1a2332">Cast: '+esc(cast)+'</span>'+
           (d.prod?' <span style="font-size:calc(20px * var(--fs-scale));color:#5c6b7a">'+esc(normalizeProductoKey(d.prod))+'</span>':'')+
           (d.maqE?' <span style="font-size:calc(20px * var(--fs-scale));font-weight:700;color:#007aff">EVG:'+d.maqE+'</span>':'')+
           (d.maqP?' <span style="font-size:calc(20px * var(--fs-scale));font-weight:700;color:#af52de">PIT:'+d.maqP+'</span>':'')+
           castConsHTML(d.refs)+
+          ' <span class="cast-cons-toggle" style="cursor:pointer;color:#007aff;font-size:calc(20px * var(--fs-scale));font-weight:700;text-decoration:underline;white-space:nowrap">Coils per consignment &#9662;</span>'+
         '</div>'+
         '<div style="text-align:right">'+
           '<span style="font-size:calc(26px * var(--fs-scale));font-weight:700;color:'+color+'">'+d.coils+'/'+TARGET+'</span>'+
@@ -2346,8 +2367,24 @@ function renderCastProgressDB(data) {
         '<span style="font-size:calc(18px * var(--fs-scale));font-weight:700;color:'+color+'">'+pct+'%</span>'+
         '<span style="font-size:calc(18px * var(--fs-scale));color:#8e9aab">'+TARGET+'</span>'+
       '</div>'+
-    '</div>';
-  }).join('');
+      '<div class="cast-cons-detail" style="display:none;margin-top:6px;padding:8px 10px;background:#f8f9fb;border-radius:8px"></div>';
+    var toggle=wrap.querySelector('.cast-cons-toggle');
+    var detail=wrap.querySelector('.cast-cons-detail');
+    toggle.addEventListener('click',function(){
+      if (detail.style.display==='block') { detail.style.display='none'; return; }
+      var rows=_castConsBreakdown(cast);
+      if (!rows.length) {
+        detail.innerHTML='<span style="color:#8e9aab;font-size:calc(20px * var(--fs-scale))">No consignment loaded for this cast.</span>';
+      } else {
+        var total=rows.reduce(function(s,r){return s+r.n;},0);
+        detail.innerHTML=rows.map(function(r){
+          return '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:calc(22px * var(--fs-scale))"><span>Consignment: <b>'+esc(r.ref)+'</b></span><span style="font-weight:700">'+r.n+' coil'+(r.n===1?'':'s')+'</span></div>';
+        }).join('')+'<div style="display:flex;justify-content:space-between;padding:5px 0 0;border-top:1px solid #e5e5ea;margin-top:4px;font-size:calc(22px * var(--fs-scale));font-weight:800"><span>Total</span><span>'+total+' coils</span></div>';
+      }
+      detail.style.display='block';
+    });
+    el.appendChild(wrap);
+  });
 }
 
 
