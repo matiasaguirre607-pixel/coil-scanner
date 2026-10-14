@@ -336,6 +336,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .status-ok{background:#e8ffe8;color:#1a7a3c}
 .status-miss{background:#fff0f0;color:#cc0000}
 .status-extra{background:#fff8e8;color:#7a5c00}
+.status-usado{background:#eef0ff;color:#3634a3}
 .upload-pdf-zone{border:2px dashed #e5e5ea;border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;background:#f8f8f8;transition:all .2s;position:relative}
 .upload-pdf-zone:hover{border-color:#007aff;background:#f0f5ff}
 .upload-pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -852,7 +853,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <span>&#10003; Full cross-check</span>
       <button onclick="runCrossCheck()" style="padding:5px 12px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:calc(24px * var(--fs-scale));font-weight:700;cursor:pointer">&#8635; Refresh</button>
     </div>
-    <div id="cross-check-summary" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:10px"></div>
+    <div id="cross-check-summary" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:10px"></div>
+    <input id="xc-search-old" type="text" placeholder="Search old coil by lot, cast or reference..." oninput="renderXcList()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:calc(24px * var(--fs-scale));margin-bottom:8px;display:none" />
     <div id="cross-check-list"></div>
   </div>
 
@@ -2915,18 +2917,41 @@ var _consProdFilter = '';
 var _consSeq = 0;
 var _consShown = 10;
 var _scannedSet = null;
+var _usadoSet = null;
 
 function refreshScannedSet() {
   var s = Object.create(null);
   (records || []).forEach(function(r){ if (r && r.coil) s[String(r.coil).trim()] = 1; });
   _scannedSet = s;
+  // Coils de consignments de antes de que arrancara la app: no se van a escanear nunca, pero se
+  // pueden marcar a mano como "usado" (ver markConsUsado) para que dejen de figurar como faltantes.
+  var u = Object.create(null);
+  (_consignments || []).forEach(function(c){ if (c && c.usado && c.lot_no) u[String(c.lot_no).trim()] = 1; });
+  _usadoSet = u;
   return s;
 }
 
-function isCoilScanned(lot) {
+// Verdaderamente escaneado por la app (coincide con un records.coil) -- no incluye los marcados a mano.
+function isCoilScannedOnly(lot) {
   if (!_scannedSet) refreshScannedSet();
   var k = String(lot == null ? '' : lot).trim();
   return !!k && _scannedSet[k] === 1;
+}
+
+// Marcado a mano como usado (coil de un consignment viejo, de antes de que existiera la app).
+function isCoilUsadoManual(lot) {
+  if (!_usadoSet) refreshScannedSet();
+  var k = String(lot == null ? '' : lot).trim();
+  return !!k && _usadoSet[k] === 1;
+}
+
+// "Resuelto": escaneado por la app O marcado a mano como usado. Esto es lo que determina si un coil
+// cuenta como pendiente/faltante en toda la app (listas de Missing, barras de progreso, totales de
+// Scanned, etc.) -- se mantiene el nombre isCoilScanned porque es el que ya se usa en todos lados.
+function isCoilScanned(lot) {
+  if (!_scannedSet) refreshScannedSet();
+  var k = String(lot == null ? '' : lot).trim();
+  return !!k && (_scannedSet[k] === 1 || _usadoSet[k] === 1);
 }
 
 function _ceAttr(s) {
@@ -3077,7 +3102,7 @@ async function saveConsignmentRows(rows) {
 
 // ============ ESTADO DE CONSIGNMENTS (compartido Dashboard + tab Consignment) ============
 var _consStatusShown = {dash: 10, tab: 10};
-var _xcMissShown = 10, _xcExtraShown = 10;
+var _xcMissShown = 10, _xcExtraShown = 10, _xcUsadoShown = 10;
 
 // "14/08/26" -> numero para poder ordenar por fecha (DD/MM/AA o DD/MM/AAAA). Sin fecha valida: al final.
 function _fechaOrdenable(f) {
@@ -3168,8 +3193,9 @@ function xcMoreBtn(kind, total, shown) {
 
 function xcMore(kind, all) {
   if (kind === 'miss') _xcMissShown = all ? 1e9 : _xcMissShown + 10;
+  else if (kind === 'usado') _xcUsadoShown = all ? 1e9 : _xcUsadoShown + 10;
   else _xcExtraShown = all ? 1e9 : _xcExtraShown + 10;
-  runCrossCheck();
+  renderXcList();
 }
 
 // ============ CONSIGNMENTS: TAB RENDER ============
@@ -3302,11 +3328,15 @@ function renderSavedCons() {
     total = rows.length;
     html = rows.slice(0, _consShown).map(function(r) {
       var ok = isCoilScanned(r.lot_no);
+      var usadoManual = ok && !isCoilScannedOnly(r.lot_no) && isCoilUsadoManual(r.lot_no);
+      var dotColor = usadoManual ? '#3634a3' : (ok ? '#34c759' : '#ff3b30');
+      var statusCls = usadoManual ? 'status-usado' : (ok ? 'status-ok' : 'status-miss');
+      var statusLbl = usadoManual ? '✓ Used (manual)' : (ok ? '✓ Scanned' : '✗ Missing');
       return '<div class="match-row" style="cursor:default">' +
-        '<div class="match-dot" style="background:' + (ok ? '#34c759' : '#ff3b30') + '"></div>' +
+        '<div class="match-dot" style="background:' + dotColor + '"></div>' +
         '<div class="match-info"><div class="match-coil">' + esc(r.lot_no || '—') + '</div>' +
         '<div class="match-sub">' + (r.cast_no ? 'Cast ' + esc(r.cast_no) + ' · ' : '') + esc(r.producto || '') + (r.peso != null ? ' · ' + (parseFloat(r.peso) || 0).toFixed(3) + 't' : '') + (r.referencia ? ' · Ref ' + esc(r.referencia) : '') + '</div></div>' +
-        '<span class="match-status ' + (ok ? 'status-ok' : 'status-miss') + '">' + (ok ? '✓ Scanned' : '✗ Missing') + '</span>' +
+        '<span class="match-status ' + statusCls + '">' + statusLbl + '</span>' +
         '<button data-id="' + _ceAttr(r.id) + '" onclick="event.stopPropagation();deleteConsRow(this.dataset.id, this.parentNode)" title="Delete" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:calc(30px * var(--fs-scale));color:#8e8e93">&#128465;</button>' +
         '</div>';
     }).join('');
@@ -4749,10 +4779,12 @@ function renderParaVerificar() {
 }
 
 // Cross-check: scan all records against consignments
+var _xcExtraScans = [], _xcMissingFromScan = [], _xcUsadoManual = [];
+
 function runCrossCheck() {
   var card = document.getElementById('cross-check-card');
   var summary = document.getElementById('cross-check-summary');
-  var list = document.getElementById('cross-check-list');
+  var searchInput = document.getElementById('xc-search-old');
   if (!card) return;
 
   if (!_consignments.length) {
@@ -4762,10 +4794,10 @@ function runCrossCheck() {
 
   card.style.display = 'block';
 
-  var totalScanned = records.length;
-  var inCons = 0, notInCons = 0, consNotScanned = 0;
-  var missingFromScan = []; // consignments not yet scanned
+  var inCons = 0, notInCons = 0, consNotScanned = 0, usadoCount = 0;
+  var missingFromScan = []; // consignments not yet scanned, not marked as used either
   var extraScans = []; // scanned but not in consignment
+  var usadoManual = []; // consignments not scanned, but manually marked as "usado" (old coils from before the app)
 
   // Check each record against consignments
   records.forEach(function(r) {
@@ -4784,10 +4816,14 @@ function runCrossCheck() {
       return String(r.coil||'').trim() === String(con.lot_no||'').trim();
     });
     if (!found) {
-      consNotScanned++;
-      missingFromScan.push(con);
+      if (con.usado) { usadoCount++; usadoManual.push(con); }
+      else { consNotScanned++; missingFromScan.push(con); }
     }
   });
+
+  _xcExtraScans = extraScans;
+  _xcMissingFromScan = missingFromScan;
+  _xcUsadoManual = usadoManual;
 
   // Summary tiles
   if (summary) {
@@ -4795,6 +4831,7 @@ function runCrossCheck() {
       {n: inCons, lbl: 'Match', color: '#34c759', bg: '#e8ffe8'},
       {n: notInCons, lbl: 'Extra (no cons.)', color: '#ff9500', bg: '#fff5e8'},
       {n: consNotScanned, lbl: 'Not scanned', color: '#ff3b30', bg: '#fff0f0'},
+      {n: usadoCount, lbl: 'Used (manual)', color: '#3634a3', bg: '#eef0ff'},
     ].map(function(t) {
       return '<div style="background:' + t.bg + ';border-radius:10px;padding:10px;text-align:center">' +
         '<div style="font-size:calc(48px * var(--fs-scale));font-weight:800;color:' + t.color + '">' + t.n + '</div>' +
@@ -4803,11 +4840,37 @@ function runCrossCheck() {
     }).join('');
   }
 
-  // Detail list
+  // Old consignment coils (from before the app was used) can be searched and marked as used -- only
+  // worth showing the search box when there's something to search among.
+  if (searchInput) searchInput.style.display = (consNotScanned > 0 || usadoCount > 0) ? 'block' : 'none';
+
+  renderXcList();
+}
+
+// Renders the cross-check detail list from the sets computed by runCrossCheck(), filtered by the
+// search box. Kept separate from runCrossCheck() so pagination ("see more") and the search box don't
+// need to recompute the full scan-vs-consignment comparison each time.
+function renderXcList() {
+  var list = document.getElementById('cross-check-list');
+  if (!list) return;
+
+  var searchEl = document.getElementById('xc-search-old');
+  var q = searchEl ? String(searchEl.value || '').trim().toLowerCase() : '';
+  function matchesQ(con) {
+    if (!q) return true;
+    return String(con.lot_no || '').toLowerCase().indexOf(q) >= 0 ||
+      String(con.cast_no || '').toLowerCase().indexOf(q) >= 0 ||
+      String(con.referencia || '').toLowerCase().indexOf(q) >= 0;
+  }
+
+  var extraScans = _xcExtraScans || [];
+  var missingFromScan = (_xcMissingFromScan || []).filter(matchesQ);
+  var usadoManual = (_xcUsadoManual || []).filter(matchesQ);
+
   var html = '';
 
-  if (notInCons > 0) {
-    html += '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Scanned with NO consignment (' + notInCons + ')</div>';
+  if (extraScans.length > 0) {
+    html += '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#ff9500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Scanned with NO consignment (' + extraScans.length + ')</div>';
     html += extraScans.slice(0, _xcExtraShown).map(function(r) {
       var mc = r.maquina === 'EVG' ? '#007aff' : '#af52de';
       var d = r.created_at ? new Date(r.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
@@ -4819,28 +4882,95 @@ function runCrossCheck() {
         '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0">' + d + '</div>' +
       '</div>';
     }).join('');
-    html += xcMoreBtn('extra', notInCons, _xcExtraShown);
+    html += xcMoreBtn('extra', extraScans.length, _xcExtraShown);
   }
 
-  if (consNotScanned > 0) {
-    html += '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments NOT scanned (' + consNotScanned + ')</div>';
+  if (missingFromScan.length > 0) {
+    html += '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Consignments NOT scanned (' + missingFromScan.length + ')</div>';
     html += missingFromScan.slice(0, _xcMissShown).map(function(con) {
       return '<div style="padding:8px 10px;background:#fff8f8;border-radius:8px;margin-bottom:4px;border-left:3px solid #ff3b30;display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:calc(26px * var(--fs-scale));font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
           '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
         '</div>' +
-        '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0">' + esc(con.cast_no||'') + '</div>' +
+        '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0;text-align:right">' + esc(con.cast_no||'') +
+          '<button data-id="' + _ceAttr(con.id) + '" onclick="markConsUsado(this.dataset.id)" title="Mark as used (old coil, scanned before the app)" style="display:block;margin-top:4px;background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Mark as used</button>' +
+        '</div>' +
       '</div>';
     }).join('');
-    html += xcMoreBtn('miss', consNotScanned, _xcMissShown);
+    html += xcMoreBtn('miss', missingFromScan.length, _xcMissShown);
   }
 
-  if (!notInCons && !consNotScanned) {
-    html = '<div style="color:#34c759;font-weight:700;font-size:calc(28px * var(--fs-scale));text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
+  if (usadoManual.length > 0) {
+    html += '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#3634a3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:12px">Marked as used manually (' + usadoManual.length + ')</div>';
+    html += usadoManual.slice(0, _xcUsadoShown).map(function(con) {
+      return '<div style="padding:8px 10px;background:#f5f5ff;border-radius:8px;margin-bottom:4px;border-left:3px solid #3634a3;display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:calc(26px * var(--fs-scale));font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
+          '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
+        '</div>' +
+        '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0;text-align:right">' + esc(con.cast_no||'') +
+          '<button data-id="' + _ceAttr(con.id) + '" onclick="unmarkConsUsado(this.dataset.id)" title="Undo" style="display:block;margin-top:4px;background:#f2f2f7;border:none;color:#8e8e93;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Undo</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    html += xcMoreBtn('usado', usadoManual.length, _xcUsadoShown);
   }
 
-  if (list) list.innerHTML = html;
+  if (!html) {
+    html = q
+      ? '<div style="color:#8e8e93;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No results for "' + esc(q) + '"</div>'
+      : '<div style="color:#34c759;font-weight:700;font-size:calc(28px * var(--fs-scale));text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
+  }
+
+  list.innerHTML = html;
+}
+
+// Marca manualmente un coil de un consignment viejo (de antes de que existiera la app) como "usado",
+// para que deje de figurar como faltante para siempre. No requiere haberlo escaneado.
+function markConsUsado(id) {
+  if (!id) return;
+  guardedAction('Password to mark coil as used', function(){ _markConsUsado(id); });
+}
+
+async function _markConsUsado(id) {
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
+  try {
+    var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json', apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, Prefer: 'return=minimal'},
+      body: JSON.stringify({usado: true})
+    });
+    if (!resp.ok) { alert('Error marking as used: ' + resp.status); return; }
+  } catch (e) { alert('Error marking as used: ' + e.message); return; }
+  var row = _consignments.find(function(c){ return String(c.id) === String(id); });
+  if (row) row.usado = true;
+  refreshScannedSet();
+  runCrossCheck();
+  renderSavedCons();
+}
+
+// Deshace la marca manual de "usado" (por si se marco un coil por error).
+function unmarkConsUsado(id) {
+  if (!id) return;
+  guardedAction('Password to undo', function(){ _unmarkConsUsado(id); });
+}
+
+async function _unmarkConsUsado(id) {
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
+  try {
+    var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json', apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, Prefer: 'return=minimal'},
+      body: JSON.stringify({usado: false})
+    });
+    if (!resp.ok) { alert('Error undoing: ' + resp.status); return; }
+  } catch (e) { alert('Error undoing: ' + e.message); return; }
+  var row = _consignments.find(function(c){ return String(c.id) === String(id); });
+  if (row) row.usado = false;
+  refreshScannedSet();
+  runCrossCheck();
+  renderSavedCons();
 }
 
 // Check a single coil against consignments after scan
