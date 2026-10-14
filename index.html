@@ -3103,7 +3103,7 @@ async function saveConsignmentRows(rows) {
 
 // ============ ESTADO DE CONSIGNMENTS (compartido Dashboard + tab Consignment) ============
 var _consStatusShown = {dash: 10, tab: 10};
-var _xcMissShown = 10, _xcExtraShown = 10, _xcUsadoShown = 10;
+var _xcMissShown = 10, _xcExtraShown = 10, _xcUsadoShown = 10, _xcSearchShown = 10;
 
 // "14/08/26" -> numero para poder ordenar por fecha (DD/MM/AA o DD/MM/AAAA). Sin fecha valida: al final.
 function _fechaOrdenable(f) {
@@ -3195,6 +3195,7 @@ function xcMoreBtn(kind, total, shown) {
 function xcMore(kind, all) {
   if (kind === 'miss') _xcMissShown = all ? 1e9 : _xcMissShown + 10;
   else if (kind === 'usado') _xcUsadoShown = all ? 1e9 : _xcUsadoShown + 10;
+  else if (kind === 'search') _xcSearchShown = all ? 1e9 : _xcSearchShown + 10;
   else _xcExtraShown = all ? 1e9 : _xcExtraShown + 10;
   renderXcList();
 }
@@ -4853,9 +4854,18 @@ function runCrossCheck() {
 // two-level search (1. cast/reference, 2. a coil-digit match within that cast). Kept separate from
 // runCrossCheck() so pagination ("see more") and typing in the search boxes don't need to recompute
 // the full scan-vs-consignment comparison each time.
+// Status of a single consignment row, for display in search results and badges.
+function _xcConStatus(con) {
+  var lot = con.lot_no;
+  if (isCoilScannedOnly(lot)) return {key: 'scanned', lbl: '✓ Scanned', color: '#34c759', bg: '#f2fff2'};
+  if (isCoilUsadoManual(lot)) return {key: 'usado', lbl: '✓ Used (manual)', color: '#3634a3', bg: '#f5f5ff'};
+  return {key: 'missing', lbl: '✗ Missing', color: '#ff3b30', bg: '#fff8f8'};
+}
+
 function renderXcList() {
   var list = document.getElementById('cross-check-list');
   if (!list) return;
+  refreshScannedSet();
 
   var castEl = document.getElementById('xc-search-cast');
   var coilEl = document.getElementById('xc-search-coil');
@@ -4880,6 +4890,40 @@ function renderXcList() {
     // covers searching by "the last 3 digits" (a common way to recognize an old coil by eye).
     if (coilQ.length >= 3 && String(con.lot_no || '').toLowerCase().indexOf(coilQ) < 0) return false;
     return true;
+  }
+
+  // While actively searching (cast/reference typed), show EVERY matching consignment coil --
+  // including ones already scanned normally -- each tagged with its real status. Before, a coil that
+  // had actually been scanned just vanished from the search (it only ever searched the "not scanned"
+  // and "used manually" lists), which looked like the search was broken.
+  if (castQ) {
+    var results = (_consignments || []).filter(matchesQ);
+    var html2 = '<div style="font-size:calc(22px * var(--fs-scale));font-weight:800;color:#007aff;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:4px">Search results (' + results.length + ')</div>';
+    if (results.length > 0) {
+      html2 += results.slice(0, _xcSearchShown).map(function(con) {
+        var st = _xcConStatus(con);
+        var actionBtn = '';
+        if (st.key === 'missing') {
+          actionBtn = '<button data-id="' + _ceAttr(con.id) + '" onclick="markConsUsado(this.dataset.id)" title="Mark as used (old coil, scanned before the app)" style="display:block;margin-top:4px;background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Mark as used</button>';
+        } else if (st.key === 'usado') {
+          actionBtn = '<button data-id="' + _ceAttr(con.id) + '" onclick="unmarkConsUsado(this.dataset.id)" title="Undo" style="display:block;margin-top:4px;background:#f2f2f7;border:none;color:#8e8e93;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Undo</button>';
+        }
+        return '<div style="padding:8px 10px;background:' + st.bg + ';border-radius:8px;margin-bottom:4px;border-left:3px solid ' + st.color + ';display:flex;align-items:center;gap:8px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:calc(26px * var(--fs-scale));font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
+            '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
+            '<div style="font-size:calc(20px * var(--fs-scale));font-weight:700;color:' + st.color + ';margin-top:2px">' + st.lbl + '</div>' +
+          '</div>' +
+          '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0;text-align:right">' + esc(con.cast_no||'') + actionBtn + '</div>' +
+        '</div>';
+      }).join('');
+      html2 += xcMoreBtn('search', results.length, _xcSearchShown);
+    } else {
+      var activeQ2 = [castQ, coilQ.length >= 3 ? coilQ : ''].filter(Boolean).join(' / ');
+      html2 = '<div style="color:#8e8e93;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No results for "' + esc(activeQ2) + '"</div>';
+    }
+    list.innerHTML = html2;
+    return;
   }
 
   var extraScans = _xcExtraScans || [];
@@ -4936,11 +4980,10 @@ function renderXcList() {
     html += xcMoreBtn('usado', usadoManual.length, _xcUsadoShown);
   }
 
+  // castQ is always empty down here (the search-mode branch above returns early otherwise), so this
+  // is the plain "nothing pending" state, never a no-results-for-search message.
   if (!html) {
-    var activeQ = [castQ, coilQ.length >= 3 ? coilQ : ''].filter(Boolean).join(' / ');
-    html = activeQ
-      ? '<div style="color:#8e8e93;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No results for "' + esc(activeQ) + '"</div>'
-      : '<div style="color:#34c759;font-weight:700;font-size:calc(28px * var(--fs-scale));text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
+    html = '<div style="color:#34c759;font-weight:700;font-size:calc(28px * var(--fs-scale));text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
   }
 
   list.innerHTML = html;
