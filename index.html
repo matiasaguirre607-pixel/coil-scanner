@@ -2964,7 +2964,13 @@ function _consProdGrade(r) {
   var p = String(r.producto || '');
   var m = p.match(/—\s*([^()]+?)(?:\s*\([^)]*\))?\s*$/);
   var raw = m ? m[1].trim() : p.replace(/^\s*\d+(?:[.,]\d+)?\s*/, '').trim();
-  return raw ? _smartGradeCase(raw) : '';
+  if (!raw) return '';
+  // "Ductile Rod" generico (sin grado explicito despues de "—") es siempre el mismo material que el
+  // grado "500E PL" -- confirmado por Matias, vale para todos los diametros. Se unifica aca para que
+  // "8MM · 500E PL" y "8MM · Ductile Rod" no aparezcan como si fueran dos productos distintos.
+  // "Wire Rod" generico, en cambio, SI es un producto distinto -- no se unifica con nada.
+  if (/^ductile\s*rod$/i.test(raw)) return '500E PL';
+  return _smartGradeCase(raw);
 }
 function _consProdKey(r) {
   var m = String(r.producto || '').match(/(\d+(?:[.,]\d+)?)/);
