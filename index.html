@@ -854,7 +854,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <button onclick="runCrossCheck()" style="padding:5px 12px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:calc(24px * var(--fs-scale));font-weight:700;cursor:pointer">&#8635; Refresh</button>
     </div>
     <div id="cross-check-summary" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:10px"></div>
-    <input id="xc-search-old" type="text" placeholder="Search old coil by lot, cast or reference..." oninput="renderXcList()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:calc(24px * var(--fs-scale));margin-bottom:8px;display:none" />
+    <input id="xc-search-cast" type="text" placeholder="1. Search old coil by cast or reference..." oninput="renderXcList()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:calc(24px * var(--fs-scale));margin-bottom:6px;display:none" />
+    <input id="xc-search-coil" type="text" placeholder="2. Then match coil digits, e.g. the last 3..." oninput="renderXcList()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:calc(24px * var(--fs-scale));margin-bottom:8px;display:none" />
     <div id="cross-check-list"></div>
   </div>
 
@@ -4784,7 +4785,7 @@ var _xcExtraScans = [], _xcMissingFromScan = [], _xcUsadoManual = [];
 function runCrossCheck() {
   var card = document.getElementById('cross-check-card');
   var summary = document.getElementById('cross-check-summary');
-  var searchInput = document.getElementById('xc-search-old');
+  var castSearchInput = document.getElementById('xc-search-cast');
   if (!card) return;
 
   if (!_consignments.length) {
@@ -4841,26 +4842,44 @@ function runCrossCheck() {
   }
 
   // Old consignment coils (from before the app was used) can be searched and marked as used -- only
-  // worth showing the search box when there's something to search among.
-  if (searchInput) searchInput.style.display = (consNotScanned > 0 || usadoCount > 0) ? 'block' : 'none';
+  // worth showing the cast search box when there's something to search among. The coil-digits box
+  // (second level) only appears once a cast search is in progress -- see renderXcList().
+  if (castSearchInput) castSearchInput.style.display = (consNotScanned > 0 || usadoCount > 0) ? 'block' : 'none';
 
   renderXcList();
 }
 
 // Renders the cross-check detail list from the sets computed by runCrossCheck(), filtered by the
-// search box. Kept separate from runCrossCheck() so pagination ("see more") and the search box don't
-// need to recompute the full scan-vs-consignment comparison each time.
+// two-level search (1. cast/reference, 2. a coil-digit match within that cast). Kept separate from
+// runCrossCheck() so pagination ("see more") and typing in the search boxes don't need to recompute
+// the full scan-vs-consignment comparison each time.
 function renderXcList() {
   var list = document.getElementById('cross-check-list');
   if (!list) return;
 
-  var searchEl = document.getElementById('xc-search-old');
-  var q = searchEl ? String(searchEl.value || '').trim().toLowerCase() : '';
+  var castEl = document.getElementById('xc-search-cast');
+  var coilEl = document.getElementById('xc-search-coil');
+  var castQ = castEl ? String(castEl.value || '').trim().toLowerCase() : '';
+
+  // Level 2 (coil digits) only makes sense once a cast search narrowed things down -- hide/reset it
+  // otherwise so it doesn't silently filter based on a stale leftover value.
+  if (coilEl) {
+    coilEl.style.display = castQ ? 'block' : 'none';
+    if (!castQ) coilEl.value = '';
+  }
+  var coilQ = (castQ && coilEl) ? String(coilEl.value || '').trim().toLowerCase() : '';
+
   function matchesQ(con) {
-    if (!q) return true;
-    return String(con.lot_no || '').toLowerCase().indexOf(q) >= 0 ||
-      String(con.cast_no || '').toLowerCase().indexOf(q) >= 0 ||
-      String(con.referencia || '').toLowerCase().indexOf(q) >= 0;
+    if (castQ) {
+      var castHit = String(con.cast_no || '').toLowerCase().indexOf(castQ) >= 0 ||
+        String(con.referencia || '').toLowerCase().indexOf(castQ) >= 0;
+      if (!castHit) return false;
+    }
+    // Require at least 3 characters before applying the coil-digit match, so a couple of stray
+    // keystrokes don't narrow the list down to nothing -- matches anywhere in the coil number, which
+    // covers searching by "the last 3 digits" (a common way to recognize an old coil by eye).
+    if (coilQ.length >= 3 && String(con.lot_no || '').toLowerCase().indexOf(coilQ) < 0) return false;
+    return true;
   }
 
   var extraScans = _xcExtraScans || [];
@@ -4918,8 +4937,9 @@ function renderXcList() {
   }
 
   if (!html) {
-    html = q
-      ? '<div style="color:#8e8e93;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No results for "' + esc(q) + '"</div>'
+    var activeQ = [castQ, coilQ.length >= 3 ? coilQ : ''].filter(Boolean).join(' / ');
+    html = activeQ
+      ? '<div style="color:#8e8e93;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No results for "' + esc(activeQ) + '"</div>'
       : '<div style="color:#34c759;font-weight:700;font-size:calc(28px * var(--fs-scale));text-align:center;padding:12px">&#10003; Everything matches perfectly</div>';
   }
 
