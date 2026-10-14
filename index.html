@@ -2940,13 +2940,31 @@ function prodChipsHTML(prodOrder, selected) {
   }).join('');
 }
 
+// Pone cada palabra del grado/material en un formato consistente sin importar como haya llegado
+// el texto (AI, texto del PDF, mayusculas, minusculas...): "DUCTILE ROD" y "Ductile Rod" deben
+// terminar siendo exactamente el mismo string, para que no queden como dos grupos distintos.
+// Las palabras tipo codigo (con un digito, ej. "500E"/"1008", o muy cortas, ej. "PL") se mantienen
+// en mayuscula tal cual (son codigos de grado, no palabras comunes); el resto se pasa a Title Case.
+function _smartGradeWord(w) {
+  if (!w) return w;
+  if (/\d/.test(w) || w.length <= 2) return w.toUpperCase();
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+}
+function _smartGradeCase(s) {
+  return String(s || '').split(/\s+/).filter(Boolean).map(_smartGradeWord).join(' ');
+}
 // Antes esto era el texto completo ("COIL REIN 9mm" / "9.0 DUCTILE ROD"): dos formas de nombrar
 // EL MISMO diametro no se agrupaban juntas. Ahora la clave es el numero + mm ("9MM"), MAS el grado/material
 // si el PDF lo trajo (ej. "9MM · 500E PL"), asi dos materiales distintos con el mismo diametro (que antes
 // quedaban indistinguibles, ej. "500E PL" vs "1008 Rod" en 7mm) ya no se agrupan como si fueran lo mismo.
+// Si el producto no trae un grado explicito despues de "—" (ej. viene de la IA sin ese formato), se usa
+// el resto del texto (todo menos el numero inicial, ej. "Ductile Rod" / "Wire Rod") como diferenciador:
+// son productos distintos en el mismo diametro y antes quedaban mezclados en un solo "7MM" sin distinguir.
 function _consProdGrade(r) {
-  var m = String(r.producto || '').match(/—\s*([^()]+?)(?:\s*\([^)]*\))?\s*$/);
-  return m ? m[1].trim().toUpperCase() : '';
+  var p = String(r.producto || '');
+  var m = p.match(/—\s*([^()]+?)(?:\s*\([^)]*\))?\s*$/);
+  var raw = m ? m[1].trim() : p.replace(/^\s*\d+(?:[.,]\d+)?\s*/, '').trim();
+  return raw ? _smartGradeCase(raw) : '';
 }
 function _consProdKey(r) {
   var m = String(r.producto || '').match(/(\d+(?:[.,]\d+)?)/);
