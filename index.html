@@ -3034,8 +3034,8 @@ async function loadConsignments() {
   var mySeq = ++_consSeq;
   var rows = null, lastErr = null;
   var attempts = [
-    ['id,referencia,fecha,cast_no,lot_no,producto,peso,wo,usado', 'created_at.asc,id.asc'],
-    ['*', 'id.asc']   // fallback si falta alguna columna (wo / usado / created_at)
+    ['id,referencia,fecha,cast_no,lot_no,producto,peso,wo,usado,maquina', 'created_at.asc,id.asc'],
+    ['*', 'id.asc']   // fallback si falta alguna columna (wo / usado / maquina / created_at)
   ];
   for (var i = 0; i < attempts.length && rows === null; i++) {
     try {
