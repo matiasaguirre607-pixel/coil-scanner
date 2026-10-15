@@ -4858,8 +4858,18 @@ function runCrossCheck() {
 function _xcConStatus(con) {
   var lot = con.lot_no;
   if (isCoilScannedOnly(lot)) return {key: 'scanned', lbl: '✓ Scanned', color: '#34c759', bg: '#f2fff2'};
-  if (isCoilUsadoManual(lot)) return {key: 'usado', lbl: '✓ Used (manual)', color: '#3634a3', bg: '#f5f5ff'};
+  if (isCoilUsadoManual(lot)) return {key: 'usado', lbl: '✓ Used (manual)' + (con.maquina ? ' · ' + esc(con.maquina) : ''), color: '#3634a3', bg: '#f5f5ff'};
   return {key: 'missing', lbl: '✗ Missing', color: '#ff3b30', bg: '#fff8f8'};
+}
+
+// "Mark as used" needs to say which machine ran that old coil (EVG/PITTINI) -- one button per
+// machine, matching the same two machines used for real scans throughout the app.
+function _xcMarkUsadoButtons(id) {
+  var idAttr = _ceAttr(id);
+  return '<div style="display:flex;gap:4px;margin-top:4px">' +
+    '<button data-id="' + idAttr + '" onclick="markConsUsado(this.dataset.id,\'EVG\')" title="Mark as used on EVG" style="background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Used: EVG</button>' +
+    '<button data-id="' + idAttr + '" onclick="markConsUsado(this.dataset.id,\'PITTINI\')" title="Mark as used on PITTINI" style="background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Used: PITTINI</button>' +
+  '</div>';
 }
 
 function renderXcList() {
@@ -4904,7 +4914,7 @@ function renderXcList() {
         var st = _xcConStatus(con);
         var actionBtn = '';
         if (st.key === 'missing') {
-          actionBtn = '<button data-id="' + _ceAttr(con.id) + '" onclick="markConsUsado(this.dataset.id)" title="Mark as used (old coil, scanned before the app)" style="display:block;margin-top:4px;background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Mark as used</button>';
+          actionBtn = _xcMarkUsadoButtons(con.id);
         } else if (st.key === 'usado') {
           actionBtn = '<button data-id="' + _ceAttr(con.id) + '" onclick="unmarkConsUsado(this.dataset.id)" title="Undo" style="display:block;margin-top:4px;background:#f2f2f7;border:none;color:#8e8e93;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Undo</button>';
         }
@@ -4957,7 +4967,7 @@ function renderXcList() {
           '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
         '</div>' +
         '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0;text-align:right">' + esc(con.cast_no||'') +
-          '<button data-id="' + _ceAttr(con.id) + '" onclick="markConsUsado(this.dataset.id)" title="Mark as used (old coil, scanned before the app)" style="display:block;margin-top:4px;background:#eef0ff;border:none;color:#3634a3;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Mark as used</button>' +
+          _xcMarkUsadoButtons(con.id) +
         '</div>' +
       '</div>';
     }).join('');
@@ -4970,7 +4980,7 @@ function renderXcList() {
       return '<div style="padding:8px 10px;background:#f5f5ff;border-radius:8px;margin-bottom:4px;border-left:3px solid #3634a3;display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:calc(26px * var(--fs-scale));font-weight:700;font-family:monospace">' + esc(con.lot_no||'—') + '</div>' +
-          '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + '</div>' +
+          '<div style="font-size:calc(22px * var(--fs-scale));color:#636366">Ref: ' + esc(con.referencia||'—') + (con.producto?' · '+esc(con.producto):'') + (con.peso?' · '+esc(con.peso)+'t':'') + (con.maquina?' · '+esc(con.maquina):'') + '</div>' +
         '</div>' +
         '<div style="font-size:calc(20px * var(--fs-scale));color:#8e8e93;flex-shrink:0;text-align:right">' + esc(con.cast_no||'') +
           '<button data-id="' + _ceAttr(con.id) + '" onclick="unmarkConsUsado(this.dataset.id)" title="Undo" style="display:block;margin-top:4px;background:#f2f2f7;border:none;color:#8e8e93;border-radius:6px;padding:3px 8px;font-size:calc(20px * var(--fs-scale));font-weight:700;cursor:pointer">Undo</button>' +
@@ -4990,30 +5000,31 @@ function renderXcList() {
 }
 
 // Marca manualmente un coil de un consignment viejo (de antes de que existiera la app) como "usado",
-// para que deje de figurar como faltante para siempre. No requiere haberlo escaneado.
-function markConsUsado(id) {
-  if (!id) return;
-  guardedAction('Password to mark coil as used', function(){ _markConsUsado(id); });
+// indicando en que maquina se proceso (EVG/PITTINI) -- para que deje de figurar como faltante para
+// siempre, con el dato de maquina para los reportes por maquina. No requiere haberlo escaneado.
+function markConsUsado(id, maquina) {
+  if (!id || !maquina) return;
+  guardedAction('Password to mark coil as used', function(){ _markConsUsado(id, maquina); });
 }
 
-async function _markConsUsado(id) {
+async function _markConsUsado(id, maquina) {
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxenFybHhqemZ4cHFpZ2p1em9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTIwMDIsImV4cCI6MjEwMzg2ODAwMn0.88ZaPDl4-gM78t7_upZQclTrqCIdu5FAsKWn9HWBBkQ';
   try {
     var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
       method: 'PATCH',
       headers: {'Content-Type':'application/json', apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, Prefer: 'return=minimal'},
-      body: JSON.stringify({usado: true})
+      body: JSON.stringify({usado: true, maquina: maquina})
     });
     if (!resp.ok) { alert('Error marking as used: ' + resp.status); return; }
   } catch (e) { alert('Error marking as used: ' + e.message); return; }
   var row = _consignments.find(function(c){ return String(c.id) === String(id); });
-  if (row) row.usado = true;
+  if (row) { row.usado = true; row.maquina = maquina; }
   refreshScannedSet();
   runCrossCheck();
   renderSavedCons();
 }
 
-// Deshace la marca manual de "usado" (por si se marco un coil por error).
+// Deshace la marca manual de "usado" (por si se marco un coil por error) y limpia la maquina guardada.
 function unmarkConsUsado(id) {
   if (!id) return;
   guardedAction('Password to undo', function(){ _unmarkConsUsado(id); });
@@ -5025,12 +5036,12 @@ async function _unmarkConsUsado(id) {
     var resp = await fetch('https://xqzqrlxjzfxpqigjuzor.supabase.co/rest/v1/consignments?id=eq.'+encodeURIComponent(id), {
       method: 'PATCH',
       headers: {'Content-Type':'application/json', apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, Prefer: 'return=minimal'},
-      body: JSON.stringify({usado: false})
+      body: JSON.stringify({usado: false, maquina: null})
     });
     if (!resp.ok) { alert('Error undoing: ' + resp.status); return; }
   } catch (e) { alert('Error undoing: ' + e.message); return; }
   var row = _consignments.find(function(c){ return String(c.id) === String(id); });
-  if (row) row.usado = false;
+  if (row) { row.usado = false; row.maquina = null; }
   refreshScannedSet();
   runCrossCheck();
   renderSavedCons();
