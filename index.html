@@ -2404,6 +2404,36 @@ function renderCastProgressDB(data) {
     if(r.maquina==='EVG') byCast[r.cast].maqE++;
     else if(r.maquina==='PITTINI') byCast[r.cast].maqP++;
   });
+  // Los coils marcados como "usado" a mano (markConsUsado -- coils viejos, de antes de la app, que
+  // nunca se escanean) son igual coils resueltos de su cast, asi que se suman al progreso -- antes
+  // quedaban afuera, y la barra de un cast con coils cargados asi se veia incompleta aunque en
+  // realidad ya estuviera 100% resuelto. Se ignora cualquier lote que ya figure escaneado en `data`
+  // (no deberia pasar nunca -- "usado" es solo para los que nunca se escanearon -- pero por las
+  // dudas, para no contar un mismo coil dos veces).
+  var scannedLots = Object.create(null);
+  data.forEach(function(r){ if (r.coil) scannedLots[String(r.coil).trim()] = 1; });
+  (_consignments || []).forEach(function(c){
+    if (!c.usado || !c.cast_no) return;
+    if (c.lot_no && scannedLots[String(c.lot_no).trim()]) return;
+    var matchKey = null;
+    Object.keys(byCast).some(function(castKey){
+      var sk = _castNormCv(castKey);
+      if (_castMatches(c.cast_no, sk, sk.indexOf('-') >= 0)) { matchKey = castKey; return true; }
+      return false;
+    });
+    if (!matchKey) {
+      // Ningun coil de ese cast fue escaneado todavia -- se crea su propia entrada igual, resuelta
+      // por completo solo con marcados manuales.
+      matchKey = c.cast_no;
+      if (!byCast[matchKey]) byCast[matchKey] = {coils:0, ton:0, prod:c.producto, maqE:0, maqP:0, refs:{}};
+    }
+    byCast[matchKey].coils++;
+    byCast[matchKey].ton += parseTon(c.peso);
+    if (c.maquina === 'EVG') byCast[matchKey].maqE++;
+    else if (c.maquina === 'PITTINI') byCast[matchKey].maqP++;
+    var rf = c.referencia || 'No ref';
+    byCast[matchKey].refs[rf] = (byCast[matchKey].refs[rf]||0) + 1;
+  });
   // Orden: primero por diametro de alambre (progresivo, igual que los chips de producto en
   // Consignments), y dentro de cada diametro, igual que antes -- el cast con mas coils primero.
   // Un divisor visible separa cada grupo de diametro (ver _castDiameterMM() mas abajo).
