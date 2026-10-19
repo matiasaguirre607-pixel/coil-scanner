@@ -2994,8 +2994,13 @@ function _consProdGrade(r) {
   // "Ductile Rod" generico (sin grado explicito despues de "—") es siempre el mismo material que el
   // grado "500E PL" -- confirmado por Matias, vale para todos los diametros. Se unifica aca para que
   // "8MM · 500E PL" y "8MM · Ductile Rod" no aparezcan como si fueran dos productos distintos.
-  // "Wire Rod" generico, en cambio, SI es un producto distinto -- no se unifica con nada.
   if (/^ductile\s*rod$/i.test(raw)) return '500E PL';
+  // Mismo caso con "Wire Rod" generico (sin grado explicito): es siempre el mismo material que el
+  // grado "1008 Rod" -- confirmado por Matias 2026-10-19, vale para todos los diametros. Un "Wire Rod"
+  // con grado EXPLICITO distinto (ej. "— SAE1012", el material de Hoa Phat) no entra aca -- ese ya
+  // tiene su propio raw ("SAE1012") porque viene del grupo de captura "—\s*(...)" de mas arriba, asi
+  // que sigue siendo un producto aparte, correctamente.
+  if (/^wire\s*rod$/i.test(raw)) return '1008 Rod';
   return _smartGradeCase(raw);
 }
 function _consProdKey(r) {
