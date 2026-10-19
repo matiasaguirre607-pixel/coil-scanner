@@ -2379,6 +2379,15 @@ function castConsHTML(refs) {
   return ' <span style="font-size:calc(20px * var(--fs-scale));font-weight:700;color:#ff9500">Consignment: ' + txt + '</span>';
 }
 
+// Diametro (en mm) de un cast para "Progress by Cast": el primer numero que aparece en el producto
+// guardado para ese cast -- cubre tanto el formato de malla ("COIL REIN 9mm", con "mm" literal)
+// como el de varilla ("9.0 DUCTILE ROD" / "7.0 WIRE ROD", sin "mm" pero el numero ES el diametro en
+// mm igual). Infinity si no hay ningun numero, para que esos casts queden siempre al final del
+// grafico, sea cual sea el orden (ascendente por diametro).
+function _castDiameterMM(producto) {
+  var m = String(producto || '').match(/(\d+\.?\d*)/);
+  return m ? parseFloat(m[1]) : Infinity;
+}
 function renderCastProgressDB(data) {
   var el = document.getElementById('db-cast-prog');
   if (!el) return;
@@ -2395,11 +2404,29 @@ function renderCastProgressDB(data) {
     if(r.maquina==='EVG') byCast[r.cast].maqE++;
     else if(r.maquina==='PITTINI') byCast[r.cast].maqP++;
   });
-  var sorted=Object.keys(byCast).sort(function(a,b){return byCast[b].coils-byCast[a].coils;});
+  // Orden: primero por diametro de alambre (progresivo, igual que los chips de producto en
+  // Consignments), y dentro de cada diametro, igual que antes -- el cast con mas coils primero.
+  // Un divisor visible separa cada grupo de diametro (ver _castDiameterMM() mas abajo).
+  var sorted=Object.keys(byCast).sort(function(a,b){
+    var da=_castDiameterMM(byCast[a].prod), db=_castDiameterMM(byCast[b].prod);
+    if (da!==db) return da-db;
+    return byCast[b].coils-byCast[a].coils;
+  });
   if(!sorted.length){el.innerHTML='<div style="color:#8e9aab;text-align:center;padding:20px;font-size:calc(26px * var(--fs-scale))">No data</div>';return;}
   el.innerHTML='';
+  var _lastDiam=null, _firstGroup=true;
   sorted.forEach(function(cast){
     var d=byCast[cast];
+    var diam=_castDiameterMM(d.prod);
+    if (diam!==_lastDiam) {
+      var divider=document.createElement('div');
+      divider.textContent=(diam===Infinity) ? 'Other / no diameter' : (diam+'mm');
+      divider.style.cssText='font-size:calc(22px * var(--fs-scale));font-weight:800;color:#5c6b7a;'+
+        'text-transform:uppercase;letter-spacing:.06em;margin:'+(_firstGroup?'0':'16px')+' 0 8px;'+
+        'padding-top:'+(_firstGroup?'0':'10px')+';border-top:'+(_firstGroup?'none':'2px solid #e3e7ee');
+      el.appendChild(divider);
+      _lastDiam=diam; _firstGroup=false;
+    }
     var TARGET=_castExpectedTotal(cast);
     var pct=Math.min(Math.round((d.coils/TARGET)*100),100);
     var color=pct>=100?'#34c759':pct>=75?'#007aff':pct>=50?'#ff9500':'#ff3b30';
