@@ -1138,17 +1138,33 @@ function initFontScale() {
   setFontScale(v);
 }
 
+// Nombres de pestana validos, en el mismo orden que aparecen en la barra de tabs.
+var _TAB_NAMES = ['scan','hist','dash','prod','cons'];
 function goTab(n) {
-  ['scan','hist','dash','prod','cons'].forEach(function(t) {
+  _TAB_NAMES.forEach(function(t) {
     var p=document.getElementById('p-'+t);
     var tb=document.getElementById('t-'+t);
     if(p)p.classList.toggle('on',t===n);
     if(tb)tb.classList.toggle('on',t===n);
   });
+  // Recuerda la ultima pestana usada (por dispositivo/navegador, via localStorage) para que la
+  // app abra donde la dejaste la vez anterior, en vez de forzar siempre "Scan" -- pedido de Matias
+  // (2026-10-19): el celular lo usa para escanear, la compu para revisar los datos, y cada uno
+  // deberia abrir en lo que usa ahi.
+  try { localStorage.setItem('lastTab', n); } catch(e) {}
   if (n === 'hist') renderHistorial();
   if (n === 'dash') requestAnimationFrame(function(){requestAnimationFrame(renderDash);});
   if (n === 'prod') loadProduccion();
   if (n === 'cons') { loadConsignments(); renderParaVerificar(); runCrossCheck(); }
+}
+// Ultima pestana guardada para este dispositivo/navegador, o 'scan' si no hay ninguna guardada
+// todavia o el valor guardado ya no es una pestana valida.
+function _lastTabOrDefault() {
+  try {
+    var t = localStorage.getItem('lastTab');
+    if (t && _TAB_NAMES.indexOf(t) >= 0) return t;
+  } catch(e) {}
+  return 'scan';
 }
 function renderWoChips() {
   var seen = {}, wos = [];
@@ -5541,7 +5557,7 @@ window.addEventListener('load', function() {
   initFontScale();
   loadRecords().then(loadScheduleWOs);
   loadConsignments();
-  goTab('scan');
+  goTab(_lastTabOrDefault());
   startRealtime();
   updateLiveBadge();
   // Show notification banner if not yet decided
