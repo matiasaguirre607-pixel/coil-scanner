@@ -3113,6 +3113,17 @@ function _fechaOrdenable(f) {
   return Date.UTC(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10));
 }
 
+// A consignment's fechaOrden (ms, from _fechaOrdenable) -> {groupKey, label} for the year/month
+// section it belongs to. Refs with no valid date all land in one "No date" group, shown last.
+function _consYearMonth(fechaOrden) {
+  if (fechaOrden === Infinity) return {groupKey: 'nodate', label: 'No date'};
+  var d = new Date(fechaOrden);
+  var y = d.getUTCFullYear();
+  var m = d.getUTCMonth(); // 0-11
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return {groupKey: y + '-' + m, label: monthNames[m] + ' ' + y};
+}
+
 function consStatusHTML(where) {
   refreshScannedSet();
   var srcRows = (where === 'tab' && _consProdFilter) ? (_consignments || []).filter(function(r) { return _consProdKey(r) === _consProdFilter; }) : (_consignments || []);
@@ -3140,12 +3151,41 @@ function consStatusHTML(where) {
     if (B === Infinity) return -1;
     return B - A;                   // mas reciente primero
   });
+
+  // Totales por grupo (mes/año), sobre TODO el set ordenado -- no solo lo visible -- para que el
+  // encabezado de cada mes muestre el total real aunque la paginacion corte ese mes a la mitad.
+  var monthTotals = {}; // groupKey -> {label, n, ton, scanned}
+  keys.forEach(function(k) {
+    var ym = _consYearMonth(refs[k].fechaOrden);
+    if (!monthTotals[ym.groupKey]) monthTotals[ym.groupKey] = {label: ym.label, n: 0, ton: 0, scanned: 0, items: 0};
+    var mt = monthTotals[ym.groupKey];
+    mt.n++;
+    refs[k].items.forEach(function(r) {
+      mt.ton += parseFloat(r.peso) || 0;
+      mt.items++;
+      if (isCoilScanned(r.lot_no)) mt.scanned++;
+    });
+  });
+
   var shown = _consStatusShown[where] || 10;
   var totalTon = srcRows.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
   var totalScanned = srcRows.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
   var html = '<div style="font-size:calc(44px * var(--fs-scale));font-weight:800;color:#1a2332;line-height:1.35;margin-bottom:10px">' + keys.length + ' consignment' + (keys.length === 1 ? '' : 's') + ' &middot; ' + totalTon.toFixed(3) + ' t &middot; ' + totalScanned + '/' + srcRows.length + ' scanned' + (where === 'tab' && _consProdFilter ? '<br><span style="font-size:calc(28px * var(--fs-scale));font-weight:700;color:#007aff">' + esc(_consProdFilter) + '</span>' : '') + '</div>';
+  var lastGroupKey = null, isFirstGroup = true;
   html += keys.slice(0, shown).map(function(ref) {
     var g = refs[ref];
+    var ym = _consYearMonth(g.fechaOrden);
+    var groupHtml = '';
+    if (ym.groupKey !== lastGroupKey) {
+      lastGroupKey = ym.groupKey;
+      var mt = monthTotals[ym.groupKey];
+      var mPct = mt.items ? Math.round(mt.scanned / mt.items * 100) : 0;
+      groupHtml = '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:' + (isFirstGroup ? '0' : '14px') + ' 0 6px;padding-top:' + (isFirstGroup ? '0' : '8px') + ';border-top:' + (isFirstGroup ? 'none' : '1px solid #e5e5ea') + '">' +
+        '<span style="font-size:calc(28px * var(--fs-scale));font-weight:800;color:#636366;text-transform:uppercase;letter-spacing:.04em">' + esc(mt.label) + '</span>' +
+        '<span style="font-size:calc(22px * var(--fs-scale));color:#8e9aab">' + mt.n + ' ref' + (mt.n === 1 ? '' : 's') + ' &middot; ' + mt.ton.toFixed(3) + 't &middot; ' + mt.scanned + '/' + mt.items + ' (' + mPct + '%)</span>' +
+      '</div>';
+      isFirstGroup = false;
+    }
     var ton = g.items.reduce(function(sum, r) { return sum + (parseFloat(r.peso) || 0); }, 0);
     var scanned = g.items.filter(function(r) { return isCoilScanned(r.lot_no); }).length;
     var missing = g.items.length - scanned;
@@ -3156,7 +3196,7 @@ function consStatusHTML(where) {
       : '';
     var castLbl = _refCastLabel(g.items);
     var detailLine = [castLbl, g.productoCompleto].filter(Boolean).join(' &middot; ');
-    return '<div style="margin-bottom:12px">' +
+    return groupHtml + '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div><span style="font-size:calc(26px * var(--fs-scale));font-weight:700;color:#1a2332">Ref: ' + esc(ref) + '</span>' +
           (g.fecha ? ' <span style="font-size:calc(22px * var(--fs-scale));color:#8e9aab">' + esc(g.fecha) + '</span>' : '') +
