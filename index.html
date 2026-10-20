@@ -407,14 +407,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="card">
     <div class="card-title">Label photo</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button id="btn-open-camera" onclick="openCameraNative()" style="flex:1;padding:20px 14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:calc(36px * var(--fs-scale));font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em">&#127909; Live camera</button>
-      <!-- capture="environment" hace que en el celular esto abra la app de Camara NATIVA directamente
-           (un toque, foto, listo) en vez del visor de camara-en-la-pagina de mas abajo (openCamera/
-           captureAndAnalyze) -- Matias pidio (2026-10-21) que sea mas directo, menos pasos. La foto
-           vuelve por el listener 'change' (onCameraFile) y usa el mismo pipeline de extraccion +
-           confirmacion que ya tenia la camara en vivo (showCamConfirm/camConfirm), asi que el resto
-           del flujo (duplicados, WO cerrada, etc.) no cambia. -->
-      <input type="file" accept="image/*" capture="environment" id="file-in-camera" style="display:none">
+      <button id="btn-open-camera" onclick="openCamera()" style="flex:1;padding:20px 14px;background:#1c1c1e;color:#fff;border:none;border-radius:var(--rs);font-size:calc(36px * var(--fs-scale));font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em">&#127909; Live camera</button>
     </div>
     <div id="notif-banner" style="display:none;background:#f0f5ff;border:1px solid #007aff;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span style="font-size:calc(26px * var(--fs-scale));color:#007aff;font-weight:600">&#128276; Turn on notifications for complete-cast alerts</span>
@@ -1169,6 +1162,10 @@ function goTab(n) {
   // (2026-10-19): el celular lo usa para escanear, la compu para revisar los datos, y cada uno
   // deberia abrir en lo que usa ahi.
   try { localStorage.setItem('lastTab', n); } catch(e) {}
+  // La camara en vivo queda prendida de fondo entre aperturas del modal dentro de Escanear (para no
+  // pedir permiso de nuevo cada vez, ver openCamera/closeCamera) -- pero si te vas de la pestana
+  // Escanear del todo, ahi si se corta de verdad.
+  if (n !== 'scan') releaseCameraStream();
   if (n === 'hist') renderHistorial();
   if (n === 'dash') requestAnimationFrame(function(){requestAnimationFrame(renderDash);});
   if (n === 'prod') loadProduccion();
@@ -2683,96 +2680,42 @@ function updateSelectionBar() {
 }
 
 var _camStream = null;
-var _camNativeMode = false;   // true cuando la foto vino de la camara nativa del celular (openCameraNative),
-                               // no del visor en vivo (openCamera) -- cambia que pasa al confirmar/cancelar:
-                               // en modo nativo no hay shutter al que volver, asi que se cierra el modal entero.
 
-// Matias pidio (2026-10-21) que "Live camera" abra la app de Camara REAL del celular en vez del visor
-// en vivo dentro de la pagina (menos pasos: un toque, foto, listo). El input#file-in-camera con
-// capture="environment" hace eso en el celular; en desktop simplemente abre el selector de archivos
-// normal (capture se ignora ahi, no hay diferencia respecto a antes).
-function openCameraNative() {
-  if (!currentMachine) {
-    setStatus('Select EVG or PITTINI first.', 'err');
-    return;
-  }
-  var inp = document.getElementById('file-in-camera');
-  if (!inp) return;
-  inp.click();
-}
-
-// Recibe la foto que devuelve la camara nativa y corre el mismo pipeline (extraer -> chequear
-// duplicado -> mostrar overlay de confirmacion) que ya usaba captureAndAnalyze() con el video en vivo,
-// reusando _pendingScan/showCamConfirm/camConfirm tal cual -- asi todo el flujo de abajo (duplicados,
-// WO cerrada, etc.) sigue funcionando igual sin duplicar logica.
-async function onCameraFile(e) {
-  var files = Array.from(e.target.files || []); e.target.value = '';
-  if (!files.length) return;
-  if (!currentMachine) { setStatus('Select EVG or PITTINI first.', 'err'); return; }
-  var file = files[0];
-  if (file.size > 10*1024*1024) { setStatus('Photo too large.', 'err'); return; }
-
-  _camNativeMode = true;
-  var modal = document.getElementById('cam-modal');
-  resetCamShutter(); resetCamConfirmBtn();
-  document.getElementById('cam-confirm').style.display = 'none';
-  document.getElementById('cam-shoot-bar').style.display = 'none';   // sin shutter en modo nativo -- ya se saco la foto
-  modal.style.cssText = 'display:flex;flex-direction:column;position:fixed;inset:0;background:#000;z-index:250';
-  var status = document.getElementById('cam-status');
-  status.style.color = 'rgba(255,255,255,.8)';
-  status.textContent = 'Analyzing...';
-  var _tick = _tickStatus(function(s) {
-    var el = document.getElementById('cam-status');
-    if (el) el.textContent = 'Analyzing' + (s ? ' (' + s + 's)' : '...');
-  });
-
-  var wo = _scanWOVal();
-  var operario = document.getElementById('operario-input').value.trim();
-  var notas = document.getElementById('notas-input').value.trim();
-
-  try {
-    var dataUrl = await compressAndRead(file);
-    var base64 = dataUrl.split(',')[1];
-    var data = await fetchExtract(base64, 'image/jpeg');
-
-    var coil0 = data.coil ? String(data.coil).trim() : null;
-    var peso0 = normalizePeso(data.peso);
-    var dchk0 = findDuplicateCandidate(coil0, data.cast, peso0);
-    if (dchk0 && dchk0.kind === 'exact') {
-      camFlash(dupFlashHTML(coil0, dchk0.rec.cast, dchk0.rec.producto, dchk0.rec.created_at, dchk0.rec.wo), 'dup');
-      closeCamera();
-      return;
-    }
-
-    _pendingScan = {
-      base64: base64, mediaType: 'image/jpeg',
-      wo: wo, operario: operario, notas: notas,
-      coil: coil0, cast: data.cast || null, peso: peso0, producto: normalizeProducto(data.producto)
-    };
-    showCamConfirm(data);
-  } catch(err) {
-    camFlash('✗ ERROR<br><span style="font-size:calc(28px * var(--fs-scale));font-weight:600">' + esc(err.message) + ' — cancelled</span>', 'err');
-    closeCamera();
-  } finally {
-    clearInterval(_tick);
-  }
-}
-
+// Matias probo la camara nativa (ver mas arriba en el historial) y no le gusto -- volvio a pedir
+// (2026-10-21) el visor en vivo de siempre, pero que el navegador no pregunte "permitir camara" cada
+// vez que toca "Live camera". La causa: antes closeCamera() paraba TODOS los tracks del stream cada
+// vez que se cerraba el modal, asi que la proxima vez que tocaba "Live camera" la pagina volvia a
+// pedir un stream nuevo (getUserMedia de cero) -- y eso es lo que dispara el cartel de permiso de
+// nuevo en varios navegadores/celulares. Ahora el stream se abre UNA sola vez por visita a la
+// pestana Escanear y se reusa: "Close" solo oculta el modal (el video sigue corriendo en segundo
+// plano), y "Live camera" de nuevo simplemente lo vuelve a mostrar sin llamar a getUserMedia otra
+// vez -- sin permiso de por medio. El stream se libera de verdad (releaseCameraStream) solo al
+// cambiar a otra pestana, para no dejar la camara prendida sin necesidad.
 function openCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatus('Your device does not support live camera. Use the upload photo button.', 'err');
-    return;
-  }
   if (!currentMachine) {
     setStatus('Select EVG or PITTINI first.', 'err');
     return;
   }
-  _camNativeMode = false;
   var modal = document.getElementById('cam-modal');
   resetCamShutter(); resetCamConfirmBtn();
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
   modal.style.cssText = 'display:flex;flex-direction:column;position:fixed;inset:0;background:#000;z-index:250';
+
+  // Ya tenemos un stream vivo de una apertura anterior en esta misma visita a Escanear -- reusarlo,
+  // nada de pedir permiso de nuevo.
+  if (_camStream && _camStream.getVideoTracks().some(function(t){ return t.readyState === 'live'; })) {
+    var video0 = document.getElementById('cam-video');
+    video0.srcObject = _camStream;
+    video0.play();
+    document.getElementById('cam-status').textContent = 'Ready — point at the label and tap the button';
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('Your device does not support live camera. Use the upload photo button.', 'err');
+    return;
+  }
   navigator.mediaDevices.getUserMedia({
     video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}
   }).then(function(stream) {
@@ -2790,6 +2733,16 @@ function openCamera() {
   });
 }
 
+// Corta de verdad la camara (todos los tracks) -- a diferencia de closeCamera(), que solo oculta el
+// modal y deja el stream corriendo para poder reabrir sin pedir permiso otra vez. Se llama al salir
+// de la pestana Escanear (goTab) para no dejar la camara prendida de fondo sin necesidad.
+function releaseCameraStream() {
+  if (_camStream) {
+    _camStream.getTracks().forEach(function(t){t.stop();});
+    _camStream = null;
+  }
+}
+
 // Deja los botones listos para la SIGUIENTE etiqueta (antes quedaban bloqueados despues del primer escaneo)
 function resetCamShutter() {
   var shut = document.getElementById('cam-capture-btn');
@@ -2805,13 +2758,11 @@ function resetScanConfirmBtn() {
 }
 
 function closeCamera() {
-  if (_camStream) {
-    _camStream.getTracks().forEach(function(t){t.stop();});
-    _camStream = null;
-  }
-  _camNativeMode = false;
+  // OJO: a proposito NO se paran los tracks de _camStream aca -- se dejan corriendo de fondo para que
+  // la proxima vez que toque "Live camera" se reuse el mismo stream en vez de pedir permiso de nuevo
+  // (ver comentario en openCamera()). El stream se corta de verdad solo con releaseCameraStream(), al
+  // salir de la pestana Escanear.
   document.getElementById('cam-modal').style.display = 'none';
-  document.getElementById('cam-video').srcObject = null;
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
   resetCamShutter(); resetCamConfirmBtn();
@@ -5468,38 +5419,23 @@ async function camConfirm() {
     await loadRecords();
 
     camFlash('✓ GUARDADO<br><span style="font-size:calc(28px * var(--fs-scale));font-weight:600">Coil ' + esc(coil) + ' · ' + peso + 't</span>', 'ok');
-    if (_camNativeMode) {
-      // Modo camara nativa: no hay obturador al que volver (la foto ya se saco afuera) -- se cierra
-      // el modal solo, Matias toca "Live camera" de nuevo para la proxima etiqueta.
-      setTimeout(closeCamera, 700);
-    } else {
-      // Show success briefly then reset for next scan
-      document.getElementById('cam-confirm').style.display = 'none';
-      document.getElementById('cam-shoot-bar').style.display = 'flex';
-      resetCamShutter(); resetCamConfirmBtn();   // <- faltaba: dejaba el obturador bloqueado
-      document.getElementById('cam-status').textContent = 'Ready for the next label';
-      document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
-    }
+    // Show success briefly then reset for next scan
+    document.getElementById('cam-confirm').style.display = 'none';
+    document.getElementById('cam-shoot-bar').style.display = 'flex';
+    resetCamShutter(); resetCamConfirmBtn();   // <- faltaba: dejaba el obturador bloqueado
+    document.getElementById('cam-status').textContent = 'Ready for the next label';
+    document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
 
   } catch(err) {
     camFlash('✗ ERROR<br><span style="font-size:calc(28px * var(--fs-scale));font-weight:600">' + esc(err.message) + ' — cancelled</span>', 'err');
-    if (_camNativeMode) {
-      setTimeout(closeCamera, 700);
-    } else {
-      document.getElementById('cam-status').textContent = 'Cancelled — fix it and try again';
-      document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
-      if(btn){btn.disabled=false;btn.textContent='✓ Confirm';}
-    }
+    document.getElementById('cam-status').textContent = 'Cancelled — fix it and try again';
+    document.getElementById('cam-status').style.color = 'rgba(255,255,255,.7)';
+    if(btn){btn.disabled=false;btn.textContent='✓ Confirm';}
   }
 }
 
 function camReject(msg, color) {
   _pendingScan = null;
-  if (_camNativeMode) {
-    // Sin obturador al que volver en modo nativo -- se cierra el modal directamente.
-    closeCamera();
-    return;
-  }
   document.getElementById('cam-confirm').style.display = 'none';
   document.getElementById('cam-shoot-bar').style.display = 'flex';
   resetCamShutter(); resetCamConfirmBtn();
@@ -5749,7 +5685,6 @@ function startRealtime() {
 window.addEventListener('load', function() {
   function safe(id, ev, fn){var el=document.getElementById(id);if(el)el.addEventListener(ev,fn);}
   safe('file-in','change',onFiles);
-  safe('file-in-camera','change',onCameraFile);
   safe('analyze-btn','click',analyze);
   safe('btn-analyze2','click',analyze);
   safe('btn-change','click',resetImg);
