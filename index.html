@@ -391,15 +391,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <!-- PANE: ESCANEAR -->
+<!-- La WO se saco de ESTA pantalla a pedido de Matias (2026-10-20): el operario que escanea casi
+     nunca sabe el numero real de WO, asi que la carga vacia y Matias la asigna el mismo despues a
+     mano desde History ("Assign WO" por grupo o seleccion multiple, ver assignWO/assignWOToSelected
+     mas abajo) -- eso ya existia desde antes, ahora es el unico lugar donde se carga. La pantalla
+     de escaneo arranca directo en Machine, despues Camera/Photos. -->
 <div class="pane" id="p-scan">
 <div class="card">
-    <div class="card-title">Work Order</div>
-    <div class="field" style="margin-bottom:8px">
-      <input class="wo-inp" type="text" id="wo-input" placeholder="e.g. WO-2026-001" autocomplete="off">
-    </div>
-    <div class="wo-chips" id="wo-chips"></div>
-  </div>
-  <div class="card">
     <div class="card-title">Machine</div>
     <div style="display:flex;gap:8px">
       <button id="btn-evg" onclick="selectMachine('EVG')" style="flex:1;padding:14px;border-radius:var(--rs);font-size:calc(32px * var(--fs-scale));font-weight:700;cursor:pointer;border:2px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s">EVG</button>
@@ -520,12 +518,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
       <div id="hero-cons-sub" style="font-size:calc(22px * var(--fs-scale));color:#8e9aab;margin-top:3px">&mdash;</div>
     </div>
   </div>
-</div>
-
-<!-- PROGRESO POR WO (semaforo, siempre visible) -->
-<div class="pbi-card" id="dash-wo-semaforo" style="margin-bottom:10px">
-  <div class="pbi-card-title">Progress by WO</div>
-  <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No active WOs</div></div>
 </div>
 
 <div id="dash-more">
@@ -717,6 +709,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div style="overflow-x:auto">
     <table class="tbl pbi-tbl" id="pivot-tbl" style="min-width:100%;border-collapse:collapse"></table>
   </div>
+  <div id="pivot-toggle-all" onclick="togglePivotShowAll()" style="display:none;text-align:center;padding:8px;margin-top:4px;cursor:pointer;color:#007aff;font-size:calc(24px * var(--fs-scale));font-weight:700"></div>
 </div>
 
 <!-- TABLA -->
@@ -741,6 +734,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pane" id="p-prod">
+<!-- PROGRESO POR WO (semaforo) -- antes vivia en el Dashboard, Matias pidio (2026-10-20) que se
+     vea solo aca en Production, que es donde realmente se usa (cargar produccion por WO). -->
+<div class="pbi-card" id="dash-wo-semaforo" style="margin-bottom:10px">
+  <div class="pbi-card-title">Progress by WO</div>
+  <div id="wo-semaforo-list"><div style="color:#8e9aab;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No active WOs</div></div>
+</div>
 <!-- Registrar produccion -->
   <div class="bal-card">
     <div class="bal-hdr">Record production by WO</div>
@@ -1032,6 +1031,13 @@ function selectMachine(m) {
   pit.style.color = m==='PITTINI' ? '#fff' : 'var(--muted)';
   pit.style.borderColor = m==='PITTINI' ? 'var(--blue)' : 'var(--border)';
 }
+// El input #wo-input ya no esta en la pantalla de Escanear (ver comentario arriba de <div
+// id="p-scan">) -- esta funcion deja que el resto del codigo lo siga "leyendo" sin romperse: cada
+// coil se guarda con wo='' y Matias la asigna el mismo despues desde History.
+function _scanWOVal() {
+  var el = document.getElementById('wo-input');
+  return el ? el.value.trim() : '';
+}
 function normalizePeso(raw) {
   if (!raw) return null;
   var m = String(raw).replace(',','.').match(/\d+\.?\d*/);
@@ -1099,7 +1105,7 @@ function _tickStatus(setFn) {
 async function callGemini(base64, mType) {
   // Check offline
   if (!navigator.onLine) {
-    var wo2 = document.getElementById('wo-input').value.trim();
+    var wo2 = _scanWOVal();
     var op2 = document.getElementById('operario-input').value.trim();
     _offlineQueue.push({imageBase64: base64, mediaType: mType||'image/jpeg', wo: wo2, operario: op2, notas: '', maquina: currentMachine});
     saveOfflineQueue();
@@ -1180,7 +1186,7 @@ function renderWoChips() {
     var el = document.createElement('span');
     el.className = 'wo-chip'; el.textContent = w;
     el.addEventListener('click', function() {
-      document.getElementById('wo-input').value = w;
+      var woEl = document.getElementById('wo-input'); if (woEl) woEl.value = w;
       document.querySelectorAll('.wo-chip').forEach(function(c) { c.classList.toggle('on', c===el); });
     });
     wrap.appendChild(el);
@@ -1234,7 +1240,7 @@ function resetImg() {
   clearStatus();
 }
 async function processQueue(files) {
-  var wo = document.getElementById('wo-input').value.trim();
+  var wo = _scanWOVal();
   var op = document.getElementById('operario-input').value.trim();
   clearStatus();
   var ok = 0, fail = 0, dup = 0, total = files.length;
@@ -1290,7 +1296,7 @@ async function analyze() {
   try {
     var base64 = pendingImg.split(',')[1];
     var mediaType = pendingImg.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
-    var wo = document.getElementById('wo-input').value.trim();
+    var wo = _scanWOVal();
     var operario = document.getElementById('operario-input').value.trim();
     var notas = document.getElementById('notas-input').value.trim();
     var parsed = await callGemini(base64, mediaType);
@@ -1600,7 +1606,7 @@ function showResult(d, wo) {
   // La verificacion contra el consignment (ok / sugerencia / sin coincidencia) se muestra en el cuadro cv-box, mas abajo.
   // Se sigue guardando en "Para verificar" para el seguimiento de la pestaña Consignment.
   if (d.coil) {
-    checkCoilVsConsignment(d.coil, d.cast, d.producto, d.peso, currentMachine, document.getElementById('wo-input').value.trim());
+    checkCoilVsConsignment(d.coil, d.cast, d.producto, d.peso, currentMachine, _scanWOVal());
   }
   var fields = document.getElementById('res-fields');
   var inputStyle = 'width:100%;padding:10px 12px;border:2px solid #e5e5ea;border-radius:9px;font-size:calc(30px * var(--fs-scale));font-family:monospace;font-weight:700;outline:none;box-sizing:border-box;margin-bottom:2px;background:#f8fafc';
@@ -2262,9 +2268,10 @@ function renderDash() {
     document.getElementById('db-cnt-trend').innerHTML = '';
   }
 
-  // Daily summary (hero), semaforo de WOs y que falta -- siempre sobre TODOS los registros/consignments, no sobre el filtro de abajo
+  // Daily summary (hero) y que falta -- siempre sobre TODOS los registros/consignments, no sobre
+  // el filtro de abajo. "Progress by WO" (renderWoSemaforo) ya no se muestra aca -- se mudo a la
+  // pestana Production (ver loadProduccion()), a pedido de Matias (2026-10-20).
   renderResumenDia();
-  renderWoSemaforo();
   applyTvMode();
   // Timelines
   renderTimeline(data);
@@ -2748,7 +2755,7 @@ async function captureAndAnalyze() {
   var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
   var base64 = dataUrl.split(',')[1];
 
-  var wo = document.getElementById('wo-input').value.trim();
+  var wo = _scanWOVal();
   var operario = document.getElementById('operario-input').value.trim();
   var notas = document.getElementById('notas-input').value.trim();
 
@@ -2818,6 +2825,7 @@ async function loadProduccion() {
     else _produccion = [];
   } catch(e) { _produccion = []; }
 
+  renderWoSemaforo();
   renderBalance();
   renderProdHist();
   renderChangeLog();
@@ -4331,17 +4339,39 @@ function renderBars2(containerId, byKey, total, onClick, limit, labelFn) {
   });
 }
 
+// Con pocas WOs activas el pivot entra entero en pantalla, pero con 20+ se vuelve una fila de
+// columnas angostas que no entran ni scrolleando comodo -- Matias pregunto (2026-10-20) como se
+// veria en ese caso. Ahora: las WOs se ordenan por toneladas (las que mas pesan primero, no
+// alfabetico) y, pasado PIVOT_WO_CAP, el resto se junta en una sola columna "+N more" con el total
+// agrupado -- siempre se puede expandir a la tabla completa con el link de abajo (el horizontal
+// scroll de #pivot-tbl sigue ahi como respaldo si se expande con muchas WOs).
+var PIVOT_WO_CAP = 12;
+var _pivotShowAll = false;
+var _lastPivotData = null;
+function togglePivotShowAll() {
+  _pivotShowAll = !_pivotShowAll;
+  if (_lastPivotData) renderPivot2(_lastPivotData);
+}
 function renderPivot2(data) {
+  _lastPivotData = data;
   var prods=unique(data.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean)).sort();
-  var wos=unique(data.map(function(r){return r.wo;}).filter(Boolean)).sort();
+  var wosAll=unique(data.map(function(r){return r.wo;}).filter(Boolean));
   var tbl=document.getElementById('pivot-tbl');
   if(!tbl)return;
-  if(!prods.length||!wos.length){
-    tbl.innerHTML='<tr><td style="padding:14px;color:#8e9aab;font-size:calc(26px * var(--fs-scale))">'+(wos.length===0?'Assign WOs in History to see the pivot table.':'No data.')+'</td></tr>';
+  if(!prods.length||!wosAll.length){
+    tbl.innerHTML='<tr><td style="padding:14px;color:#8e9aab;font-size:calc(26px * var(--fs-scale))">'+(wosAll.length===0?'Assign WOs in History to see the pivot table.':'No data.')+'</td></tr>';
     return;
   }
+  // Orden por toneladas (de mas a menos), asi las WOs mas relevantes quedan primero y a la vista
+  // aunque despues se corte la lista.
+  wosAll.sort(function(a,b){ return sumTon(data.filter(function(r){return r.wo===b;})) - sumTon(data.filter(function(r){return r.wo===a;})); });
+  var capped = !_pivotShowAll && wosAll.length > PIVOT_WO_CAP;
+  var wos = capped ? wosAll.slice(0, PIVOT_WO_CAP) : wosAll;
+  var restWos = capped ? wosAll.slice(PIVOT_WO_CAP) : [];
+
   var html='<thead><tr><th style="text-align:left">Product</th>';
   wos.forEach(function(w){html+='<th style="text-align:center">'+esc(w)+'</th>';});
+  if (restWos.length) html+='<th style="text-align:center;color:#8e9aab">+'+restWos.length+' more</th>';
   html+='<th style="text-align:center;color:#007aff">Total</th></tr></thead><tbody>';
   prods.forEach(function(p){
     var row=data.filter(function(r){return normalizeProductoKey(r.producto)===p;});
@@ -4352,13 +4382,32 @@ function renderPivot2(data) {
       var v=sumTon(cell);
       html+='<td style="text-align:center;padding:8px 10px">'+(v>0?'<div class="pbi-tbl-val">'+v.toFixed(3)+'</div><div style="font-size:calc(20px * var(--fs-scale));color:#8e9aab">'+cell.length+' coils</div>':'<span style="color:#e8ecf0">—</span>')+'</td>';
     });
+    if (restWos.length) {
+      var restCell=row.filter(function(r){return restWos.indexOf(r.wo)>=0;});
+      var restV=sumTon(restCell);
+      html+='<td style="text-align:center;padding:8px 10px;color:#8e9aab">'+(restV>0?'<div class="pbi-tbl-val" style="color:#8e9aab">'+restV.toFixed(3)+'</div><div style="font-size:calc(20px * var(--fs-scale))">'+restCell.length+' coils</div>':'<span style="color:#e8ecf0">—</span>')+'</td>';
+    }
     html+='<td style="text-align:center;padding:8px 10px"><div class="pbi-tbl-val">'+rowTot.toFixed(3)+'</div><div style="font-size:calc(20px * var(--fs-scale));color:#8e9aab">'+row.length+' coils</div></td></tr>';
   });
   var totRow='<tr class="pbi-tbl-tot"><td style="padding:8px 10px;font-weight:700">TOTAL</td>';
   wos.forEach(function(w){var v=sumTon(data.filter(function(r){return r.wo===w;}));totRow+='<td style="text-align:center;padding:8px 10px;font-weight:700;color:#007aff">'+v.toFixed(3)+'</td>';});
+  if (restWos.length) {
+    var restTot=sumTon(data.filter(function(r){return restWos.indexOf(r.wo)>=0;}));
+    totRow+='<td style="text-align:center;padding:8px 10px;font-weight:700;color:#8e9aab">'+restTot.toFixed(3)+'</td>';
+  }
   totRow+='<td style="text-align:center;padding:8px 10px;font-weight:700;color:#007aff">'+sumTon(data).toFixed(3)+'</td></tr>';
   html+=totRow+'</tbody>';
   tbl.innerHTML=html;
+
+  var toggleEl=document.getElementById('pivot-toggle-all');
+  if (toggleEl) {
+    if (wosAll.length > PIVOT_WO_CAP) {
+      toggleEl.style.display='block';
+      toggleEl.textContent = _pivotShowAll ? 'Show top '+PIVOT_WO_CAP+' only' : 'Show all '+wosAll.length+' WOs';
+    } else {
+      toggleEl.style.display='none';
+    }
+  }
 }
 
 
@@ -4859,7 +4908,7 @@ function updateWOChipsFromSchedule() {
     el.className = 'wo-chip';
     el.textContent = w;
     el.addEventListener('click', function() {
-      document.getElementById('wo-input').value = w;
+      var woEl = document.getElementById('wo-input'); if (woEl) woEl.value = w;
       document.querySelectorAll('.wo-chip').forEach(function(c){c.classList.toggle('on', c===el);});
     });
     chips.appendChild(el);
