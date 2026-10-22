@@ -390,6 +390,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <button class="tab" id="t-cons" onclick="goTab('cons')">&#128196; Consignment</button>
 </div>
 
+<!-- FILTRO DE AÑO (global -- pedido de Matias 2026-10-23: poder ver como va progresando ano a ano,
+     ej. terminar 2026 y compararlo con 2025, despues empezar 2027 con esa referencia. Vive afuera de
+     los .pane asi que se ve en TODAS las pestanas (menos Scan, donde no aplica), y filtra Dashboard,
+     Production, History y Consignment a la vez -- ver setYearFilter()/renderYearChips() mas abajo. ) -->
+<div id="year-filter-bar" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto">
+  <span style="font-size:calc(22px * var(--fs-scale));color:var(--muted);font-weight:700;flex-shrink:0;letter-spacing:.3px">&#128197; YEAR</span>
+  <div id="year-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+</div>
+
 <!-- PANE: ESCANEAR -->
 <!-- La WO se saco de ESTA pantalla a pedido de Matias (2026-10-20): el operario que escanea casi
      nunca sabe el numero real de WO, asi que la carga vacia y Matias la asigna el mismo despues a
@@ -1166,6 +1175,8 @@ function goTab(n) {
   // pedir permiso de nuevo cada vez, ver openCamera/closeCamera) -- pero si te vas de la pestana
   // Escanear del todo, ahi si se corta de verdad.
   if (n !== 'scan') releaseCameraStream();
+  renderYearChips();
+  populateYearCompareOptions();
   if (n === 'hist') renderHistorial();
   if (n === 'dash') requestAnimationFrame(function(){requestAnimationFrame(renderDash);});
   if (n === 'prod') loadProduccion();
@@ -2043,9 +2054,104 @@ function clearDashFilters() {
   renderDash();
 }
 
+// ============ FILTRO DE AÑO (global, pedido de Matias 2026-10-23) ============
+// Deja ver como va progresando la app ano a ano: terminar el 2026 y compararlo con el 2025 (via
+// Compare periods mas abajo), empezar el 2027 con esa referencia, y asi siguiendo. _yearFilter es un
+// string como '2026', o '' para "todos los anos" (comportamiento de siempre, sin filtrar).
+var _yearFilter = '';
+try { _yearFilter = localStorage.getItem('yearFilter') || ''; } catch(e) {}
+
+// Ano de un record escaneado (records), por su created_at. null si no tiene fecha valida.
+function _recordYear(r) {
+  if (!r || !r.created_at) return null;
+  var d = new Date(r.created_at);
+  return isNaN(d.getTime()) ? null : d.getFullYear();
+}
+// Ano de un consignment (_consignments), por su campo "fecha" (string "DD/MM/AA" o "DD/MM/AAAA" que
+// trae el PDF) -- reusa _fechaOrdenable(), que ya sabe parsear ese formato (ver mas abajo). null si no
+// tiene fecha valida.
+function _consYear(c) {
+  if (!c) return null;
+  var fo = _fechaOrdenable(c.fecha);
+  if (fo === Infinity) return null;
+  return new Date(fo).getUTCFullYear();
+}
+// Ano de una entrada de produccion (_produccion), por su created_at. null si no tiene fecha valida.
+function _prodYear(p) {
+  if (!p || !p.created_at) return null;
+  var d = new Date(p.created_at);
+  return isNaN(d.getTime()) ? null : d.getFullYear();
+}
+
+// Las 3 listas de datos (records/consignments/produccion), recortadas al ano elegido en el filtro
+// global -- o la lista entera tal cual si _yearFilter esta vacio ("All years"). Las usan Dashboard,
+// Production, History y Consignment; los helpers de "esta escaneado" (isCoilScanned y companeros) y
+// la deteccion de duplicados durante el escaneo siguen mirando SIEMPRE el set completo, sin filtrar
+// por ano -- eso es integridad de datos, no una vista de reporte.
+function _yearFilteredRecords() {
+  if (!_yearFilter) return records || [];
+  var y = parseInt(_yearFilter, 10);
+  return (records || []).filter(function(r) { return _recordYear(r) === y; });
+}
+function _yearFilteredConsignments() {
+  if (!_yearFilter) return _consignments || [];
+  var y = parseInt(_yearFilter, 10);
+  return (_consignments || []).filter(function(c) { return _consYear(c) === y; });
+}
+function _yearFilteredProduccion() {
+  if (!_yearFilter) return _produccion || [];
+  var y = parseInt(_yearFilter, 10);
+  return (_produccion || []).filter(function(p) { return _prodYear(p) === y; });
+}
+// Todos los anos distintos presentes en los datos (escaneos + consignments + produccion), de mas
+// reciente a mas antiguo -- para poblar los chips del filtro y las opciones de ano en Compare periods.
+function _allDataYears() {
+  var ys = {};
+  (records || []).forEach(function(r) { var y = _recordYear(r); if (y) ys[y] = 1; });
+  (_consignments || []).forEach(function(c) { var y = _consYear(c); if (y) ys[y] = 1; });
+  (_produccion || []).forEach(function(p) { var y = _prodYear(p); if (y) ys[y] = 1; });
+  return Object.keys(ys).map(Number).sort(function(a, b) { return b - a; });
+}
+
+function renderYearChips() {
+  var el = document.getElementById('year-chips');
+  if (!el) return;
+  var years = _allDataYears();
+  var html = '<button class="pbi-date-chip' + (!_yearFilter ? ' on' : '') + '" onclick="setYearFilter(\'\')">All years</button>';
+  years.forEach(function(y) {
+    html += '<button class="pbi-date-chip' + (_yearFilter === String(y) ? ' on' : '') + '" onclick="setYearFilter(\'' + y + '\')">' + y + '</button>';
+  });
+  el.innerHTML = html;
+}
+
+// Which tab's pane is currently showing -- reusa el mismo criterio (.pane.on) que goTab() usa para
+// marcar la pestana activa.
+function _activeTabName() {
+  for (var i = 0; i < _TAB_NAMES.length; i++) {
+    var p = document.getElementById('p-' + _TAB_NAMES[i]);
+    if (p && p.classList.contains('on')) return _TAB_NAMES[i];
+  }
+  return 'scan';
+}
+
+function setYearFilter(y) {
+  _yearFilter = y ? String(y) : '';
+  try { localStorage.setItem('yearFilter', _yearFilter); } catch(e) {}
+  renderYearChips();
+  populateYearCompareOptions();
+  // Re-renderiza lo que esta visible ahora, sin volver a pedir los datos al servidor (ya los
+  // tenemos en memoria -- el filtro de ano es puramente del lado del cliente).
+  var tab = _activeTabName();
+  if (tab === 'dash') renderDash();
+  else if (tab === 'prod') renderProduccionViews();
+  else if (tab === 'hist') renderHistorial();
+  else if (tab === 'cons') renderConsignmentViews();
+}
+
 function getFilteredData() {
   var now = new Date();
   return records.filter(function(r) {
+    if (_yearFilter && _recordYear(r) !== parseInt(_yearFilter, 10)) return false;
     if (_dbMaq && r.maquina !== _dbMaq) return false;
     if (_dbProd && normalizeProductoKey(r.producto) !== _dbProd) return false;
     if (_dbWO && r.wo !== _dbWO) return false;
@@ -2136,12 +2242,13 @@ function renderResumenDia() {
 function renderWoSemaforo() {
   var el = document.getElementById('wo-semaforo-list');
   if (!el) return;
-  var allWos = unique((records || []).map(function(r) { return r.wo; }).filter(Boolean));
+  var recs = _yearFilteredRecords(), prod = _yearFilteredProduccion();
+  var allWos = unique(recs.map(function(r) { return r.wo; }).filter(Boolean));
   if (!allWos.length) { el.innerHTML = '<div style="color:#8e9aab;font-size:calc(26px * var(--fs-scale));text-align:center;padding:12px">No WOs</div>'; return; }
   var rows = allWos.map(function(wo) {
-    var woRecs = records.filter(function(r) { return r.wo === wo; });
+    var woRecs = recs.filter(function(r) { return r.wo === wo; });
     var entrada = sumTon(woRecs);
-    var producido = (_produccion || []).filter(function(p) { return p.wo === wo; }).reduce(function(s, p) { return s + (parseFloat(p.toneladas_producidas) || 0); }, 0);
+    var producido = prod.filter(function(p) { return p.wo === wo; }).reduce(function(s, p) { return s + (parseFloat(p.toneladas_producidas) || 0); }, 0);
     var pct = entrada > 0 ? Math.round(producido / entrada * 100) : 0;
     var prods = unique(woRecs.map(function(r) { return normalizeProductoKey(r.producto); }).filter(Boolean));
     return {wo: wo, entrada: entrada, producido: producido, pct: pct, coils: woRecs.length, prods: prods, closed: isWOClosed(wo)};
@@ -2855,8 +2962,20 @@ function refreshProdWOSelector() {
   if (prevVal && !isWOClosed(prevVal)) sel.value = prevVal;
 }
 
+// Todo lo que la pestana Production muestra, a partir de lo que YA esta en memoria (_produccion,
+// records) -- sin pedir nada al servidor. Separado de loadProduccion() para que cambiar el filtro de
+// ano (setYearFilter) pueda re-renderizar al toque sin un fetch de por medio.
+function renderProduccionViews() {
+  renderWoSemaforo();
+  renderBalance();
+  renderProdHist();
+  renderChangeLog();
+  checkStockAlerts();
+}
+
 async function loadProduccion() {
-  // Populate WO selector from records
+  // Populate WO selector from records -- a proposito con TODAS las WOs (sin filtrar por ano): registrar
+  // produccion es una accion de carga, no un reporte, no tiene que quedar acotada por el filtro de ano.
   refreshProdWOSelector();
 
   // Load produccion records
@@ -2868,11 +2987,9 @@ async function loadProduccion() {
     else _produccion = [];
   } catch(e) { _produccion = []; }
 
-  renderWoSemaforo();
-  renderBalance();
-  renderProdHist();
-  renderChangeLog();
-  checkStockAlerts();
+  renderYearChips();
+  populateYearCompareOptions();
+  renderProduccionViews();
 }
 
 async function saveProduccion() {
@@ -2923,7 +3040,8 @@ function _woLastDate(wo) {
   return max;
 }
 function renderBalance() {
-  var wos = unique(records.map(function(r){return r.wo;}).filter(Boolean));
+  var recs = _yearFilteredRecords(), prod = _yearFilteredProduccion();
+  var wos = unique(recs.map(function(r){return r.wo;}).filter(Boolean));
   // Las WO abiertas van primero, las cerradas despues; dentro de cada grupo, la de actividad
   // (escaneo) mas reciente va arriba -- igual criterio que el resto de la app (Historial, etc.).
   wos.sort(function(a, b) {
@@ -2939,10 +3057,10 @@ function renderBalance() {
   }
   list.innerHTML = '';
   wos.forEach(function(wo) {
-    var entrada = sumTon(records.filter(function(r){return r.wo===wo;}));
-    var coils = records.filter(function(r){return r.wo===wo;}).length;
+    var entrada = sumTon(recs.filter(function(r){return r.wo===wo;}));
+    var coils = recs.filter(function(r){return r.wo===wo;}).length;
     // Sum all produccion for this WO
-    var producido = _produccion
+    var producido = prod
       .filter(function(p){return p.wo===wo;})
       .reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
     var scrapEst = entrada * 0.0075;   // 0.75% de merma esperada, calculada sobre lo que ingreso a la maquina
@@ -2962,7 +3080,7 @@ function renderBalance() {
       div.style.borderRadius = '10px';
       div.style.padding = '12px 10px';
     }
-    var woRecs = records.filter(function(r){return r.wo===wo;});
+    var woRecs = recs.filter(function(r){return r.wo===wo;});
     var prods = unique(woRecs.map(function(r){return normalizeProductoKey(r.producto);}).filter(Boolean));
     var prodTags = prods.map(function(p){
       return '<span style="background:#f0f5ff;color:#007aff;font-size:calc(20px * var(--fs-scale));font-weight:700;border-radius:4px;padding:2px 7px;margin-right:3px">'+esc(p)+'</span>';
@@ -3009,8 +3127,8 @@ function renderBalance() {
   });
 
   // Total stock summary
-  var totalEntrada = sumTon(records.filter(function(r){return r.wo;}));
-  var totalProducido = _produccion.reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
+  var totalEntrada = sumTon(recs.filter(function(r){return r.wo;}));
+  var totalProducido = prod.reduce(function(s,p){return s+parseFloat(p.toneladas_producidas||0);},0);
   var totalScrapEst = totalEntrada * 0.0075;
   var totalStock = totalEntrada - totalProducido - totalScrapEst;
   var summary = document.createElement('div');
@@ -3026,11 +3144,12 @@ function renderBalance() {
 function renderProdHist() {
   var hist = document.getElementById('prod-hist-list');
   if (!hist) return;
-  if (!_produccion.length) {
+  var prod = _yearFilteredProduccion();
+  if (!prod.length) {
     hist.innerHTML = '<div style="color:#8e8e93;text-align:center;padding:20px;font-size:calc(26px * var(--fs-scale))">No production records.</div>';
     return;
   }
-  hist.innerHTML = _produccion.slice(0,50).map(function(p) {
+  hist.innerHTML = prod.slice(0,50).map(function(p) {
     var d = p.created_at ? new Date(p.created_at).toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f2f2f7;gap:10px">'+
       '<div style="min-width:0">'+
@@ -3223,12 +3342,22 @@ async function loadConsignments() {
   }
   _consignments = rows;
   _consShown = 10;
+  renderYearChips();
+  populateYearCompareOptions();
+  renderConsignmentViews();
+  var dp = document.getElementById('p-dash');
+  if (dp && dp.classList.contains('on')) { try { renderDash(); } catch(e) { console.error('[renderDash]', e); } }
+}
+
+// Todo lo que la pestana Consignment (y el resumen de consignments del Dashboard) muestran, a partir
+// de lo que YA esta en memoria (_consignments, records) -- sin pedir nada al servidor. Separado de
+// loadConsignments() para que cambiar el filtro de ano (setYearFilter) pueda re-renderizar al toque
+// sin un fetch de por medio.
+function renderConsignmentViews() {
   renderSavedCons();
   runCrossCheck();
   renderParaVerificar();
   try { renderConsSummaryDash(); } catch(e) { console.error('[renderConsSummaryDash]', e); }
-  var dp = document.getElementById('p-dash');
-  if (dp && dp.classList.contains('on')) { try { renderDash(); } catch(e) { console.error('[renderDash]', e); } }
 }
 
 async function saveConsignmentRows(rows) {
@@ -3293,7 +3422,8 @@ function _consYearMonth(fechaOrden) {
 
 function consStatusHTML(where) {
   refreshScannedSet();
-  var srcRows = (where === 'tab' && _consProdFilter) ? (_consignments || []).filter(function(r) { return _consProdKey(r) === _consProdFilter; }) : (_consignments || []);
+  var consYr = _yearFilteredConsignments();
+  var srcRows = (where === 'tab' && _consProdFilter) ? consYr.filter(function(r) { return _consProdKey(r) === _consProdFilter; }) : consYr;
   var refs = {}, order = [];
   srcRows.forEach(function(r) {
     var k = r.referencia || 'No ref';
@@ -3430,7 +3560,7 @@ function renderSavedCons() {
   var listEl = document.getElementById('saved-cons-list');
   if (!listEl) return;
   refreshScannedSet();
-  var all = _consignments || [];
+  var all = _yearFilteredConsignments();
   var byId = function(id) { return document.getElementById(id); };
   var setDisp = function(id, on) { var e = byId(id); if (e) e.style.display = on ? 'block' : 'none'; };
   var setTxt = function(id, t) { var e = byId(id); if (e) e.textContent = t; };
@@ -4074,7 +4204,7 @@ function renderHistorial() {
   var q = (document.getElementById('search-inp')||{}).value ? document.getElementById('search-inp').value.toLowerCase() : '';
   var wo = (document.getElementById('wo-filter')||{}).value ? document.getElementById('wo-filter').value.toLowerCase() : '';
   var dateFilter = getHistDate();
-  var filtered = records.filter(function(r) {
+  var filtered = _yearFilteredRecords().filter(function(r) {
     if (q && ![r.producto,r.coil,r.cast,r.operario,r.notas].some(function(v){return(v||'').toLowerCase().indexOf(q)>=0;})) return false;
     if (wo && (r.wo||'').toLowerCase().indexOf(wo)<0) return false;
     if (dateFilter && r.created_at) {
@@ -4871,7 +5001,15 @@ function getPeriodData(val) {
   } else if (val === 'month1') {
     start = new Date(now.getFullYear(), now.getMonth()-1, 1);
     end = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if (/^year\d{4}$/.test(val || '')) {
+    // "yearNNNN" -- pedido de Matias (2026-10-23): comparar un ano calendario completo contra otro
+    // (ej. terminar el 2026 y verlo contra el 2025), poblado dinamicamente con los anos que realmente
+    // hay datos (ver populateYearCompareOptions()).
+    var y = parseInt(val.slice(4), 10);
+    start = new Date(y, 0, 1);
+    end = new Date(y + 1, 0, 1);
   }
+  if (!start || !end) return [];
   return records.filter(function(r){
     if (!r.created_at) return false;
     var d = new Date(r.created_at);
@@ -4881,7 +5019,31 @@ function getPeriodData(val) {
 
 function getPeriodLabel(val) {
   var labels = {week0:'This week', week1:'Last week', month0:'This month', month1:'Last month'};
-  return labels[val] || val;
+  if (labels[val]) return labels[val];
+  var m = /^year(\d{4})$/.exec(val || '');
+  if (m) return m[1];
+  return val;
+}
+
+// Agrega una opcion por cada ano con datos (records/consignments/produccion) a los selects "Period A"
+// / "Period B" de Compare periods, ademas de las opciones fijas de semana/mes que ya habia -- asi
+// terminando el 2026 se puede elegir "2026" vs "2025" directamente, y arrancando el 2027 queda "2027"
+// vs "2026" disponible sin tocar nada. No duplica opciones si se llama mas de una vez (ej. cada vez
+// que cambian los datos).
+function populateYearCompareOptions() {
+  var years = _allDataYears();
+  [document.getElementById('cmp-a'), document.getElementById('cmp-b')].forEach(function(sel) {
+    if (!sel) return;
+    // Saca las opciones "yearNNNN" existentes para repoblarlas limpias (evita duplicados si los
+    // anos con datos cambiaron, ej. recien se cargo el primer consignment de un ano nuevo).
+    Array.prototype.slice.call(sel.querySelectorAll('option[value^="year"]')).forEach(function(o) { o.remove(); });
+    years.forEach(function(y) {
+      var opt = document.createElement('option');
+      opt.value = 'year' + y;
+      opt.textContent = String(y);
+      sel.appendChild(opt);
+    });
+  });
 }
 
 function renderComparison() {
@@ -5045,25 +5207,33 @@ function runCrossCheck() {
 
   card.style.display = 'block';
 
+  // El filtro de ano acota CUALES records/consignments se reportan en cada lista, pero el chequeo
+  // de "esta matcheado" en si se hace siempre contra el set COMPLETO (sin filtrar) de la otra punta
+  // -- si no, un coil de una consigna con fecha de un ano pero escaneado en otro (cruzando fin de
+  // ano) apareceria mal como "extra" o "no escaneado" solo por el corte de ano, cuando en realidad
+  // si esta matcheado.
+  var recsYr = _yearFilteredRecords(), consYr = _yearFilteredConsignments();
+  var recsAll = records || [], consAll = _consignments || [];
+
   var inCons = 0, notInCons = 0, consNotScanned = 0, usadoCount = 0;
   var missingFromScan = []; // consignments not yet scanned, not marked as used either
   var extraScans = []; // scanned but not in consignment
   var usadoManual = []; // consignments not scanned, but manually marked as "usado" (old coils from before the app)
 
-  // Check each record against consignments
-  records.forEach(function(r) {
+  // Check each record (del ano filtrado) against ALL consignments
+  recsYr.forEach(function(r) {
     if (!r.coil) return;
-    var found = _consignments.find(function(c){
+    var found = consAll.find(function(c){
       return String(c.lot_no||'').trim() === String(r.coil||'').trim();
     });
     if (found) { inCons++; }
     else { notInCons++; extraScans.push(r); }
   });
 
-  // Check each consignment against scanned records
-  _consignments.forEach(function(con) {
+  // Check each consignment (del ano filtrado) against ALL scanned records
+  consYr.forEach(function(con) {
     if (!con.lot_no) return;
-    var found = records.find(function(r){
+    var found = recsAll.find(function(r){
       return String(r.coil||'').trim() === String(con.lot_no||'').trim();
     });
     if (!found) {
@@ -5637,11 +5807,13 @@ function updateLiveBadge() {
 }
 
 function refreshActiveView() {
+  renderYearChips();
+  populateYearCompareOptions();
   var activeTab = document.querySelector('.tab.on');
   if (!activeTab) return;
   if (activeTab.id === 't-dash') renderDash();
   else if (activeTab.id === 't-hist') renderHistorial();
-  else if (activeTab.id === 't-cons') { renderSavedCons(); runCrossCheck(); renderParaVerificar(); }
+  else if (activeTab.id === 't-cons') renderConsignmentViews();
 }
 
 function rtSchedule(kind) {
